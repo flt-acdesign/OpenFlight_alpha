@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aircraft Physics Simulation with Joystick Control</title>
+    <link rel="stylesheet" href="./00_styles/styles.css">
+
+    <!-- Include Babylon.js via files -->
+    <script src="./99_external_libraries/babylon.js"></script>
+    <script src="./99_external_libraries/babylon_GUI.js"></script>
+    <script src="./99_external_libraries/babylonjs.loaders.min.js"></script>
+    <script src="./99_external_libraries/loaders/babylon.objFileLoader.js"></script>
+
+    <script src="./10_transfer_state_to_server/transfer_state_to_server.js"></script>
+    <script src="./20_GUI/$_gui.js"></script>
+
+
+    <script src="./40_geometry/$_aircraft_geometry.js"></script>
+    <script src="./40_geometry/$_world_geometry.js"></script>
+
+    <script src="./50_draw_forces_and_velocities/draw_forces_and_velocities.js"></script>
+    <script src="./60_MAIN_render_engine/MAIN_render_loop.js"></script>
+    <script src="./60_MAIN_render_engine/$_create_scene.js"></script>
+    <script src="./30_joystick/$_joystick_gamepad.js"></script>
+
+    <script src="./70_initializations/$_initializations.js"></script>
+
+</head>
+<body>
+
+    <input type="file" id="fileInput" accept=".obj"/>  // html button to load an .obj model for the aircraft
+
+    <canvas id="renderCanvas"></canvas>
+
+</body>
+</html>
