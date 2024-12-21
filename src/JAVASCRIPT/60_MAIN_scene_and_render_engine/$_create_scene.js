@@ -2,36 +2,28 @@ function createScene(engine, canvas) {
   const scene = new BABYLON.Scene(engine);
   scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
 
-  const {camera, pilotCamera} = setupCameras(scene, canvas);
   const {lights, shadowGenerator} = setupLights(scene);
-  setupWorld(scene, shadowGenerator, camera);
+  createAircraft(shadowGenerator, scene)
+  const {camera, pilotCamera} = setupCameras(scene, canvas);
+  create_world_scenary(scene, shadowGenerator, camera);
+  createVelocityLine();
+  createForceLine();
+  createGUI();
   setupEventListeners(scene, shadowGenerator);
   setupAnimations(scene);
-
   return scene;
 }
 
-function setupCameras(scene, canvas) {
+
+function setupCameras(scene, canvas, shadowGenerator) {
   const camera = new BABYLON.ArcRotateCamera(
       "Camera", 
-      -1.2, 1.6, 100,
+      -1.2,
+      1.6,
+      100,
       new BABYLON.Vector3(170, 110, -70),
       scene
   );
-  configureCameraSettings(camera, canvas);
-
-  const pilotCamera = new BABYLON.UniversalCamera(
-      'pilotCamera',
-      new BABYLON.Vector3(-15, 2, 0),
-      scene
-  );
-  pilotCamera.rotation = new BABYLON.Vector3(0, Math.PI / 2, 0);
-  scene.activeCamera = camera;
-
-  return {camera, pilotCamera};
-}
-
-function configureCameraSettings(camera, canvas) {
   camera.minZ = 0.1;
   camera.maxZ = 5000;
   camera.fov = 0.647;
@@ -43,7 +35,23 @@ function configureCameraSettings(camera, canvas) {
   camera.upperRadiusLimit = 1650;
   camera.wheelPrecision = 10;
   camera.inputs.attached.pointers.panningSensibility = 10;
+
+  const pilotCamera = new BABYLON.FollowCamera("pilotCamera", new BABYLON.Vector3(0, 10, -10), scene);
+  pilotCamera.heightOffset = 5;
+  pilotCamera.rotationOffset = 180;
+  pilotCamera.cameraAcceleration = 0.1;
+  pilotCamera.maxCameraSpeed = 10;
+  pilotCamera.radius = -15;
+
+  scene.activeCamera = camera;
+
+
+  pilotCamera.lockedTarget = aircraft;
+  camera.lockedTarget = aircraft;  
+
+  return { camera, pilotCamera };
 }
+
 
 function setupLights(scene) {
   const lightDown = new BABYLON.HemisphericLight(
@@ -51,14 +59,14 @@ function setupLights(scene) {
       new BABYLON.Vector3(0, 1, 0),
       scene
   );
-  lightDown.intensity = 0.2;
+  lightDown.intensity = 0.4;
 
   const lightUp = new BABYLON.HemisphericLight(
       "lightUp",
       new BABYLON.Vector3(0, -1, 1),
       scene
   );
-  lightUp.intensity = 0.20;
+  lightUp.intensity = 0.3;
 
   const directionalLight = createDirectionalLight(scene);
   const shadowGenerator = createShadowGenerator(directionalLight);
@@ -88,13 +96,6 @@ function createShadowGenerator(directionalLight) {
   return shadowGenerator;
 }
 
-function setupWorld(scene, shadowGenerator, camera) {
-  create_world_scenary(scene, shadowGenerator, camera);
-  createAircraft(shadowGenerator, scene);
-  createVelocityLine();
-  createForceLine();
-  createGUI();
-}
 
 function setupEventListeners(scene, shadowGenerator) {
   setupFileInput(scene, shadowGenerator);
