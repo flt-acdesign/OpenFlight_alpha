@@ -95,3 +95,24 @@ function loadObjFile(file, scaleFactor, rotationX, rotationY, rotationZ, scene, 
 
   reader.readAsText(file);
 }
+
+
+
+function setupFileInput(scene, shadowGenerator) {
+  document.getElementById("fileInput").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file && file.name.endsWith(".obj")) {
+          loadObjFile(
+              file,
+              0.01,  // scaleFactor
+              -90,   // rotationX
+              90,    // rotationY
+              180,   // rotationZ
+              scene,
+              shadowGenerator
+          );
+      } else {
+          alert("Please select a valid .obj file");
+      }
+  });
+}

@@ -39,18 +39,40 @@ function setupCameras(scene, canvas, shadowGenerator) {
   const pilotCamera = new BABYLON.FollowCamera("pilotCamera", new BABYLON.Vector3(0, 10, -10), scene);
   pilotCamera.heightOffset = 5;
   pilotCamera.rotationOffset = 180;
-  pilotCamera.cameraAcceleration = 0.1;
-  pilotCamera.maxCameraSpeed = 10;
+  pilotCamera.cameraAcceleration = 0.0005;   // Reduced acceleration for smoother movement
+  pilotCamera.maxCameraSpeed = 1;       // Reduced max speed for smoother movement
   pilotCamera.radius = -15;
+
+
+
+
+
+  // Create the cockpit camera, but dont target it yet.
+  const cockpitCamera = new BABYLON.UniversalCamera("cockpitCamera", new BABYLON.Vector3(0, 0, 0), scene);
+  cockpitCamera.rotation.y = Math.PI/2 // Adjust for initial forward facing direction.
+
 
   scene.activeCamera = camera;
 
 
-  pilotCamera.lockedTarget = aircraft;
-  camera.lockedTarget = aircraft;  
+  if (aircraft) {
+    pilotCamera.lockedTarget = aircraft;
+    camera.lockedTarget = aircraft;
+
+    // Make the cockpit camera a child of the aircraft and position it
+    cockpitCamera.parent = aircraft;
+    cockpitCamera.position.y = 1; // Adjust as needed for the position of the cockpit relative to the center of the aircraft mesh.
+    //cockpitCamera.position.z = 2;  // Adjust as needed for the position of the cockpit relative to the center of the aircraft mesh.
+    //cockpitCamera.setTarget(new BABYLON.Vector3(0,1,10)); // Set it to look forward.
+}
 
   return { camera, pilotCamera };
 }
+
+
+
+
+
 
 
 function setupLights(scene) {
@@ -102,24 +124,7 @@ function setupEventListeners(scene, shadowGenerator) {
   setupDoubleClickHandler(scene);
 }
 
-function setupFileInput(scene, shadowGenerator) {
-  document.getElementById("fileInput").addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (file && file.name.endsWith(".obj")) {
-          loadObjFile(
-              file,
-              0.01,  // scaleFactor
-              -90,   // rotationX
-              90,    // rotationY
-              180,   // rotationZ
-              scene,
-              shadowGenerator
-          );
-      } else {
-          alert("Please select a valid .obj file");
-      }
-  });
-}
+
 
 function setupAnimations(scene) {
   scene.onBeforeRenderObservable.add(() => {
