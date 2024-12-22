@@ -54,11 +54,11 @@ const aircraft_model_data = Aircraft_Model_Data_structure(
 
     # Aerodynamic damping coefficients
     -0.00006,    # Roll damping coefficient
-    -0.000002,     # Pitch damping coefficient
+    -0.00002,     # Pitch damping coefficient
     -0.0001,     # Yaw damping coefficient
 
     # Thrust parameters
-    60.0,        # maximum_thrust_at_sea_level, Maximum static thrust at sea level (N)
+    90.0,        # maximum_thrust_at_sea_level, Maximum static thrust at sea level (N)
     0.0,         # thrust_installation_angle_DEG, Angle of tilt of thrust line with respect to x axis, positive upwards
 
     # Aircraft inertia tensor

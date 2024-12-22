@@ -149,15 +149,16 @@ function undulation_map(x, y, fx, fy) {
 
 
 function createRandomTrees(scene, shadowGenerator, groundConfig) {
-  const treeCount = 50;
+  const treeCount = 500;
   const { fx, fz, amplitude } = groundConfig;
 
   for (let i = 0; i < treeCount; i++) {
-    const treeHeight = Math.random() * 4 + 2; 
-    const treeBaseRadius = Math.random() * 1 + 1; 
+    const treeHeight = Math.random() * 15 + 3; 
+    const treeBaseRadius = Math.random() * 4 + 2; 
 
-    const xPos = Math.random() * 180 - 90;
-    const zPos = Math.random() * 180 - 90;
+    const xPos = Math.random() * 800 + 90;
+    const zPos = Math.random() * 1800 - 900
+
 
     // Calculate height of ground at the given position
     const groundY = amplitude *  Math.abs(undulation_map(xPos, zPos, fx, fz)) 

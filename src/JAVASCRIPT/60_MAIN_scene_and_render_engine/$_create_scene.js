@@ -2,9 +2,9 @@ function createScene(engine, canvas) {
   const scene = new BABYLON.Scene(engine);
   scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
 
-  const {lights, shadowGenerator} = setupLights(scene);
+  const {lights, shadowGenerator} = setupLights_and_shadows(scene);
   createAircraft(shadowGenerator, scene)
-  const {camera, pilotCamera} = setupCameras(scene, canvas);
+  const {camera, pilotCamera, cockpitCamera} = setupCameras(scene, canvas);
   create_world_scenary(scene, shadowGenerator, camera);
   createVelocityLine();
   createForceLine();
@@ -44,13 +44,9 @@ function setupCameras(scene, canvas, shadowGenerator) {
   pilotCamera.radius = -15;
 
 
-
-
-
   // Create the cockpit camera, but dont target it yet.
   const cockpitCamera = new BABYLON.UniversalCamera("cockpitCamera", new BABYLON.Vector3(0, 0, 0), scene);
   cockpitCamera.rotation.y = Math.PI/2 // Adjust for initial forward facing direction.
-
 
   scene.activeCamera = camera;
 
@@ -66,32 +62,40 @@ function setupCameras(scene, canvas, shadowGenerator) {
     //cockpitCamera.setTarget(new BABYLON.Vector3(0,1,10)); // Set it to look forward.
 }
 
-  return { camera, pilotCamera };
+  return { camera, pilotCamera, cockpitCamera };
 }
 
 
 
 
-
-
-
-function setupLights(scene) {
+function setupLights_and_shadows(scene) {
   const lightDown = new BABYLON.HemisphericLight(
       "lightDown",
       new BABYLON.Vector3(0, 1, 0),
       scene
   );
-  lightDown.intensity = 0.4;
+  lightDown.intensity = 0.7;
 
   const lightUp = new BABYLON.HemisphericLight(
       "lightUp",
       new BABYLON.Vector3(0, -1, 1),
       scene
   );
-  lightUp.intensity = 0.3;
+  lightUp.intensity = 0.2;
 
-  const directionalLight = createDirectionalLight(scene);
-  const shadowGenerator = createShadowGenerator(directionalLight);
+  const directionalLight = new BABYLON.DirectionalLight(
+    "directionalLight",
+    new BABYLON.Vector3(-1, -2, -1),
+    scene
+);
+directionalLight.position = new BABYLON.Vector3(5, 10, 5);
+directionalLight.intensity = 0.7;
+directionalLight.autoCalcShadowZBounds = true;
+
+const shadowGenerator = new BABYLON.ShadowGenerator(2048, directionalLight);
+shadowGenerator.useBlurExponentialShadowMap = true;
+shadowGenerator.blurKernel = 32;
+
 
   return {
       lights: {lightDown, lightUp, directionalLight},
@@ -99,31 +103,11 @@ function setupLights(scene) {
   };
 }
 
-function createDirectionalLight(scene) {
-  const light = new BABYLON.DirectionalLight(
-      "directionalLight",
-      new BABYLON.Vector3(-1, -2, -1),
-      scene
-  );
-  light.position = new BABYLON.Vector3(5, 10, 5);
-  light.intensity = 0.8;
-  light.autoCalcShadowZBounds = true;
-  return light;
-}
-
-function createShadowGenerator(directionalLight) {
-  const shadowGenerator = new BABYLON.ShadowGenerator(2048, directionalLight);
-  shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = 32;
-  return shadowGenerator;
-}
-
 
 function setupEventListeners(scene, shadowGenerator) {
   setupFileInput(scene, shadowGenerator);
   setupDoubleClickHandler(scene);
 }
-
 
 
 function setupAnimations(scene) {
