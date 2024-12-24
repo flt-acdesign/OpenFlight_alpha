@@ -140,7 +140,7 @@ function http_handler(req)
 end
 
 function launch_client()
-    html_file = joinpath(script_dir, "./src/JAVASCRIPT/front_end_and_client.html")
+    html_file = joinpath(script_dir, "./src/JAVASCRIPT/✅_front_end_and_client.html")
     try
         run(`cmd /c start msedge "$html_file"`)
         println("Microsoft Edge launched successfully.")

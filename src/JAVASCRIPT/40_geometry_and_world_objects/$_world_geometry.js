@@ -3,7 +3,7 @@ function create_world_scenary(scene, shadowGenerator, camera) {
   scene.groundConfig = {
     fx: 0.002,     // frequency along X
     fz: 0.004,     // frequency along Z
-    amplitude: 120 // increase amplitude to make the waves more visible
+    amplitude: 220 // increase amplitude to make the waves more visible
   };
 
   createSkySphere(scene, camera);
@@ -14,7 +14,7 @@ function create_world_scenary(scene, shadowGenerator, camera) {
 
   // Set linear fog for a smooth fade effect
   scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-  scene.fogStart = 2000.0; 
+  scene.fogStart = 1000.0; 
   scene.fogEnd = 3800.0;  
   scene.fogColor = new BABYLON.Color3(135/255, 206/255, 255/255); 
   scene.fogDensity = 0.00058;
@@ -22,7 +22,7 @@ function create_world_scenary(scene, shadowGenerator, camera) {
 
 function createSkySphere(scene, camera) {
   const skySphere = BABYLON.MeshBuilder.CreateSphere("skySphere", {
-    diameter: 7500,
+    diameter: 7000,
     sideOrientation: BABYLON.Mesh.BACKSIDE
   }, scene);
 
@@ -49,6 +49,17 @@ function createSkySphere(scene, camera) {
   skySphere.rotation.z = Math.PI / 2;
   skySphere.position.copyFrom(camera.target);
 }
+
+
+function updateSkySpherePosition(scene) {
+  const skySphere = scene.getMeshByName("skySphere");
+  if (skySphere && scene.activeCamera) {
+      skySphere.position.x = scene.activeCamera.position.x;
+      skySphere.position.z = scene.activeCamera.position.z;
+  }
+}
+
+
 
 function createSegmentedGround(scene, groundConfig) {
   const segmentCount = 20;  
@@ -149,15 +160,15 @@ function undulation_map(x, y, fx, fy) {
 
 
 function createRandomTrees(scene, shadowGenerator, groundConfig) {
-  const treeCount = 500;
+  const treeCount = 50;
   const { fx, fz, amplitude } = groundConfig;
 
   for (let i = 0; i < treeCount; i++) {
     const treeHeight = Math.random() * 15 + 3; 
     const treeBaseRadius = Math.random() * 4 + 2; 
 
-    const xPos = Math.random() * 800 + 90;
-    const zPos = Math.random() * 1800 - 900
+    const xPos = Math.random() * 80 + 90;
+    const zPos = Math.random() * 180 - 90
 
 
     // Calculate height of ground at the given position
@@ -280,5 +291,3 @@ function createRunway(scene, groundConfig) {
  }
 
 }
-
-

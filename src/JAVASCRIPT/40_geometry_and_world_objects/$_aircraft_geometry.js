@@ -1,6 +1,6 @@
 
 
-async function createAircraft(shadowGenerator, scene, externalModelUrl = null, rotationParams = { x: 0, y: 0, z: 0 }, scaleParams = { x: 1, y: 1, z: 1 }) {
+async function createAircraft(shadowGenerator, scene) {
   // Create the wing
   const wing = BABYLON.MeshBuilder.CreatePlane("wing", { width: 1.2, height: 8, sideOrientation: BABYLON.Mesh.DOUBLESIDE }, scene);
   wing.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, Math.PI / 2);
@@ -41,147 +41,66 @@ async function createAircraft(shadowGenerator, scene, externalModelUrl = null, r
 
   // Add shadows for each mesh of the aircraft
   aircraft.getChildMeshes().forEach((mesh) => {
-    mesh.position.z += 1.5;
-    shadowGenerator.addShadowCaster(mesh);
+      mesh.position.z += 1.5;
+      shadowGenerator.addShadowCaster(mesh);
   });
+
+  // Update cameras for the new aircraft
+  scene.updateCamerasForAircraft(aircraft);
 }
 
-
-function setupFileInput(scene, shadowGenerator) {
-  document.getElementById("fileInput").addEventListener("change", (event) => {
-    const file = event.target.files[0];
-    const fileName = file ? file.name : '';
-    
-    //alert(fileName);
-
-    if (file && file.name.toLowerCase().endsWith(".glb")) {
-      let scaleFactor, rotationX, rotationY, rotationZ, translationX, translationY, translationZ;
-
-      switch(fileName.toLowerCase()) {
-        case "mig21.glb":
-          scaleFactor = 1;
-          rotationX = 90;
-          rotationY = 90;
-          rotationZ = 0;
-          translationX = -4;
-          translationY = -5;
-          translationZ = 2;
-          break;
-        case "bucker.glb":
-          scaleFactor = 1;
-          rotationX = 90;
-          rotationY = 90;
-          rotationZ = 0;
-          translationX = 1;
-          translationY = -2.5;
-          translationZ = 0;
-          break;
-          case "airliner.glb":
-            scaleFactor = .01;
-            rotationX = 0;
-            rotationY = 0;
-            rotationZ = 0;
-            translationX = 0
-            translationY = 0
-            translationZ = 0;
-            break;
-            case "bizjet.glb":
-              scaleFactor = .01;
-              rotationX = 0;
-              rotationY = 0;
-              rotationZ = 0;
-              translationX = 0
-              translationY = 0
-              translationZ = 0;
-              break;
-
-
-
-
-        default:
-          scaleFactor = 1;
-          rotationX = 0;
-          rotationY = 0;
-          rotationZ = 0;
-          translationX = 0;
-          translationY = 0;
-          translationZ = 0;
-      }
-      
-      loadGlbFile(
-        file,
-        scaleFactor,
-        rotationX,
-        rotationY,
-        rotationZ,
-        translationX,
-        translationY,
-        translationZ,
-        scene,
-        shadowGenerator
-      );
-    } else {
-      alert("Please select a valid .glb file");
-    }
-  });
-}
 
 function loadGlbFile(file, scaleFactor, rotationX, rotationY, rotationZ, translationX, translationY, translationZ, scene, shadowGenerator) {
   const reader = new FileReader();
   reader.onload = function (event) {
-    const arrayBuffer = event.target.result;
-    const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
+      const arrayBuffer = event.target.result;
+      const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
 
-    BABYLON.SceneLoader.ImportMesh(
-      "",
-      url,
-      "",
-      scene,
-      function (meshes, particleSystems, skeletons, animationGroups) {
-        const transformNode = new BABYLON.TransformNode("rootNode", scene);
+      BABYLON.SceneLoader.ImportMesh(
+          "",
+          url,
+          "",
+          scene,
+          function (meshes, particleSystems, skeletons, animationGroups) {
+              const transformNode = new BABYLON.TransformNode("rootNode", scene);
 
-        if (typeof aircraft !== "undefined") {
-          aircraft.dispose();
-        }
+              if (typeof aircraft !== "undefined") {
+                  aircraft.dispose();
+              }
 
-        meshes.forEach(function (mesh) {
-          mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-          mesh.rotation = new BABYLON.Vector3(
-            BABYLON.Tools.ToRadians(rotationX),
-            BABYLON.Tools.ToRadians(rotationY),
-            BABYLON.Tools.ToRadians(rotationZ)
-          );
-          mesh.position = new BABYLON.Vector3(translationX, translationY, translationZ);
-          mesh.parent = transformNode;
+              meshes.forEach(function (mesh) {
+                  mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                  mesh.rotation = new BABYLON.Vector3(
+                      BABYLON.Tools.ToRadians(rotationX),
+                      BABYLON.Tools.ToRadians(rotationY),
+                      BABYLON.Tools.ToRadians(rotationZ)
+                  );
+                  mesh.position = new BABYLON.Vector3(translationX, translationY, translationZ);
+                  mesh.parent = transformNode;
 
-          // Add shadow casting for each imported mesh
-          shadowGenerator.addShadowCaster(mesh);
-        });
+                  shadowGenerator.addShadowCaster(mesh);
+              });
 
-        aircraft = transformNode;
+              aircraft = transformNode;
 
-        // Handle animations if present
-        if (animationGroups.length > 0) {
-          animationGroups[0].play(true);
-        }
+              // Update cameras for the new aircraft
+              if (scene.updateCamerasForAircraft) {
+                  scene.updateCamerasForAircraft(aircraft);
+              }
 
-        URL.revokeObjectURL(url);
-      },
-      null,
-      null,
-      ".glb"
-    );
+              if (animationGroups.length > 0) {
+                  animationGroups[0].play(true);
+              }
+
+              URL.revokeObjectURL(url);
+          },
+          null,
+          null,
+          ".glb"
+      );
   };
 
   reader.readAsArrayBuffer(file);
-
-
-                // Enable PBR
-                scene.meshes.forEach(mesh => {
-                  if (mesh.material) {
-                      mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
-                      mesh.material.backFaceCulling = false;
-                  }
-              });
 }
+
