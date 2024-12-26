@@ -24,12 +24,12 @@ window.addEventListener("DOMContentLoaded", function () {
         // Update forces and moments based on joystick input
         updateForcesFromJoystickOrKeyboard(scene)
 
-        if (aircraft !== undefined) { sendStateToServer(global_time_step) } // Send state to server if aircraft is defined
+        if (aircraft_geometric_reference !== undefined) { sendStateToServer(global_time_step) } // Send state to server if aircraft_geometric_reference is defined
       }
     }
 
-    // Update displayed coordinates and speed once the aircraft is defined (active object)
-    if (aircraft !== undefined) { updateInfo() }
+    // Update displayed coordinates and speed once the aircraft_geometric_reference is defined (active object)
+    if (aircraft_geometric_reference !== undefined) { updateInfo() }
 
     scene.render() // Render the scene
 

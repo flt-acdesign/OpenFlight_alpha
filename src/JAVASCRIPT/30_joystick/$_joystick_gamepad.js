@@ -99,7 +99,7 @@ function updateForcesFromJoystickOrKeyboard(scene) {
     // Check if the "Select" button is pressed
     if (joystick.buttons[1].value == 1) {scene.activeCamera = scene.cameras[1]} // Chase camera
     if (joystick.buttons[0].value == 1) {scene.activeCamera = scene.cameras[0]} // External camera
-    if (joystick.buttons[3].value == 1) {scene.activeCamera = scene.cameras[2]} // Cockpit camera
+    if (joystick.buttons[3].value == 1) { scene.activeCamera = scene.cameras[2]} // Cockpit camera
     if (joystick.buttons[8].value == 1) { pauseSimulation() } // Pause-RESUME simulation
                                 
                        

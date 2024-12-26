@@ -21,7 +21,7 @@ function updateVelocityLine() {
     velocityLine.dispose()
   }
 
-  const origin = aircraft.position.clone()
+  const origin = aircraft_geometric_reference.position.clone()
   const velocityVector = new BABYLON.Vector3(velocity.x, velocity.y, velocity.z)
 
   // Scale the velocity vector for visualization purposes
@@ -45,7 +45,7 @@ function updateForceLine() {
     forceLine.dispose()
   }
 
-  const origin = aircraft.position.clone()
+  const origin = aircraft_geometric_reference.position.clone()
   const forceVector = new BABYLON.Vector3(forceGlobalX, forceGlobalY, forceGlobalZ)
 
   // Scale the force vector for visualization purposes
@@ -66,7 +66,7 @@ function updateForceLine() {
 function updateTrajectory() {
   // Create a small sphere at the aircraft's current position
   const sphere = BABYLON.MeshBuilder.CreateSphere("trajectoryPoint", { diameter: 1.1, segments: 4 }, scene)
-  sphere.position = aircraft.position.clone()
+  sphere.position = aircraft_geometric_reference.position.clone()
 
   sphere.material = new BABYLON.StandardMaterial("trajectoryMaterial", scene)
   sphere.material.emissiveColor = new BABYLON.Color3(0, 1, 0) // Green color

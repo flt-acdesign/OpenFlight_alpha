@@ -12,7 +12,7 @@ include(raw"./SRC/JULIA/40_Atmosphere_and_anemometry/anemometry.jl")
 
 # Prepare CSV file for logging
 script_dir = @__DIR__
-csv_file = joinpath(script_dir, raw"./OUTPUT_OF_SIMULATION_DATA/simulation_data.csv")
+csv_file = joinpath(script_dir, raw"./OUTPUT_OF_SIMULATION_DATA/✅_front_end_and_client.html")
 df = DataFrame(
     time=Float64[], x=Float64[], y=Float64[], z=Float64[],
     vx=Float64[], vy=Float64[], vz=Float64[],

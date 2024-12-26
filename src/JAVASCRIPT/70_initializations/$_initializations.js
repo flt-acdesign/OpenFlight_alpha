@@ -1,5 +1,5 @@
 
-let aircraft  // Reference to the aircraft
+let aircraft_geometric_reference  // Reference to the aircraft
 let engine, scene;
 let velocity = { x: 20, y: 0, z: 0 }; // Initial velocity
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
@@ -12,7 +12,7 @@ let simulationStartTime = Date.now();
 let lastFrameTime = Date.now();
 let elapsedTime = 0; // Total elapsed time
 let timeSinceLastUpdate = 0; // Accumulated time since last update
-let global_time_step = 0.025  // miliseconds, play ping-pong at this rate
+let global_time_step = 0.015  // miliseconds, play ping-pong at this rate
 
 
 let material; // Material for the aircraft

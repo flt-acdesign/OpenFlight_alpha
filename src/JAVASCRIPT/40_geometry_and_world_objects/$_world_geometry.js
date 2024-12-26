@@ -1,9 +1,11 @@
 function create_world_scenary(scene, shadowGenerator, camera) {
+  
+  
   // Define global parameters for height calculation
   scene.groundConfig = {
-    fx: 0.002,     // frequency along X
-    fz: 0.004,     // frequency along Z
-    amplitude: 120 // increase amplitude to make the waves more visible
+    fx: 0.001,     // frequency along X
+    fz: 0.002,     // frequency along Z
+    amplitude: 320 // increase amplitude to make the waves more visible
   };
 
   createSkySphere(scene, camera);
@@ -14,7 +16,7 @@ function create_world_scenary(scene, shadowGenerator, camera) {
 
   // Set linear fog for a smooth fade effect
   scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
-  scene.fogStart = 2000.0; 
+  scene.fogStart = 1500.0; 
   scene.fogEnd = 3800.0;  
   scene.fogColor = new BABYLON.Color3(135/255, 206/255, 255/255); 
   scene.fogDensity = 0.00058;
@@ -22,7 +24,7 @@ function create_world_scenary(scene, shadowGenerator, camera) {
 
 function createSkySphere(scene, camera) {
   const skySphere = BABYLON.MeshBuilder.CreateSphere("skySphere", {
-    diameter: 7500,
+    diameter: 7000,
     sideOrientation: BABYLON.Mesh.BACKSIDE
   }, scene);
 
@@ -49,6 +51,17 @@ function createSkySphere(scene, camera) {
   skySphere.rotation.z = Math.PI / 2;
   skySphere.position.copyFrom(camera.target);
 }
+
+
+function updateSkySpherePosition(scene) {
+  const skySphere = scene.getMeshByName("skySphere");
+  if (skySphere && scene.activeCamera) {
+      skySphere.position.x = scene.activeCamera.position.x;
+      skySphere.position.z = scene.activeCamera.position.z;
+  }
+}
+
+
 
 function createSegmentedGround(scene, groundConfig) {
   const segmentCount = 20;  
@@ -114,7 +127,7 @@ function createSegmentedGround(scene, groundConfig) {
 
        // const newY = amplitude *  (Math.sin(fx * globalX*globalZ/100 + globalX/100) * Math.sin(fz * globalZ*(globalX^3)/100 + globalZ/100) + Math.sin(3*fx * globalX*globalX/100) * Math.sin(3*fz * globalZ*(globalX^1)/100) )
 
-        const newY = amplitude *  Math.abs(undulation_map(globalX, globalZ, fx, fz)) 
+        const newY =  undulation_map(globalX, globalZ, fx, fz, amplitude)
 
 
         positions[v + 1] = (Math.max(newY, 0)) 
@@ -134,14 +147,44 @@ function createSegmentedGround(scene, groundConfig) {
 
 
 
-function undulation_map(x, y, fx, fy) {
+function undulation_map(x, y, fx, fy, amplitude) {
 
 
 //  return  Math.sin(1*(fx*(Math.abs(x))**1.1+1*(Math.abs(y))**1.3)) * Math.sin(.1* (fy*(Math.abs(y))**1 / 100)) *100
 
   //return  Math.sin(0.6*(fx*(Math.abs(x/100))**1+0*(Math.abs(y))**2)) * Math.sin((0.2*fy*(Math.abs(y))**1)) *1 * (1-Math.sin((fx*(Math.abs(x/10))**1))) *1
 
-  return Math.sin(fx * (Math.abs(x)**2.3)/20000) * Math.sin(fy * y) / Math.log(  (x**2 + y**2 )**.5 + .01)*10
+  
+  //return Math.sin(fx * (Math.abs(x)**2.3)/20000) * Math.sin(fy * y) / Math.log(  (x**2 + y**2 )**.5 + .01)*10
+
+
+
+  base = (Math.sin(fx * x*1.1))**1 * (Math.sin(fy * y*x/1000))**1 * 2 
+
+  octave_1 = (Math.sin(fx*2 * x))**2 * (Math.cos(fy*2 * y))**2 * 1
+
+  octave_2 = (Math.sin(fx*5 * x))**4 * (Math.sin(fy*5 * y))**4  * .6
+
+  octave_3 = (Math.sin(fx*8 * x))**6 * (Math.sin(fy*8 * y))**6  * .1
+
+
+  z = amplitude *  ((base +  octave_1 + octave_2 + octave_3) / 4 - 0) *  x/1000         //Math.abs(x)  /1000 //* y/1000
+
+
+  if ((Math.abs(x) < 100) && (Math.abs(y) < 300))  {
+    z = 0
+  }
+
+
+
+
+
+  return z
+
+
+
+
+
 }
 
 
@@ -149,26 +192,29 @@ function undulation_map(x, y, fx, fy) {
 
 
 function createRandomTrees(scene, shadowGenerator, groundConfig) {
-  const treeCount = 500;
+  const treeCount = 150;
   const { fx, fz, amplitude } = groundConfig;
 
   for (let i = 0; i < treeCount; i++) {
     const treeHeight = Math.random() * 15 + 3; 
     const treeBaseRadius = Math.random() * 4 + 2; 
 
-    const xPos = Math.random() * 800 + 90;
-    const zPos = Math.random() * 1800 - 900
+    const xPos = Math.random() * 580 + 90;
+    const zPos = Math.random() * 580 - 90
 
 
     // Calculate height of ground at the given position
-    const groundY = amplitude *  Math.abs(undulation_map(xPos, zPos, fx, fz)) 
+    //const groundY = amplitude *  Math.abs(undulation_map(xPos, zPos, fx, fz)) 
+
+    const groundY  =  undulation_map(xPos, zPos, fx, fz, amplitude)
+
     const treeY = groundY + (treeHeight / 2);
 
     const tree = BABYLON.MeshBuilder.CreateCylinder("tree", {
       diameterTop: 0,
       diameterBottom: treeBaseRadius,
       height: treeHeight,
-      tessellation: 8,
+      tessellation: 6,
     }, scene);
 
     tree.position = new BABYLON.Vector3(xPos, treeY, zPos);
@@ -238,7 +284,10 @@ function createRunway(scene, groundConfig) {
      //const y = Math.max(amplitude * Math.sin(fx * x*z/300) * Math.sin(fz * z*x/400), 0)
      
 
-     const y = groundConfig.amplitude *  Math.abs(undulation_map(x, z, groundConfig.fx, groundConfig.fz)) 
+     //const y = groundConfig.amplitude *  Math.abs(undulation_map(x, z, groundConfig.fx, groundConfig.fz)) 
+
+
+     const y = undulation_map(x, z, groundConfig.fx, groundConfig.fz, groundConfig.amplitude) + .1
 
 
      roadPositions[v+1] = y + 0.15; 
@@ -265,7 +314,9 @@ function createRunway(scene, groundConfig) {
      const divZ = i;
      //const divY = Math.max(amplitude * (Math.sin(fx * divX*divZ/300) * Math.sin(fz * divZ*divX/400)) + 0.055, 0)
 
-     const divY = groundConfig.amplitude *  Math.abs(undulation_map(divX, divZ, groundConfig.fx, groundConfig.fz)) + 0.2
+     //const divY = groundConfig.amplitude *  Math.abs(undulation_map(divX, divZ, groundConfig.fx, groundConfig.fz)) + 0.2
+
+     const divY = undulation_map(divX, divZ, groundConfig.fx, groundConfig.fz, groundConfig.amplitude) + .3
            
 
 
@@ -280,5 +331,3 @@ function createRunway(scene, groundConfig) {
  }
 
 }
-
-
