@@ -17,7 +17,7 @@ let simulationStartTime = Date.now();
 let lastFrameTime = Date.now();
 let elapsedTime = 0; // Total elapsed time
 let timeSinceLastUpdate = 0; // Accumulated time since last update
-let global_time_step = 0.015  // miliseconds, play ping-pong at this rate
+let global_time_step = 0.01  // miliseconds, play ping-pong at this rate
 
 
 let material; // Material for the aircraft
