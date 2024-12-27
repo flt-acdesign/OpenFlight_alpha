@@ -25,6 +25,7 @@ function create_world_scenary(scene, shadowGenerator, camera) {
 function createSkySphere(scene, camera) {
   const skySphere = BABYLON.MeshBuilder.CreateSphere("skySphere", {
     diameter: 7000,
+    diameter: 7000,
     sideOrientation: BABYLON.Mesh.BACKSIDE
   }, scene);
 
@@ -51,6 +52,17 @@ function createSkySphere(scene, camera) {
   skySphere.rotation.z = Math.PI / 2;
   skySphere.position.copyFrom(camera.target);
 }
+
+
+function updateSkySpherePosition(scene) {
+  const skySphere = scene.getMeshByName("skySphere");
+  if (skySphere && scene.activeCamera) {
+      skySphere.position.x = scene.activeCamera.position.x;
+      skySphere.position.z = scene.activeCamera.position.z;
+  }
+}
+
+
 
 
 function updateSkySpherePosition(scene) {
