@@ -19,9 +19,9 @@ function sendStateToServer(deltaTime) {
     }
 
     const aircraftState = {
-        x: aircraft_geometric_reference.position.x,
-        y: aircraft_geometric_reference.position.y,
-        z: aircraft_geometric_reference.position.z,
+        x: aircraft.position.x,
+        y: aircraft.position.y,
+        z: aircraft.position.z,
         vx: velocity.x,
         vy: velocity.y,
         vz: velocity.z,
@@ -34,10 +34,10 @@ function sendStateToServer(deltaTime) {
         wz: angularVelocity.z,
         fx: forceX,
         fy: forceY,
-        thrust_lever: thrust_lever,
-        aileron_input: aileron_input,
-        elevator_input: elevator_input,
-        rudder_input: rudder_input,
+        thrust_setting_demand: thrust_setting_demand,
+        roll_demand: roll_demand,
+        pitch_demand: pitch_demand,
+        yaw_demand: yaw_demand,
         deltaTime: deltaTime
     };
 
@@ -47,9 +47,9 @@ function sendStateToServer(deltaTime) {
 ws.onmessage = (event) => {
     const responseData = JSON.parse(event.data);
     
-    aircraft_geometric_reference.position.x = parseFloat(responseData.x);
-    aircraft_geometric_reference.position.y = parseFloat(responseData.y);
-    aircraft_geometric_reference.position.z = parseFloat(responseData.z);
+    aircraft.position.x = parseFloat(responseData.x);
+    aircraft.position.y = parseFloat(responseData.y);
+    aircraft.position.z = parseFloat(responseData.z);
 
     velocity.x = parseFloat(responseData.vx);
     velocity.y = parseFloat(responseData.vy);
@@ -68,7 +68,7 @@ ws.onmessage = (event) => {
     forceGlobalY = parseFloat(responseData.fy_global);
     forceGlobalZ = parseFloat(responseData.fz_global);
 
-    aircraft_geometric_reference.rotationQuaternion = new BABYLON.Quaternion(
+    aircraft.rotationQuaternion = new BABYLON.Quaternion(
         orientation.x,
         orientation.y,
         orientation.z,

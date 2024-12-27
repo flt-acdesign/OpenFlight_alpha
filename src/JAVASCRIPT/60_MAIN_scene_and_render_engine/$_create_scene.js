@@ -18,7 +18,7 @@ function createScene(engine, canvas) {
 
 
 function setupEventListeners(scene, shadowGenerator) {
-  setupFileInput(scene, shadowGenerator);
+  setup_GLB_model_transformations(scene, shadowGenerator);
   setupDoubleClickHandler(scene);
 }
 

@@ -70,12 +70,12 @@ const aircraft_model_data = Aircraft_Model_Data_structure(
 
 
 
-function compute_net_thrust_force_vector_body(thrust_lever, alt, tas, aircraft_data)  
+function compute_net_thrust_force_vector_body(thrust_setting_demand, alt, tas, aircraft_data)  
         # Calculate thrust force based on thrust lever input
-        if thrust_lever >= 0.0
-            thrust_ratio = thrust_lever 
+        if thrust_setting_demand >= 0.0
+            thrust_ratio = thrust_setting_demand 
         else
-            thrust_ratio = thrust_lever * 0.3
+            thrust_ratio = thrust_setting_demand * 0.3
         end   
         thrust_force = thrust_ratio * aircraft_data.maximum_thrust_at_sea_level 
         return [thrust_force * cos(deg2rad(aircraft_data.thrust_installation_angle_DEG)), thrust_force * sin(deg2rad(aircraft_data.thrust_installation_angle_DEG)),  0.0]
@@ -95,16 +95,16 @@ function compute_net_thrust_force_vector_body(thrust_lever, alt, tas, aircraft_d
         return 0.0 # To be implemented
     end
     
-    function compute_rolling_moment_coefficient(aileron_input, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )
-        aircraft_data.derivative_roll_vs_aileron * aileron_input
+    function compute_rolling_moment_coefficient(roll_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )
+        aircraft_data.derivative_roll_vs_aileron * roll_demand
     end
     
-    function compute_pitching_moment_coefficient(elevator_input, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )
-        aircraft_data.derivative_pitch_vs_elevator * elevator_input + aircraft_data.CM0
+    function compute_pitching_moment_coefficient(pitch_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )
+        aircraft_data.derivative_pitch_vs_elevator * pitch_demand + aircraft_data.CM0
     end
     
-    function compute_yawing_moment_coefficient(rudder_input, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )
-        aircraft_data.derivative_yaw_vs_rudder * rudder_input
+    function compute_yawing_moment_coefficient(yaw_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )
+        aircraft_data.derivative_yaw_vs_rudder * yaw_demand
     
     end
     

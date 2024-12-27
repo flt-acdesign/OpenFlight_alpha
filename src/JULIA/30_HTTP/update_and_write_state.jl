@@ -73,12 +73,12 @@ function update_state(req::HTTP.Request)
         force_control_inputs = (  # Control inputs (thrust lever)
             x = float(data["fx"]),
             y = float(data["fy"]),
-            thrust_lever = float(data["thrust_lever"])
+            thrust_setting_demand = float(data["thrust_setting_demand"])
         )
         moment_control_inputs = ( # Control inputs (stick and pedals)
-            aileron_input = float(data["aileron_input"]),
-            elevator_input = float(data["elevator_input"]),
-            rudder_input = float(data["rudder_input"])
+            roll_demand = float(data["roll_demand"]),
+            pitch_demand = float(data["pitch_demand"]),
+            yaw_demand = float(data["yaw_demand"])
         )
         deltaTime = float(data["deltaTime"])
 

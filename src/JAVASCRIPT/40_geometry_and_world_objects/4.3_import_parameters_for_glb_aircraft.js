@@ -1,7 +1,7 @@
 
 
 
-function setupFileInput(scene, shadowGenerator) {
+function setup_GLB_model_transformations(scene, shadowGenerator) {
     document.getElementById("fileInput").addEventListener("change", (event) => {
       const file = event.target.files[0];
       const fileName = file ? file.name : '';

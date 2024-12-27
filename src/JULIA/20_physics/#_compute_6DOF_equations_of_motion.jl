@@ -27,7 +27,7 @@ function compute_6DOF_equations_of_motion(s_local, force_control_inputs, moment_
     beta_RAD  = -1.0 * angle(complex(v_body[1], v_body[3]))  # defined as per eq. 7.1.4 Phillips 1st Edition
     
     # Compute thrust force value in Newtons from the position of the thrust lever, the altitude and the speed
-    propulsive_force_vector_body_N = compute_net_thrust_force_vector_body(force_control_inputs.thrust_lever, altitude, v_body_mag, aircraft_data)
+    propulsive_force_vector_body_N = compute_net_thrust_force_vector_body(force_control_inputs.thrust_setting_demand, altitude, v_body_mag, aircraft_data)
 
     # Compute aerodynamic force coefficients in wind axis
     CL = compute_lift_coefficient(alpha_RAD, beta_RAD, v_body_mag, aircraft_data) # lift coefficient
@@ -75,9 +75,9 @@ function compute_6DOF_equations_of_motion(s_local, force_control_inputs, moment_
 
         # Compute aircraft control moments in body axes
         control_moment_body_vector = aircraft_data.wing_mean_aerodynamic_chord * aircraft_data.reference_area * dynamic_pressure .* [
-            compute_rolling_moment_coefficient(moment_control_inputs.aileron_input, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )      ,    
-            compute_yawing_moment_coefficient(moment_control_inputs.rudder_input, alpha_RAD, beta_RAD, v_body_mag, aircraft_data ) ,
-            compute_pitching_moment_coefficient(moment_control_inputs.elevator_input, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )    
+            compute_rolling_moment_coefficient(moment_control_inputs.roll_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )      ,    
+            compute_yawing_moment_coefficient(moment_control_inputs.yaw_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data ) ,
+            compute_pitching_moment_coefficient(moment_control_inputs.pitch_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )    
             ]
     
         # Compute aircraft static stability moments in body axes

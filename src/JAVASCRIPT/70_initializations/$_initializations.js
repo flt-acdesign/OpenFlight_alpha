@@ -1,5 +1,10 @@
 
-let aircraft_geometric_reference  // Reference to the aircraft
+
+let aircraft = null;  // The sphere
+let planeNode = null; // TransformNode holding the simple plane
+let glbNode = null;   // TransformNode holding the loaded GLB
+
+
 let engine, scene;
 let velocity = { x: 20, y: 0, z: 0 }; // Initial velocity
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
@@ -20,11 +25,11 @@ let material; // Material for the aircraft
 // Pilot control inputs
 let forceX = 0.0;
 let forceY = 0.0;
-let thrust_lever = 0.0
+let thrust_setting_demand = 0.0
 
-let aileron_input = 0.0;
-let elevator_input = 0.0
-let rudder_input = 0.0
+let roll_demand = 0.0;
+let pitch_demand = 0.0
+let yaw_demand = 0.0
 
 // Global force values from server
 let forceGlobalX = 0.0;

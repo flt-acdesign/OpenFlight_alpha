@@ -12,7 +12,7 @@ include(raw"./SRC/JULIA/40_Atmosphere_and_anemometry/anemometry.jl")
 
 # Prepare CSV file for logging
 script_dir = @__DIR__
-csv_file = joinpath(script_dir, raw"./OUTPUT_OF_SIMULATION_DATA/✅_front_end_and_client.html")
+csv_file = joinpath(script_dir, raw"./OUTPUT_OF_SIMULATION_DATA/simulation_data.csv")
 df = DataFrame(
     time=Float64[], x=Float64[], y=Float64[], z=Float64[],
     vx=Float64[], vy=Float64[], vz=Float64[],
@@ -50,12 +50,12 @@ function update_state(data)
         force_control_inputs = (
             x = float(data["fx"]),
             y = float(data["fy"]),
-            thrust_lever = float(data["thrust_lever"])
+            thrust_setting_demand = float(data["thrust_setting_demand"])
         )
         moment_control_inputs = (
-            aileron_input = float(data["aileron_input"]),
-            elevator_input = float(data["elevator_input"]),
-            rudder_input = float(data["rudder_input"])
+            roll_demand = float(data["roll_demand"]),
+            pitch_demand = float(data["pitch_demand"]),
+            yaw_demand = float(data["yaw_demand"])
         )
         deltaTime = float(data["deltaTime"])
 
@@ -140,7 +140,7 @@ function http_handler(req)
 end
 
 function launch_client()
-    html_file = joinpath(script_dir, "./src/JAVASCRIPT/front_end_and_client.html")
+    html_file = joinpath(script_dir, "./src/JAVASCRIPT/✅_front_end_and_client.html")
     try
         run(`cmd /c start msedge "$html_file"`)
         println("Microsoft Edge launched successfully.")
