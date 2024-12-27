@@ -100,23 +100,34 @@ function updateForcesFromJoystickOrKeyboard(scene) {
 if (detectControllerType(joystick) === 'XBOX') {
 
 
-        // Map joystick axes to forces and moments
+        // Map joystick axes to control demands
         thrust_setting_demand = -1 * joystick.axes[1]; // Left stick vertical
 
         roll_demand = -0.1 * joystick.axes[2]; // Right stick horizontal
         pitch_demand = 0.1 * joystick.axes[3]; // Right stick vertical
         yaw_demand = 0.1 * joystick.axes[0]; // Left stick horizontal
 
-//      forceY = -1 * joystick.buttons[1].value + joystick.buttons[3].value;
-//      forceX = -1 * joystick.buttons[14].value + joystick.buttons[15].value;
-
         // Update buttons
         joystickButtons = joystick.buttons.map(button => button.pressed ? "1" : "0");
 
-                   // Check if the "Start" button is pressed
-                   if (joystick.buttons[9].value == 1) {
-                    location.reload(); // Reload the page
-                }
+
+        // Buttons used in the simulation
+        trim_nose_down = joystick.buttons[12].value
+        trim_nose_up = joystick.buttons[13].value
+
+        flaps_one_up = joystick.buttons[5].value
+        flaps_one_down = joystick.buttons[7].value
+ 
+        ground_brakes_on = joystick.buttons[4].value
+        air_brakes_on = joystick.buttons[6].value
+
+
+        // Buttons used only in the Javascript side
+
+       // Check if the "Start" button is pressed
+        if (joystick.buttons[9].value == 1) {
+           location.reload(); // Reload the page
+        }
 
         // Checking joystick buttons for camera selection
         if (joystick.buttons[1].value == 1) {
@@ -136,26 +147,84 @@ if (detectControllerType(joystick) === 'XBOX') {
         }
 
 
+        if (joystick.buttons[14].value == 1) {  // need to be written
+            rotateCamera_left(scene);
+        }
 
+        if (joystick.buttons[15].value == 1) {  // need to be written
+            rotateCamera_right(scene);
+        }
 
-
-    if (joystick.buttons[8].value == 1) { pauseSimulation() } // Pause-RESUME simulation
+        if (joystick.buttons[8].value == 1) { pauseSimulation() } // Pause-RESUME simulation
                                 
     } // end of XBOX controller
 
 
 
+    else if (detectControllerType(joystick) === 'GENERIC') { // JOYSTICK
 
-    else if (detectControllerType(gamepad) === 'GENERIC') {
+        // Map joystick axes to control demands
+        thrust_setting_demand = -1 * joystick.axes[2]; // Left stick vertical
+
+        roll_demand = -0.1 * joystick.axes[0]; // Right stick horizontal
+        pitch_demand = 0.1 * joystick.axes[1]; // Right stick vertical
+        yaw_demand = 0.1 * joystick.axes[5]; // Left stick horizontal
+
+        thrust_balance = 0.1 * joystick.axes[6]; // Left stick horizontal (-1,1)
 
 
+        // Update buttons
+        joystickButtons = joystick.buttons.map(button => button.pressed ? "1" : "0");
 
 
+        // Buttons used in the simulation
+        trim_nose_down = joystick.buttons[6].value
+        trim_nose_up = joystick.buttons[4].value
+
+        flaps_one_up = joystick.buttons[8].value
+        flaps_one_down = joystick.buttons[9].value
+
+        ground_brakes_on = joystick.buttons[7].value
+        air_brakes_on = joystick.buttons[5].value
 
 
+        // Buttons used only in the Javascript side
+
+       // Check if the "Start" button is pressed
+        if (joystick.buttons[11].value == 1) {
+
+        joystick.buttons[11].value = 0
+           location.reload(); // Reload the page
+        }
+
+        // Checking joystick buttons for camera selection
+        if (joystick.buttons[3].value == 1) {
+            // Chase camera => index 1
+            setActiveCamera(1, scene);
+        }
+        if (joystick.buttons[0].value == 1) {
+            // External camera => index 0
+            setActiveCamera(0, scene);
+        }
+        if (joystick.buttons[1].value == 1) {
+            // Cockpit camera => index 2
+            setActiveCamera(2, scene);
+        }
+        if (joystick.buttons[2].value == 1) {
+            setActiveCamera(3, scene);
+        }
 
 
+        if (joystick.axes[9].value == 0.71) {  // need to be written
+            rotateCamera_left(scene);
+        }
 
+        if (joystick.axes[9].value == -0.43) {  // need to be written
+            rotateCamera_right(scene);
+        }
+
+
+        if (joystick.buttons[10].value == 1) { pauseSimulation() } // Pause-RESUME simulation
 
     }
 
