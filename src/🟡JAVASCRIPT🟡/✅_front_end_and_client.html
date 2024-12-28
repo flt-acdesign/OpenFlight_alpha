@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aircraft Physics Simulation with Joystick Control</title>
+    <link rel="stylesheet" href="./00_CSS_styles/styles.css">
+
+    <!-- Include Babylon.js via files -->
+    <script src="./99_external_libraries/babylon.js"></script>
+    <script src="./99_external_libraries/babylon_GUI.js"></script>
+    <script src="./99_external_libraries/babylonjs.loaders.min.js"></script>
+    <script src="./99_external_libraries/loaders/babylon.objFileLoader.js"></script>
+
+
+    <!-- Websockets connection and code to transfer aircraft state to and from server -->
+    <script src="./1_exchange_aircraft_state_with_server/1.1_🔁_exchange_aircraft_state_to_server.js"></script>
+
+    <!-- Include Babylon.js via files -->
+    <script src="./2_GUI/2.1_📟_gui.js"></script>
+
+    <script src="./3_joystick/3.1_🕹_joystick_gamepad.js"></script>
+
+    <script src="./4_geometry_and_world_objects/4.1_✈_aircraft_geometry.js"></script>
+    <script src="./4_geometry_and_world_objects/4.3_🔼_import_parameters_for_glb_aircraft.js"></script>
+
+    <script src="./4_geometry_and_world_objects/4.2_🌍_world_geometry.js"></script>
+    
+
+    <script src="./5_draw_forces_and_velocities/5.1_📐_draw_forces_and_velocities.js"></script>
+
+    <script src="./6_MAIN_scene_and_render_engine/6.1_♻_MAIN_render_loop.js"></script>
+    <script src="./6_MAIN_scene_and_render_engine/6.2_🌄_create_scene.js"></script>
+    <script src="./6_MAIN_scene_and_render_engine/6.3_💡_create_lights_and_shadows.js"></script>
+    <script src="./6_MAIN_scene_and_render_engine/6.4_🎦_create_cameras.js"></script>
+ 
+    <script src="./7_initializations/7.1_🧾_initializations.js"></script>
+
+</head>
+<body>
+
+    <input type="file" id="fileInput" accept=".glb"/>  
+
+    <canvas id="renderCanvas"></canvas>
+
+</body>
+</html>

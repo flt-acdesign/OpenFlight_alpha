@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Babylon.js OBJ Loader with Textures</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #fileInput {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept=".obj,.mtl,.jpg,.png,.jpeg" multiple />
+    <canvas id="renderCanvas"></canvas>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const fileInput = document.getElementById("fileInput");
+        const engine = new BABYLON.Engine(canvas, true);
+        let currentScene;
+
+        const createScene = async function(files) {
+            const scene = new BABYLON.Scene(engine);
+
+            const camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2.5, 5, 
+                          new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            // Find OBJ and MTL files
+            const objFile = Array.from(files).find(file => file.name.endsWith('.obj'));
+            const mtlFile = Array.from(files).find(file => file.name.endsWith('.mtl'));
+            const textureFiles = Array.from(files).filter(file => 
+                file.name.endsWith('.jpg') || 
+                file.name.endsWith('.png') || 
+                file.name.endsWith('.jpeg')
+            );
+
+            if (!objFile) {
+                alert("Please select an OBJ file!");
+                return scene;
+            }
+
+            // Create object URLs for all files
+            const objUrl = URL.createObjectURL(objFile);
+            const mtlUrl = mtlFile ? URL.createObjectURL(mtlFile) : null;
+            const textureUrls = {};
+            textureFiles.forEach(file => {
+                textureUrls[file.name] = URL.createObjectURL(file);
+            });
+
+            // Load textures first
+            const assetsManager = new BABYLON.AssetsManager(scene);
+            for (let file of textureFiles) {
+                const textureTask = assetsManager.addTextureTask(file.name, textureUrls[file.name]);
+                textureTask.onSuccess = function(task) {
+                    scene.textures.push(task.texture);
+                };
+            }
+
+            // Wait for textures to load
+            await assetsManager.loadAsync();
+
+            // Load the OBJ file
+            return new Promise((resolve) => {
+                BABYLON.SceneLoader.ImportMesh(
+                    "",
+                    "",
+                    objUrl,
+                    scene,
+                    function(meshes) {
+                        meshes.forEach(mesh => {
+                            mesh.position.y = 0;
+                            
+                            // Adjust material settings if needed
+                            if (mesh.material) {
+                                mesh.material.backFaceCulling = false;
+                                // Find and apply corresponding texture
+                                textureFiles.forEach(file => {
+                                    const textureName = file.name.toLowerCase();
+                                    const materialName = mesh.material.name.toLowerCase();
+                                    if (textureName.includes(materialName)) {
+                                        mesh.material.diffuseTexture = scene.textures.find(
+                                            t => t.name === file.name
+                                        );
+                                    }
+                                });
+                            }
+                        });
+
+                        // Camera adjustments
+                        if (meshes.length > 0) {
+                            const boundingBox = meshes[0].getBoundingInfo().boundingBox;
+                            camera.setTarget(boundingBox.centerWorld);
+                            camera.radius = boundingBox.maximumWorld.subtract(
+                                boundingBox.minimumWorld
+                            ).length() * 1.5;
+                        }
+
+                        // Cleanup URLs
+                        URL.revokeObjectURL(objUrl);
+                        if (mtlUrl) URL.revokeObjectURL(mtlUrl);
+                        Object.values(textureUrls).forEach(url => URL.revokeObjectURL(url));
+
+                        resolve(scene);
+                    },
+                    null,
+                    function(scene, message) {
+                        console.error("Error loading model:", message);
+                        resolve(scene);
+                    },
+                    ".obj"
+                );
+            });
+        };
+
+        fileInput.addEventListener("change", async function(event) {
+            if (currentScene) {
+                currentScene.dispose();
+            }
+
+            currentScene = await createScene(event.target.files);
+        });
+
+        engine.runRenderLoop(function() {
+            if (currentScene) {
+                currentScene.render();
+            }
+        });
+
+        window.addEventListener("resize", function() {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>

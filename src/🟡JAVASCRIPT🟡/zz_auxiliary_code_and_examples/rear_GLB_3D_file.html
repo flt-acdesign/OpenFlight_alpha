@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Babylon.js GLB Viewer</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #fileInput {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
+        }
+        #loadingText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept=".glb" />
+    <div id="loadingText">Loading 3D Model...</div>
+    <canvas id="renderCanvas"></canvas>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+        const loadingText = document.getElementById("loadingText");
+        let currentScene;
+        let currentModel;
+
+        const createScene = function() {
+            const scene = new BABYLON.Scene(engine);
+            
+            // Black background
+            scene.clearColor = new BABYLON.Color3(0, 0, 0);
+
+            // Camera setup
+            const camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 2, 10, 
+                          new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+            camera.wheelPrecision = 50;
+            camera.pinchPrecision = 50;
+            camera.lowerRadiusLimit = 0.1;
+            camera.upperRadiusLimit = 100;
+
+            // Lighting
+            const hemiLight = new BABYLON.HemisphericLight("hemiLight", 
+                            new BABYLON.Vector3(0, 1, 0), scene);
+            hemiLight.intensity = 0.7;
+
+            const dirLight = new BABYLON.DirectionalLight("dirLight", 
+                           new BABYLON.Vector3(0, -1, 1), scene);
+            dirLight.intensity = 0.3;
+
+            // Environment
+            scene.createDefaultEnvironment({
+                createSkybox: false,
+                createGround: false,
+                environmentTexture: BABYLON.CubeTexture.CreateFromPrefilteredData(
+                    "https://playground.babylonjs.com/textures/environment.env",
+                    scene
+                )
+            });
+
+            return scene;
+        };
+
+        const loadGLBFile = async function(file) {
+            loadingText.style.display = "block";
+
+            if (currentModel) {
+                currentModel.dispose();
+            }
+
+            try {
+                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "", file, currentScene, 
+                    function(evt) {
+                        // Optional loading progress
+                        if (evt.lengthComputable) {
+                            const progress = (evt.loaded * 100 / evt.total).toFixed();
+                            loadingText.textContent = `Loading: ${progress}%`;
+                        }
+                    }
+                );
+
+                currentModel = result.meshes[0];
+                
+                // Center and scale model
+                const boundingBox = currentModel.getHierarchyBoundingVectors();
+                const modelSize = boundingBox.max.subtract(boundingBox.min);
+                const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
+                
+                // Scale to reasonable size
+                const scaleFactor = 5 / Math.max(modelSize.x, modelSize.y, modelSize.z);
+                currentModel.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                
+                // Center the model
+                currentModel.position = new BABYLON.Vector3(
+                    -modelCenter.x * scaleFactor,
+                    -modelCenter.y * scaleFactor,
+                    -modelCenter.z * scaleFactor
+                );
+
+                // Reset camera
+                const camera = currentScene.getCameraByName("camera");
+                camera.setTarget(BABYLON.Vector3.Zero());
+                camera.alpha = 0;
+                camera.beta = Math.PI / 2;
+                camera.radius = 10;
+
+                // Enable PBR
+                currentScene.meshes.forEach(mesh => {
+                    if (mesh.material) {
+                        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
+                        mesh.material.backFaceCulling = false;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error loading GLB file:", error);
+                alert("Error loading 3D model. Please try another file.");
+            }
+
+            loadingText.style.display = "none";
+        };
+
+        // Initialize scene
+        currentScene = createScene();
+
+        // File input handling
+        document.getElementById("fileInput").addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.name.toLowerCase().endsWith('.glb')) {
+                    loadGLBFile(file);
+                } else {
+                    alert("Please select a GLB file");
+                }
+            }
+        });
+
+        // Render loop
+        engine.runRenderLoop(function() {
+            currentScene.render();
+        });
+
+        // Handle window resize
+        window.addEventListener("resize", function() {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
