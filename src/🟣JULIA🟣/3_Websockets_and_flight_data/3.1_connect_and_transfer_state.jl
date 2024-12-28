@@ -25,14 +25,17 @@ function update_aircraft_state(aircraft_state_data)
             wz = float(aircraft_state_data["wz"])
         )
         force_control_inputs = (
-            x = float(aircraft_state_data["fx"]),
-            y = float(aircraft_state_data["fy"]),
+            x = float(aircraft_state_data["fx"]),  # Not used
+            y = float(aircraft_state_data["fy"]),  # Not used
             thrust_setting_demand = float(aircraft_state_data["thrust_setting_demand"])
         )
         moment_control_inputs = (
             roll_demand = float(aircraft_state_data["roll_demand"]),
             pitch_demand = float(aircraft_state_data["pitch_demand"]),
-            yaw_demand = float(aircraft_state_data["yaw_demand"])
+            yaw_demand = float(aircraft_state_data["yaw_demand"]),
+            roll_demand_attained = float(aircraft_state_data["roll_demand_attained"]),
+            pitch_demand_attained = float(aircraft_state_data["pitch_demand_attained"]),
+            yaw_demand_attained = float(aircraft_state_data["yaw_demand_attained"])
         )
         deltaTime = float(aircraft_state_data["deltaTime"])
 
@@ -47,7 +50,7 @@ function update_aircraft_state(aircraft_state_data)
 
         elapsed_time = time() - start_time 
         if (elapsed_time > 6.0 && elapsed_time < 21.0)
-            gather_telemetry(aircraft_updated_state_vector, elapsed_time, df)
+            gather_telemetry(aircraft_updated_state_vector, force_control_inputs, moment_control_inputs, elapsed_time, df)
         end
 
         return Dict(
@@ -68,7 +71,13 @@ function update_aircraft_state(aircraft_state_data)
             "fy_global" => aircraft_updated_state_vector[:fy_global],
             "fz_global" => aircraft_updated_state_vector[:fz_global],
             "alpha" => aircraft_updated_state_vector[:alpha_avg],
-            "beta" => aircraft_updated_state_vector[:beta_avg]
+            "beta" => aircraft_updated_state_vector[:beta_avg], 
+            "pitch_demand" => aircraft_updated_state_vector[:pitch_demand],
+            "roll_demand" => aircraft_updated_state_vector[:roll_demand],
+            "yaw_demand" => aircraft_updated_state_vector[:yaw_demand],
+            "pitch_demand_attained" => aircraft_updated_state_vector[:pitch_demand_attained],
+            "roll_demand_attained" => aircraft_updated_state_vector[:roll_demand_attained],
+            "yaw_demand_attained" => aircraft_updated_state_vector[:yaw_demand_attained]
         )
     catch e
         @error "Error processing state" exception=e

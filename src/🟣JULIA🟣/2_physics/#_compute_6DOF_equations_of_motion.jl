@@ -75,10 +75,12 @@ function compute_6DOF_equations_of_motion(s_local, force_control_inputs, moment_
 
         # Compute aircraft control moments in body axes
         control_moment_body_vector = aircraft_data.wing_mean_aerodynamic_chord * aircraft_data.reference_area * dynamic_pressure .* [
-            compute_rolling_moment_coefficient(moment_control_inputs.roll_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )      ,    
-            compute_yawing_moment_coefficient(moment_control_inputs.yaw_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data ) ,
-            compute_pitching_moment_coefficient(moment_control_inputs.pitch_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )    
+            compute_rolling_moment_coefficient(moment_control_inputs.roll_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )      ,    
+            compute_yawing_moment_coefficient(moment_control_inputs.yaw_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data ) ,
+            compute_pitching_moment_coefficient(moment_control_inputs.pitch_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )    
             ]
+
+            #println( string(moment_control_inputs.roll_demand_attained) * "  " * string(moment_control_inputs.roll_demand))
     
         # Compute aircraft static stability moments in body axes
         static_stability_moment_body_vector = aircraft_data.wing_mean_aerodynamic_chord * aircraft_data.reference_area * dynamic_pressure .* [  # Move all these ad-hoc coefficient to aircraft_data, like all the others

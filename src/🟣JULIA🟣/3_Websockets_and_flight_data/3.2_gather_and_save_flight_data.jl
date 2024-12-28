@@ -10,13 +10,14 @@ df = DataFrame(
     qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
     wx=Float64[], wy=Float64[], wz=Float64[],
     fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
-    alpha=Float64[], beta=Float64[]
+    alpha=Float64[], beta=Float64[], pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[], 
+    pitch_demand_attained=Float64[], roll_demand_attained=Float64[], yaw_demand_attained=Float64[]
 )
 
 # Add a flag to track if the file has been written
 has_written_to_csv = false
 
-function gather_telemetry(aircraft_state_data, elapsed_time, df)
+function gather_telemetry(aircraft_state_data, force_control_inputs, moment_control_inputs, elapsed_time, df)
     # Make the flag variable accessible inside the function
     global has_written_to_csv
     
@@ -40,7 +41,13 @@ function gather_telemetry(aircraft_state_data, elapsed_time, df)
         fy_global = round(aircraft_state_data[:fy_global], digits=DECIMAL_PLACES),
         fz_global = round(aircraft_state_data[:fz_global], digits=DECIMAL_PLACES),
         alpha = round(aircraft_state_data[:alpha_avg], digits=DECIMAL_PLACES),
-        beta = round(aircraft_state_data[:beta_avg], digits=DECIMAL_PLACES)
+        beta = round(aircraft_state_data[:beta_avg], digits=DECIMAL_PLACES), 
+        pitch_demand = round(moment_control_inputs[:pitch_demand], digits=DECIMAL_PLACES),
+        roll_demand = round(moment_control_inputs[:roll_demand], digits=DECIMAL_PLACES),
+        yaw_demand = round(moment_control_inputs[:yaw_demand], digits=DECIMAL_PLACES),
+        pitch_demand_attained = round(moment_control_inputs[:pitch_demand_attained], digits=DECIMAL_PLACES),
+        roll_demand_attained = round(moment_control_inputs[:roll_demand_attained], digits=DECIMAL_PLACES),
+        yaw_demand_attained = round(moment_control_inputs[:yaw_demand_attained], digits=DECIMAL_PLACES)
     ))
 
     # Write to CSV if elapsed_time is greater than 20 seconds and the file has not been written yet

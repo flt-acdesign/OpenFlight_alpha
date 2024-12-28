@@ -17,7 +17,8 @@ let simulationStartTime = Date.now();
 let lastFrameTime = Date.now();
 let elapsedTime = 0; // Total elapsed time
 let timeSinceLastUpdate = 0; // Accumulated time since last update
-let global_time_step = 0.01  // miliseconds, play ping-pong at this rate
+let fps_demanded = 60 // Frames per second demanded
+let global_time_step = 1.0 / fps_demanded  // seconds, play ping-pong at this rate
 
 
 let material; // Material for the aircraft
@@ -30,6 +31,11 @@ let thrust_setting_demand = 0.0
 let roll_demand = 0.0;
 let pitch_demand = 0.0
 let yaw_demand = 0.0
+
+let roll_demand_attained = 0.0;
+let pitch_demand_attained = 0.0;
+let yaw_demand_attained = 0.0;
+
 
 // Global force values from server
 let forceGlobalX = 0.0;

@@ -12,11 +12,13 @@ include(raw"./src/🟣JULIA🟣/0_Aircraft_Model_and_Data/0.1_📊_aircraft_mode
 include(raw"./SRC/🟣JULIA🟣/1_maths/quaternions_and_transformations.jl")
 
 include(raw"./SRC/🟣JULIA🟣/2_physics/runge_kutta_integrator.jl")
+include(raw"./src/🟣JULIA🟣/2_physics/2.1_convert_control_demanded_to_attained.jl")
 include(raw"./SRC/🟣JULIA🟣/2_physics/#_compute_6DOF_equations_of_motion.jl")
+
 include(raw"./SRC/🟣JULIA🟣/2_physics/handle_collisions.jl")
 
-include(raw"./src/🟣JULIA🟣/3_Websockets/3.1_connect_and_transfer_state.jl") 
-include(raw"./src/🟣JULIA🟣/3_Websockets/3.2_gather_and_save_telemetry.jl")
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_connect_and_transfer_state.jl") 
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.2_gather_and_save_flight_data.jl")
 
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_and_anemometry/physical_constants.jl")
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_and_anemometry/ISA76.jl")

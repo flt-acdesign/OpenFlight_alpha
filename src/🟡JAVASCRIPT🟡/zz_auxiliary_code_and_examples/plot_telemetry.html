@@ -68,6 +68,9 @@
         <div id="angularVelocityPlot" class="plot-container"></div>
         <div id="forcePlot" class="plot-container"></div>
         <div id="anglePlot" class="plot-container"></div>
+        <div id="pitchPlot" class="plot-container"></div>
+        <div id="rollPlot" class="plot-container"></div>
+        <div id="yawPlot" class="plot-container"></div>
     </div>
 
     <script>
@@ -95,6 +98,8 @@
             const wx = [], wy = [], wz = [];
             const fx = [], fy = [], fz = [];
             const alpha = [], beta = [];
+            const pitch_demand = [], roll_demand = [], yaw_demand = [];
+            const pitch_attained = [], roll_attained = [], yaw_attained = [];
 
             rows.forEach(row => {
                 if (row.trim()) {
@@ -118,6 +123,12 @@
                     fz.push(parseFloat(columns[16]));
                     alpha.push(parseFloat(columns[17]));
                     beta.push(parseFloat(columns[18]));
+                    pitch_demand.push(parseFloat(columns[19]));
+                    roll_demand.push(parseFloat(columns[20]));
+                    yaw_demand.push(parseFloat(columns[21]));
+                    pitch_attained.push(parseFloat(columns[22]));
+                    roll_attained.push(parseFloat(columns[23]));
+                    yaw_attained.push(parseFloat(columns[24]));
                 }
             });
 
@@ -181,9 +192,50 @@
                 layout: { title: 'Angles vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Angle (deg)' } }
             };
 
+            // Pitch Plot
+            const pitchPlot = {
+                traces: [
+                    { y: pitch_demand, name: 'Pitch Demand', line: { dash: 'dash' } },
+                    { y: pitch_attained, name: 'Pitch Attained' }
+                ],
+                layout: { 
+                    title: 'Pitch vs Time', 
+                    xaxis: { title: 'Time (s)' }, 
+                    yaxis: { title: 'Pitch (deg)' }
+                }
+            };
+
+            // Roll Plot
+            const rollPlot = {
+                traces: [
+                    { y: roll_demand, name: 'Roll Demand', line: { dash: 'dash' } },
+                    { y: roll_attained, name: 'Roll Attained' }
+                ],
+                layout: { 
+                    title: 'Roll vs Time', 
+                    xaxis: { title: 'Time (s)' }, 
+                    yaxis: { title: 'Roll (deg)' }
+                }
+            };
+
+            // Yaw Plot
+            const yawPlot = {
+                traces: [
+                    { y: yaw_demand, name: 'Yaw Demand', line: { dash: 'dash' } },
+                    { y: yaw_attained, name: 'Yaw Attained' }
+                ],
+                layout: { 
+                    title: 'Yaw vs Time', 
+                    xaxis: { title: 'Time (s)' }, 
+                    yaxis: { title: 'Yaw (deg)' }
+                }
+            };
+
             // Create all plots
-            const plots = [positionPlot, velocityPlot, quaternionPlot, angularVelocityPlot, forcePlot, anglePlot];
-            const divIds = ['positionPlot', 'velocityPlot', 'quaternionPlot', 'angularVelocityPlot', 'forcePlot', 'anglePlot'];
+            const plots = [positionPlot, velocityPlot, quaternionPlot, angularVelocityPlot, 
+                          forcePlot, anglePlot, pitchPlot, rollPlot, yawPlot];
+            const divIds = ['positionPlot', 'velocityPlot', 'quaternionPlot', 'angularVelocityPlot', 
+                           'forcePlot', 'anglePlot', 'pitchPlot', 'rollPlot', 'yawPlot'];
 
             document.getElementById('plotGrid').style.display = 'grid';
             
@@ -193,7 +245,8 @@
                     y: trace.y,
                     name: trace.name,
                     type: 'scatter',
-                    mode: 'lines'
+                    mode: 'lines',
+                    line: trace.line || {}  // Add line style if specified
                 }));
 
                 Plotly.newPlot(divIds[index], traces, {
