@@ -1,59 +1,94 @@
-function create_world_scenary(scene, shadowGenerator, camera) {
+/***************************************************************
+ * Creates the main world scenery, applying fog settings and
+ * delegating sub-elements (sky, ground, trees, runway, reference
+ * cube) to specialized functions.
+ **************************************************************/
+function create_world_scenery(scene, shadowGenerator, camera) {
   
   
-  // Define global parameters for height calculation
+  x_wavelength = 833  // Global "valley size" in X
+  z_wavelength = 500   // Global "valley size" in Z
+
+  
+  // Store config parameters for ground undulation
   scene.groundConfig = {
-    fx: 0.001,     // frequency along X
-    fz: 0.002,     // frequency along Z
-    amplitude: 320 // increase amplitude to make the waves more visible
+      freqX: (1 / x_wavelength),     // Wave frequency along X
+      freqZ:  (1 / x_wavelength),      // Wave frequency along Z
+      amplitude: 320     // Overall height amplitude of terrain
   };
 
+  // Create the sky sphere
   createSkySphere(scene, camera);
-  createSegmentedGround(scene, scene.groundConfig);
-  create_reference_cube(scene, shadowGenerator);
-  createRandomTrees(scene, shadowGenerator, scene.groundConfig);
-  createRunway(scene, scene.groundConfig)
 
-  // Set linear fog for a smooth fade effect
+  // Create the segmented ground based on the stored config
+  createSegmentedGround(scene, scene.groundConfig);
+
+  // Create a reference cube tower (for orientation)
+  createReferenceCube(scene, shadowGenerator);
+
+  // Create random trees scattered around
+  createRandomTrees(scene, shadowGenerator, scene.groundConfig);
+
+  // Create a runway that follows the terrain
+  createRunway(scene, scene.groundConfig);
+
+  // Configure linear fog for atmospheric depth
   scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
   scene.fogStart = 1500.0; 
   scene.fogEnd = 3800.0;  
-  scene.fogColor = new BABYLON.Color3(135/255, 206/255, 255/255); 
+  scene.fogColor = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255); 
   scene.fogDensity = 0.00058;
 }
 
-function createSkySphere(scene, camera) {
-  const skySphere = BABYLON.MeshBuilder.CreateSphere("skySphere", {
-    diameter: 7000,
-    diameter: 7000,
-    sideOrientation: BABYLON.Mesh.BACKSIDE
-  }, scene);
 
+/***************************************************************
+* Creates a large sky sphere with a vertical gradient texture.
+* Automatically positions it based on the camera target.
+**************************************************************/
+function createSkySphere(scene, camera) {
+  const skySphere = BABYLON.MeshBuilder.CreateSphere(
+      "skySphere",
+      { diameter: 7000, sideOrientation: BABYLON.Mesh.BACKSIDE },
+      scene
+  );
+
+  // Create a dynamic texture for the gradient
   const textureSize = 1024;
-  const skyTexture = new BABYLON.DynamicTexture("skyTexture", {width: textureSize, height: textureSize}, scene);
+  const skyTexture = new BABYLON.DynamicTexture(
+      "skyTexture", 
+      { width: textureSize, height: textureSize },
+      scene
+  );
   const ctx = skyTexture.getContext();
 
-  // Gradient
+  // Define the vertical gradient (sunset-like)
   const gradient = ctx.createLinearGradient(0, 0, 0, textureSize);
-  gradient.addColorStop(0, "rgb(246, 97, 42)");
-  gradient.addColorStop(1, "rgb(229, 229, 240)");
-
+  gradient.addColorStop(0, "rgb(246, 97, 42)");   // near top
+  gradient.addColorStop(1, "rgb(229, 229, 240)"); // near bottom
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, textureSize, textureSize);
   skyTexture.update();
 
+  // Create a material for the sky sphere
   const skyMaterial = new BABYLON.StandardMaterial("skyMaterial", scene);
-  skyMaterial.backFaceCulling = false;
+  skyMaterial.backFaceCulling = false;  // Render inside faces
   skyMaterial.diffuseTexture = skyTexture;
   skyMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+
+  // Attach the material to the sky sphere
   skySphere.material = skyMaterial;
   skySphere.isAlwaysActive = true;
 
+  // Align skySphere with the camera target
   skySphere.rotation.z = Math.PI / 2;
   skySphere.position.copyFrom(camera.target);
 }
 
 
+/***************************************************************
+* Updates the sky sphere position so that it always follows
+* the active camera in the scene (prevents clipping on large worlds).
+**************************************************************/
 function updateSkySpherePosition(scene) {
   const skySphere = scene.getMeshByName("skySphere");
   if (skySphere && scene.activeCamera) {
@@ -63,41 +98,44 @@ function updateSkySpherePosition(scene) {
 }
 
 
-
-
-function updateSkySpherePosition(scene) {
-  const skySphere = scene.getMeshByName("skySphere");
-  if (skySphere && scene.activeCamera) {
-      skySphere.position.x = scene.activeCamera.position.x;
-      skySphere.position.z = scene.activeCamera.position.z;
-  }
-}
-
-
-
+/***************************************************************
+* Creates a segmented ground made of multiple tiles. Each tile
+* is subdivided and its vertices are adjusted to create a wavy
+* terrain. Uses a simple checker pattern for illustration.
+**************************************************************/
 function createSegmentedGround(scene, groundConfig) {
-  const segmentCount = 20;  
-  const segmentSize = 400;  
-  const textureSize = 256;
+  const segmentCount = 20;     // Number of tiles in X and Z directions
+  const segmentSize = 300;     // Physical size of each tile
+  const textureSize = 128;     // Size for the dynamic checker texture
 
-  const groundTexture = new BABYLON.DynamicTexture("groundTexture", {width: textureSize, height: textureSize}, scene);
+  // Create a checkerboard dynamic texture
+  const groundTexture = new BABYLON.DynamicTexture(
+      "groundTexture",
+      { width: textureSize, height: textureSize },
+      scene
+  );
   const ctx = groundTexture.getContext();
 
-  // Checker pattern
+  // Basic checker pattern
   const halfSize = textureSize / 2;
-  const color1 = "#228B22"; 
-  const color2 = "#006400"; 
+  const color1 = "#228B22"; // ForestGreen
+  const color2 = "#006400"; // DarkGreen
 
+  // Top-left square
   ctx.fillStyle = color1;
   ctx.fillRect(0, 0, halfSize, halfSize);
+  // Top-right square
   ctx.fillStyle = color2;
   ctx.fillRect(halfSize, 0, halfSize, halfSize);
+  // Bottom-left square
   ctx.fillRect(0, halfSize, halfSize, halfSize);
+  // Bottom-right square
   ctx.fillStyle = color1;
   ctx.fillRect(halfSize, halfSize, halfSize, halfSize);
 
   groundTexture.update();
 
+  // Create the ground material and apply the checker texture
   const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
   groundMaterial.diffuseTexture = groundTexture;
   groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
@@ -105,167 +143,182 @@ function createSegmentedGround(scene, groundConfig) {
   groundTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
   groundTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
 
-  const { fx, fz, amplitude } = groundConfig;
+  // Destructure configuration
+  const { freqX, freqZ, amplitude } = groundConfig;
 
+  // Generate the ground in segments
   for (let i = 0; i < segmentCount; i++) {
-    for (let j = 0; j < segmentCount; j++) {
-      const x = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
-      const z = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
+      for (let j = 0; j < segmentCount; j++) {
+          // Calculate center positions for each segment
+          const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
+          const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
 
-      // Create a subdivided, updatable ground segment
-      const groundSegment = BABYLON.MeshBuilder.CreateGround(`groundSegment_${i}_${j}`, {
-        width: segmentSize,
-        height: segmentSize,
-        subdivisions: 50,
-        updatable: true
-      }, scene);
+          // Create a ground mesh with subdivisions (for smooth waves)
+          const groundSegment = BABYLON.MeshBuilder.CreateGround(
+              `groundSegment_${i}_${j}`,
+              {
+                  width: segmentSize,
+                  height: segmentSize,
+                  subdivisions: 50,
+                  updatable: true
+              },
+              scene
+          );
 
-      groundSegment.position.x = x;
-      groundSegment.position.z = z;
-      groundSegment.material = groundMaterial;
-      groundSegment.receiveShadows = true;
-      groundSegment.isAlwaysActive = true;
+          groundSegment.position.x = centerX;
+          groundSegment.position.z = centerZ;
+          groundSegment.material = groundMaterial;
+          groundSegment.receiveShadows = true;
+          groundSegment.isAlwaysActive = true;
 
-      // Get vertex data
-      const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-      const indices = groundSegment.getIndices();
+          // Retrieve mesh vertex data
+          const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+          const indices = groundSegment.getIndices();
 
-      // Modify vertex positions to create waves
-      for (let v = 0; v < positions.length; v += 3) {
-        const vx = positions[v];    
-        const vz = positions[v + 2]; 
-        const globalX = vx + x; 
-        const globalZ = vz + z;
+          // Adjust vertex positions to create waves (using our custom undulationMap)
+          for (let v = 0; v < positions.length; v += 3) {
+              // local X/Z in the segment
+              const localX = positions[v];     
+              const localZ = positions[v + 2];
+              // absolute world positions
+              const xPos = localX + centerX;
+              const yPos = localZ + centerZ;
 
-       // const newY = amplitude *  (Math.sin(fx * globalX*globalZ/100 + globalX/100) * Math.sin(fz * globalZ*(globalX^3)/100 + globalZ/100) + Math.sin(3*fx * globalX*globalX/100) * Math.sin(3*fz * globalZ*(globalX^1)/100) )
+              // Compute new Y via the wavy function
+              const newY = undulationMap(xPos, yPos, freqX, freqZ, amplitude);
+              // Optionally clamp negative to 0 if you want a "floor"
+              positions[v + 1] = Math.max(newY, 0);
+          }
 
-        const newY =  undulation_map(globalX, globalZ, fx, fz, amplitude)
+          // Overwrite the mesh data with new positions
+          groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions, true);
 
-
-        positions[v + 1] = (Math.max(newY, 0)) 
-
+          // Recompute normals for correct lighting
+          const normals = [];
+          BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+          groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
       }
-
-      // Update vertex positions
-      groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions, true);
-
-      // Recompute normals
-      const normals = [];
-      BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-      groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
-    }
   }
 }
 
 
+/***************************************************************
+* Custom function to calculate a "wave height" (undulation) at
+* any (xPos, yPos) coordinate based on multiple sine wave octaves.
+*  - freqX, freqZ: frequencies for each axis
+*  - amplitude: scale factor for the final wave height
+**************************************************************/
+function undulationMap(xPos, yPos, freqX, freqZ, amplitude) {
 
-function undulation_map(x, y, fx, fy, amplitude) {
+  // Multi-octave wave structure
+  let baseWave = (Math.sin(freqX * xPos * 1.1)) ** 1 
+               * (Math.sin(freqZ * yPos * xPos / 1000)) ** 1 
+               * 2;
 
+  let octave1  = (Math.sin(freqX * 2 * xPos)) ** 2 
+               * (Math.cos(freqZ * 2 * yPos)) ** 2 
+               * 1;
 
-//  return  Math.sin(1*(fx*(Math.abs(x))**1.1+1*(Math.abs(y))**1.3)) * Math.sin(.1* (fy*(Math.abs(y))**1 / 100)) *100
+  let octave2  = (Math.sin(freqX * 5 * xPos)) ** 4 
+               * (Math.sin(freqZ * 5 * yPos)) ** 6 
+               * 0.6;
 
-  //return  Math.sin(0.6*(fx*(Math.abs(x/100))**1+0*(Math.abs(y))**2)) * Math.sin((0.2*fy*(Math.abs(y))**1)) *1 * (1-Math.sin((fx*(Math.abs(x/10))**1))) *1
+  let octave3  = (Math.sin(freqX * 8 * xPos)) ** 8 
+               * (Math.sin(freqZ * 8 * yPos)) ** 8 
+               * 0.12;
 
-  
-  //return Math.sin(fx * (Math.abs(x)**2.3)/20000) * Math.sin(fy * y) / Math.log(  (x**2 + y**2 )**.5 + .01)*10
+  // Combine wave components, scale by amplitude
+  let heightZ = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (xPos / 1000);
 
-
-
-  base = (Math.sin(fx * x*1.1))**1 * (Math.sin(fy * y*x/1000))**1 * 2 
-
-  octave_1 = (Math.sin(fx*2 * x))**2 * (Math.cos(fy*2 * y))**2 * 1
-
-  octave_2 = (Math.sin(fx*5 * x))**4 * (Math.sin(fy*5 * y))**4  * .6
-
-  octave_3 = (Math.sin(fx*8 * x))**6 * (Math.sin(fy*8 * y))**6  * .1
-
-
-  z = amplitude *  ((base +  octave_1 + octave_2 + octave_3) / 4 - 0) *  x/1000         //Math.abs(x)  /1000 //* y/1000
-
-
-  if ((Math.abs(x) < 100) && (Math.abs(y) < 300))  {
-    z = 0
+  // Flatten region near the origin if desired (e.g., runway area)
+  if ((Math.abs(xPos) < 100) && (Math.abs(yPos) < 300)) {
+      heightZ = 0;
   }
 
-
-
-
-
-  return z
-
-
-
-
-
+  return heightZ;
 }
 
 
-
-
-
+/***************************************************************
+* Creates a number of random trees across the terrain.
+* Each tree is a simple tapered cylinder placed at the local
+* terrain height.
+**************************************************************/
 function createRandomTrees(scene, shadowGenerator, groundConfig) {
   const treeCount = 150;
-  const { fx, fz, amplitude } = groundConfig;
+  const { freqX, freqZ, amplitude } = groundConfig;
 
   for (let i = 0; i < treeCount; i++) {
-    const treeHeight = Math.random() * 15 + 3; 
-    const treeBaseRadius = Math.random() * 4 + 2; 
+      // Random tree dimension and location
+      const treeHeight = Math.random() * 15 + 3; 
+      const treeBaseRadius = Math.random() * 4 + 2; 
 
-    const xPos = Math.random() * 580 + 90;
-    const zPos = Math.random() * 580 - 90
+      // For clarity, rename zPos → yPos
+      const xPos = Math.random() * 580 + 90;
+      const yPos = Math.random() * 580 - 90;
 
+      // Calculate ground height at that position
+      const groundY = undulationMap(xPos, yPos, freqX, freqZ, amplitude);
+      const treeY = groundY + (treeHeight / 2);
 
-    // Calculate height of ground at the given position
-    //const groundY = amplitude *  Math.abs(undulation_map(xPos, zPos, fx, fz)) 
+      // Create a simple cylinder as the tree
+      const tree = BABYLON.MeshBuilder.CreateCylinder(
+          "tree",
+          {
+              diameterTop: 0,
+              diameterBottom: treeBaseRadius,
+              height: treeHeight,
+              tessellation: 6
+          },
+          scene
+      );
+      tree.position = new BABYLON.Vector3(xPos, treeY, yPos);
 
-    const groundY  =  undulation_map(xPos, zPos, fx, fz, amplitude)
+      // Simple green material
+      const treeMaterial = new BABYLON.StandardMaterial("treeMaterial", scene);
+      treeMaterial.diffuseColor = new BABYLON.Color3(0.13, 0.55, 0.13);
+      treeMaterial.fogEnabled = true;
+      tree.material = treeMaterial;
 
-    const treeY = groundY + (treeHeight / 2);
-
-    const tree = BABYLON.MeshBuilder.CreateCylinder("tree", {
-      diameterTop: 0,
-      diameterBottom: treeBaseRadius,
-      height: treeHeight,
-      tessellation: 6,
-    }, scene);
-
-    tree.position = new BABYLON.Vector3(xPos, treeY, zPos);
-
-    const treeMaterial = new BABYLON.StandardMaterial("treeMaterial", scene);
-    treeMaterial.diffuseColor = new BABYLON.Color3(0.13, 0.55, 0.13);
-    treeMaterial.fogEnabled = true; 
-    tree.material = treeMaterial;
-
-    shadowGenerator.addShadowCaster(tree);
-    tree.isAlwaysActive = true;
+      // Cast shadows for a more realistic scene
+      shadowGenerator.addShadowCaster(tree);
+      tree.isAlwaysActive = true;
   }
 }
 
-function create_reference_cube(scene, shadowGenerator) {
-  const baseSize = 3;
-  const height = 10;
+
+/***************************************************************
+* Creates a small reference "cube tower" so that players
+* can orient themselves in the scene. It is a stack of boxes,
+* alternately colored red and white.
+**************************************************************/
+function createReferenceCube(scene, shadowGenerator) {
+  const baseSize = 3;  // NxN base
+  const height = 10;   // Number of cubes stacked
 
   for (let y = 0; y < height; y++) {
       for (let x = 0; x < baseSize; x++) {
           for (let z = 0; z < baseSize; z++) {
+
+              // Each cube is size=2
               const cube = BABYLON.MeshBuilder.CreateBox("cube", { size: 2 }, scene);
               cube.position = new BABYLON.Vector3(
-                  40 + (x - (baseSize - 1) / 2) * 2,  // Center the tower
-                  1 + y * 2,
+                  40 + (x - (baseSize - 1) / 2) * 2,  // offset for centering
+                  1 + y * 2,                         // stack height
                   (z - (baseSize - 1) / 2) * 2
               );
 
-              const cubeMaterial = new BABYLON.StandardMaterial("cubeMaterial", scene);
-              
               // Alternate red and white
+              const cubeMaterial = new BABYLON.StandardMaterial("cubeMaterial", scene);
               if ((x + y + z) % 2 === 0) {
-                   cubeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);  // Red
+                  cubeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);  // Red
               } else {
-                   cubeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);  // White
+                  cubeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);  // White
               }
-
               cubeMaterial.fogEnabled = true;
               cube.material = cubeMaterial;
+
+              // Cast shadows
               shadowGenerator.addShadowCaster(cube);
               cube.isAlwaysActive = true;
           }
@@ -274,72 +327,80 @@ function create_reference_cube(scene, shadowGenerator) {
 }
 
 
-
-
-
+/***************************************************************
+* Creates a runway that follows the undulations of the terrain.
+* Also adds small divider boxes to mark the runway center line.
+**************************************************************/
 function createRunway(scene, groundConfig) {
+  const { freqX, freqZ, amplitude } = groundConfig;
 
- // Create a wavy road following the terrain, dark grey
- const roadMaterial = new BABYLON.StandardMaterial("roadMaterial", scene);
- roadMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
- const road = BABYLON.MeshBuilder.CreateGround("road", { width: 15, height: 400, subdivisions: 50, updatable: true }, scene);
- road.material = roadMaterial;
- const roadPositions = road.getVerticesData(BABYLON.VertexBuffer.PositionKind);
- const roadIndices = road.getIndices();
+  // Create a strip of ground for the runway
+  const runwayMaterial = new BABYLON.StandardMaterial("runwayMaterial", scene);
+  runwayMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2); // dark grey
+  
+  const runway = BABYLON.MeshBuilder.CreateGround(
+      "runway",
+      {
+          width: 15,
+          height: 400,
+          subdivisions: 50,
+          updatable: true
+      },
+      scene
+  );
+  runway.material = runwayMaterial;
 
- // Apply wavy formula to road
- for (let v = 0; v < roadPositions.length; v += 3) {
-     const x = roadPositions[v];
-     const z = roadPositions[v+2];
-     //const y = amplitude * Math.sin(fx * x) * Math.sin(fz * z);
-             
-     //const y = Math.max(amplitude * Math.sin(fx * x*z/300) * Math.sin(fz * z*x/400), 0)
-     
+  // Retrieve runway vertex data
+  const runwayPositions = runway.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  const runwayIndices = runway.getIndices();
 
-     //const y = groundConfig.amplitude *  Math.abs(undulation_map(x, z, groundConfig.fx, groundConfig.fz)) 
+  // Apply wavy formula to runway to match the terrain
+  for (let v = 0; v < runwayPositions.length; v += 3) {
+      const xPos = runwayPositions[v];
+      const yPos = runwayPositions[v + 2];
+      
+      // Slightly raise runway above ground
+      const terrainHeight = undulationMap(xPos, yPos, freqX, freqZ, amplitude);
+      runwayPositions[v + 1] = terrainHeight + 0.15;
+  }
+  runway.setVerticesData(BABYLON.VertexBuffer.PositionKind, runwayPositions, true);
 
+  // Recompute normals
+  const runwayNormals = [];
+  BABYLON.VertexData.ComputeNormals(runwayPositions, runwayIndices, runwayNormals);
+  runway.setVerticesData(BABYLON.VertexBuffer.NormalKind, runwayNormals, true);
 
-     const y = undulation_map(x, z, groundConfig.fx, groundConfig.fz, groundConfig.amplitude) + .1
+  // Enable collision or physics (optional)
+  runway.receiveShadows = true;
+  runway.physicsImpostor = new BABYLON.PhysicsImpostor(
+      runway,
+      BABYLON.PhysicsImpostor.MeshImpostor,
+      { mass: 0, friction: 0.5, restitution: 0.1 },
+      scene
+  );
 
+  // Add runway centerline dividers
+  const dividerMaterial = new BABYLON.StandardMaterial("dividerMaterial", scene);
+  dividerMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // white lines
 
-     roadPositions[v+1] = y + 0.15; 
- }
- road.setVerticesData(BABYLON.VertexBuffer.PositionKind, roadPositions, true);
- const roadNormals = [];
- BABYLON.VertexData.ComputeNormals(roadPositions, roadIndices, roadNormals);
- road.setVerticesData(BABYLON.VertexBuffer.NormalKind, roadNormals, true);
+  for (let i = -200; i < 200; i += 20) {
+      const xPos = 0;  // keep runway dividers on X=0
+      const yPos = i;
 
- road.receiveShadows = true;
- road.physicsImpostor = new BABYLON.PhysicsImpostor(
-     road, 
-     BABYLON.PhysicsImpostor.MeshImpostor, 
-     { mass: 0, friction: 0.5, restitution: 0.1 }, 
-     scene
- );
+      const dividerHeight = undulationMap(xPos, yPos, freqX, freqZ, amplitude) + 0.3;
 
- const dividerMaterial = new BABYLON.StandardMaterial("dividerMaterial", scene);
- dividerMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
- for (let i = -200; i < 200; i += 20) {
-     const divider = BABYLON.MeshBuilder.CreateBox("divider", { width: 0.3, height: 0.1, depth: 3 }, scene);
-     // Compute Y based on terrain:
-     const divX = 0; 
-     const divZ = i;
-     //const divY = Math.max(amplitude * (Math.sin(fx * divX*divZ/300) * Math.sin(fz * divZ*divX/400)) + 0.055, 0)
-
-     //const divY = groundConfig.amplitude *  Math.abs(undulation_map(divX, divZ, groundConfig.fx, groundConfig.fz)) + 0.2
-
-     const divY = undulation_map(divX, divZ, groundConfig.fx, groundConfig.fz, groundConfig.amplitude) + .3
-           
-
-
-     divider.position.set(divX, divY, divZ);
-     divider.material = dividerMaterial;
-     divider.physicsImpostor = new BABYLON.PhysicsImpostor(
-         divider, 
-         BABYLON.PhysicsImpostor.BoxImpostor, 
-         { mass: 0 }, 
-         scene
-     );
- }
-
+      const divider = BABYLON.MeshBuilder.CreateBox(
+          "divider",
+          { width: 0.3, height: 0.1, depth: 3 },
+          scene
+      );
+      divider.position.set(xPos, dividerHeight, yPos);
+      divider.material = dividerMaterial;
+      divider.physicsImpostor = new BABYLON.PhysicsImpostor(
+          divider,
+          BABYLON.PhysicsImpostor.BoxImpostor,
+          { mass: 0 },
+          scene
+      );
+  }
 }

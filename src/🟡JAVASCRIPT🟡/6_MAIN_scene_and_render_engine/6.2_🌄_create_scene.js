@@ -5,7 +5,7 @@ function createScene(engine, canvas) {
   const {lights, shadowGenerator} = setupLights_and_shadows(scene);
   createAircraft(shadowGenerator, scene)
   const {camera, pilotCamera, cockpitCamera} = setupCameras(scene, canvas);
-  create_world_scenary(scene, shadowGenerator, camera);
+  create_world_scenery(scene, shadowGenerator, camera);
   createVelocityLine();
   createForceLine();
   createGUI();

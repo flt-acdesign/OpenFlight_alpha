@@ -42,9 +42,9 @@ const aircraft_model_data = Aircraft_Model_Data_structure(
     1.2,        # wing_mean_aerodynamic_chord, Aircraft Wing Mean Aerodynamic Chord (m)
     
     # Control coefficients
-    0.001,      # derivative_roll_vs_aileron, d_C_rolling_moment/d_aileron ; roll control derivative (OJO!!/rad)
-    0.0025,      # derivative_pitch_vs_elevator, d_C_pitching_moment/d_elevator ; pitch control derivative (OJO!!/rad)
-    0.0004,      # derivative_yaw_vs_rudder, d_C_yawing_moment/d_rudder ; yar control derivative (OJO!!/rad)
+    0.0001,      # derivative_roll_vs_aileron, d_C_rolling_moment/d_aileron ; roll control derivative (OJO!!/rad)
+    0.00025,      # derivative_pitch_vs_elevator, d_C_pitching_moment/d_elevator ; pitch control derivative (OJO!!/rad)
+    0.00004,      # derivative_yaw_vs_rudder, d_C_yawing_moment/d_rudder ; yar control derivative (OJO!!/rad)
     
 
     # Aerodynamic stiffness coefficients
