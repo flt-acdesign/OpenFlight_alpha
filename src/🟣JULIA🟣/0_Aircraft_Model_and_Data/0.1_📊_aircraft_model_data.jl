@@ -26,6 +26,7 @@ struct Aircraft_Model_Data_structure
     thrust_installation_angle_DEG::Float64  # Angle of tilt of thrust line with respect to x axis, positive upwards
     I_body::Matrix{Float64} # Inertia tensor in body axes. General 3x3 matrix
 
+    control_actuator_speed::Float64  # Actuator speed in rad/s
 
 end
 
@@ -65,6 +66,9 @@ const aircraft_model_data = Aircraft_Model_Data_structure(
     [ 1/6 0.0 0.0 
       0.0 1/6 0.0 
       0.0 0.0 1/6 ], # Aircraft Inertial tensor in body axes. General 3x3 inertia tensor.
+
+
+    3.0         # control_actuator_speed, 300% of amplitude per second
 
 )
 

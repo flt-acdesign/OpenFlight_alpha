@@ -131,9 +131,9 @@ function detectControllerType(gamepad) {
       if (type === 'XBOX') {
         // Map axes
         thrust_setting_demand = -1 * axes[1]; // Left stick vertical
-        roll_demand = -0.1 * axes[2];         // Right stick horizontal
-        pitch_demand = 0.1 * axes[3];         // Right stick vertical
-        yaw_demand = 0.1 * axes[0];          // Left stick horizontal
+        roll_demand = -1.0 * axes[2];         // Right stick horizontal
+        pitch_demand = 1.0 * axes[3];         // Right stick vertical
+        yaw_demand = 1.0 * axes[0];          // Left stick horizontal
   
         // Buttons
         trim_nose_down   = buttons[12]?.value;
@@ -165,9 +165,9 @@ function detectControllerType(gamepad) {
       else {
         // Map axes
         thrust_setting_demand = -1 * axes[2]; // Possibly left stick vertical
-        roll_demand = -0.1 * axes[0];
-        pitch_demand = 0.1 * axes[1];
-        yaw_demand = 0.1 * axes[5];
+        roll_demand = -1.0 * axes[0];
+        pitch_demand = 1.0 * axes[1];
+        yaw_demand = 1.0 * axes[5];
         thrust_balance = 0.1 * axes[6];       // Example usage
   
         // Buttons

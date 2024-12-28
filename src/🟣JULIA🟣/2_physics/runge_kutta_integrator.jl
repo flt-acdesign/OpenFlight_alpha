@@ -153,9 +153,9 @@ function Runge_Kutta_4_integrator(
         :fz_global        => fz_global,
         :alpha_avg        => alpha_avg,
         :beta_avg         => beta_avg,
-        :pitch_demand_attained => moment_control_inputs_attained.pitch_demand,
-        :roll_demand_attained  => moment_control_inputs_attained.roll_demand,
-        :yaw_demand_attained   => moment_control_inputs_attained.yaw_demand,
+        :pitch_demand_attained => moment_control_inputs_attained.pitch_demand_attained,
+        :roll_demand_attained  => moment_control_inputs_attained.roll_demand_attained,
+        :yaw_demand_attained   => moment_control_inputs_attained.yaw_demand_attained,
         :pitch_demand          => moment_control_inputs.pitch_demand,
         :roll_demand           => moment_control_inputs.roll_demand,
         :yaw_demand            => moment_control_inputs.yaw_demand            
