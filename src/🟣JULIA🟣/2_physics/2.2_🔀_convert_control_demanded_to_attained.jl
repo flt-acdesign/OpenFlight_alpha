@@ -21,8 +21,7 @@ Tuple `(force_control_inputs_out, moment_control_inputs_out)` with updated attai
 """
 function convert_control_demanded_to_attained(
     aircraft_model_data,
-    force_control_inputs,
-    moment_control_inputs,
+    control_demand_vector,
     deltaTime
 )
     # Retrieve actuator speed or fall back to 1.0 if not provided
@@ -47,57 +46,53 @@ function convert_control_demanded_to_attained(
     end
 
     # For now, thrust matches demanded directly (no spool-up)
-    thrust_attained = force_control_inputs.thrust_setting_demand
+    thrust_attained = control_demand_vector.thrust_setting_demand
 
     # Compute new attained positions using current attained values
     roll_attained = compute_attained(
-        moment_control_inputs.roll_demand,
-        moment_control_inputs.roll_demand_attained,
+        control_demand_vector.roll_demand,
+        control_demand_vector.roll_demand_attained,
         actuator_delta
     )
 
     pitch_attained = compute_attained(
-        moment_control_inputs.pitch_demand,
-        moment_control_inputs.pitch_demand_attained,
+        control_demand_vector.pitch_demand,
+        control_demand_vector.pitch_demand_attained,
         actuator_delta
     )
 
     yaw_attained = compute_attained(
-        moment_control_inputs.yaw_demand,
-        moment_control_inputs.yaw_demand_attained,
+        control_demand_vector.yaw_demand,
+        control_demand_vector.yaw_demand_attained,
         actuator_delta
     )
 
     # Construct outputs
-    force_control_inputs_out = (
+    control_demand_vector_attained_out = (
         thrust_setting_demand = thrust_attained,
-        x = get(force_control_inputs, :x, 0.0),
-        y = get(force_control_inputs, :y, 0.0)
-    )
+        x = get(control_demand_vector, :x, 0.0),
+        y = get(control_demand_vector, :y, 0.0),
 
-    moment_control_inputs_out = (
         # Keep original demands
-        roll_demand = moment_control_inputs.roll_demand,
-        pitch_demand = moment_control_inputs.pitch_demand,
-        yaw_demand = moment_control_inputs.yaw_demand,
+        roll_demand = control_demand_vector.roll_demand,
+        pitch_demand = control_demand_vector.pitch_demand,
+        yaw_demand = control_demand_vector.yaw_demand,
         # Update attained values
         roll_demand_attained = roll_attained,
         pitch_demand_attained = pitch_attained,
         yaw_demand_attained = yaw_attained
     )
 
-    return force_control_inputs_out, moment_control_inputs_out
+    return control_demand_vector_attained_out
 end
 
 # Example of proper initialization:
 function initialize_control_inputs()
-    force_control_inputs = (
+    control_demand_vector = (
         thrust_setting_demand = 0.0,
         x = 0.0,
-        y = 0.0
-    )
+        y = 0.0,
 
-    moment_control_inputs = (
         # Initial demands (can be non-zero if needed)
         roll_demand = 0.0,
         pitch_demand = 0.0,
@@ -108,37 +103,5 @@ function initialize_control_inputs()
         yaw_demand_attained = 0.0
     )
 
-    return force_control_inputs, moment_control_inputs
-end
-
-# Example usage:
-function example_usage()
-    # Initialize aircraft model data
-    aircraft_model_data = Dict(:actuator_speed => 1.0)
-    
-    # Initialize control inputs with proper starting values
-    force_controls, moment_controls = initialize_control_inputs()
-    
-    # Simulation loop example
-    deltaTime = 0.01
-    for t in 1:100
-        # Update demanded values (example)
-        moment_controls = (
-            roll_demand = sin(t * deltaTime),  # Some varying demand
-            pitch_demand = cos(t * deltaTime), # Some varying demand
-            yaw_demand = 0.0,                 # Constant demand
-            # Keep current attained values
-            roll_demand_attained = moment_controls.roll_demand_attained,
-            pitch_demand_attained = moment_controls.pitch_demand_attained,
-            yaw_demand_attained = moment_controls.yaw_demand_attained
-        )
-        
-        # Convert demanded to attained
-        force_controls, moment_controls = convert_control_demanded_to_attained(
-            aircraft_model_data,
-            force_controls,
-            moment_controls,
-            deltaTime
-        )
-    end
+    return control_demand_vector
 end

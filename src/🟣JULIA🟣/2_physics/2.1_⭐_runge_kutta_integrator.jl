@@ -29,8 +29,7 @@ Typical usage:
 """
 function Runge_Kutta_4_integrator(
     state_vector,
-    force_control_inputs,
-    moment_control_inputs,
+    control_demand_vector,
     deltaTime,
     aircraft_model_data
 )
@@ -38,10 +37,9 @@ function Runge_Kutta_4_integrator(
     # -------------------------------------------------------------------------
     # 1. Convert demanded controls to the actually attainable controls
     #    (accounting for actuator dynamics).
-    force_control_inputs_attained, moment_control_inputs_attained = convert_control_demanded_to_attained(
+    control_demand_vector_attained = convert_control_demanded_to_attained(
         aircraft_model_data,
-        force_control_inputs,
-        moment_control_inputs,
+        control_demand_vector,
         deltaTime
     )
 
@@ -51,32 +49,28 @@ function Runge_Kutta_4_integrator(
     # k1
     k1, force_total_k1, alpha_k1, beta_k1 = compute_6DOF_equations_of_motion(
         state_vector,
-        force_control_inputs_attained,
-        moment_control_inputs_attained,
+        control_demand_vector_attained,
         aircraft_model_data
     )
 
     # k2
     k2, force_total_k2, alpha_k2, beta_k2 = compute_6DOF_equations_of_motion(
         state_vector .+ (deltaTime / 2) .* k1,
-        force_control_inputs_attained,
-        moment_control_inputs_attained,
+        control_demand_vector_attained,
         aircraft_model_data
     )
 
     # k3
     k3, force_total_k3, alpha_k3, beta_k3 = compute_6DOF_equations_of_motion(
         state_vector .+ (deltaTime / 2) .* k2,
-        force_control_inputs_attained,
-        moment_control_inputs_attained,
+        control_demand_vector_attained,
         aircraft_model_data
     )
 
     # k4
     k4, force_total_k4, alpha_k4, beta_k4 = compute_6DOF_equations_of_motion(
         state_vector .+ deltaTime .* k3,
-        force_control_inputs_attained,
-        moment_control_inputs_attained,
+        control_demand_vector_attained,
         aircraft_model_data
     )
 
@@ -153,11 +147,13 @@ function Runge_Kutta_4_integrator(
         :fz_global        => fz_global,
         :alpha_avg        => alpha_avg,
         :beta_avg         => beta_avg,
-        :pitch_demand_attained => moment_control_inputs_attained.pitch_demand_attained,
-        :roll_demand_attained  => moment_control_inputs_attained.roll_demand_attained,
-        :yaw_demand_attained   => moment_control_inputs_attained.yaw_demand_attained,
-        :pitch_demand          => moment_control_inputs.pitch_demand,
-        :roll_demand           => moment_control_inputs.roll_demand,
-        :yaw_demand            => moment_control_inputs.yaw_demand            
+
+        :pitch_demand_attained => control_demand_vector_attained.pitch_demand_attained,
+        :roll_demand_attained  => control_demand_vector_attained.roll_demand_attained,
+        :yaw_demand_attained   => control_demand_vector_attained.yaw_demand_attained,
+
+        :pitch_demand          => control_demand_vector.pitch_demand,
+        :roll_demand           => control_demand_vector.roll_demand,
+        :yaw_demand            => control_demand_vector.yaw_demand            
     )
 end

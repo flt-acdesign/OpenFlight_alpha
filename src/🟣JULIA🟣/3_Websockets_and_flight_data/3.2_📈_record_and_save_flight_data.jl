@@ -17,7 +17,7 @@ df = DataFrame(
 # Add a flag to track if the file has been written
 has_written_to_csv = false
 
-function gather_telemetry(aircraft_state_data, force_control_inputs, moment_control_inputs, elapsed_time, df)
+function gather_telemetry(aircraft_state_data, control_demand_vector, elapsed_time, df)
     # Make the flag variable accessible inside the function
     global has_written_to_csv
     
@@ -42,12 +42,14 @@ function gather_telemetry(aircraft_state_data, force_control_inputs, moment_cont
         fz_global = round(aircraft_state_data[:fz_global], digits=DECIMAL_PLACES),
         alpha = round(aircraft_state_data[:alpha_avg], digits=DECIMAL_PLACES),
         beta = round(aircraft_state_data[:beta_avg], digits=DECIMAL_PLACES), 
-        pitch_demand = round(moment_control_inputs[:pitch_demand], digits=DECIMAL_PLACES),
-        roll_demand = round(moment_control_inputs[:roll_demand], digits=DECIMAL_PLACES),
-        yaw_demand = round(moment_control_inputs[:yaw_demand], digits=DECIMAL_PLACES),
-        pitch_demand_attained = round(moment_control_inputs[:pitch_demand_attained], digits=DECIMAL_PLACES),
-        roll_demand_attained = round(moment_control_inputs[:roll_demand_attained], digits=DECIMAL_PLACES),
-        yaw_demand_attained = round(moment_control_inputs[:yaw_demand_attained], digits=DECIMAL_PLACES)
+
+        pitch_demand = round(control_demand_vector[:pitch_demand], digits=DECIMAL_PLACES),
+        roll_demand = round(control_demand_vector[:roll_demand], digits=DECIMAL_PLACES),
+        yaw_demand = round(control_demand_vector[:yaw_demand], digits=DECIMAL_PLACES),
+
+        pitch_demand_attained = round(control_demand_vector[:pitch_demand_attained], digits=DECIMAL_PLACES),
+        roll_demand_attained = round(control_demand_vector[:roll_demand_attained], digits=DECIMAL_PLACES),
+        yaw_demand_attained = round(control_demand_vector[:yaw_demand_attained], digits=DECIMAL_PLACES)
     ))
 
     # Write to CSV if elapsed_time is greater than 20 seconds and the file has not been written yet

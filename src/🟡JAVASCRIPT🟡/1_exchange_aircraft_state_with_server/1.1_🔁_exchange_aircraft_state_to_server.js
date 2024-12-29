@@ -35,12 +35,15 @@ function sendStateToServer(deltaTime) {
         fx: forceX,
         fy: forceY,
         thrust_setting_demand: thrust_setting_demand,
+
         roll_demand: roll_demand,
         pitch_demand: pitch_demand,
         yaw_demand: yaw_demand,
+
         roll_demand_attained: roll_demand_attained,
         pitch_demand_attained: pitch_demand_attained,
         yaw_demand_attained: yaw_demand_attained,
+
         deltaTime: deltaTime
     };
 
@@ -78,11 +81,12 @@ ws.onmessage = (event) => {
         orientation.w
     );
 
-    alpha_DEG = parseFloat(responseData.alpha);
-    beta_DEG = parseFloat(responseData.beta);
-    pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);
-    roll_demand_attained = parseFloat(responseData.roll_demand_attained);
-    yaw_demand_attained = parseFloat(responseData.yaw_demand_attained);
+    alpha_DEG = parseFloat(responseData.alpha)
+    beta_DEG = parseFloat(responseData.beta)
+
+    pitch_demand_attained = parseFloat(responseData.pitch_demand_attained)
+    roll_demand_attained = parseFloat(responseData.roll_demand_attained)
+    yaw_demand_attained = parseFloat(responseData.yaw_demand_attained)
     
     updateVelocityLine();
     updateForceLine();

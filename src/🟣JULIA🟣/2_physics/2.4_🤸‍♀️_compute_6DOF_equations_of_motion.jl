@@ -1,6 +1,6 @@
 # This function is called by the Runge-Kutta integrator
 
-function compute_6DOF_equations_of_motion(s_local, force_control_inputs, moment_control_inputs, aircraft_data::Aircraft_Model_Data_structure)
+function compute_6DOF_equations_of_motion(s_local,  control_demand_vector_attained, aircraft_data::Aircraft_Model_Data_structure)
 
     latitude, altitude, longitude = s_local[1], s_local[2], s_local[3] # in global axis  (latitude and longitude are not used unless the simulator limits the range)
     vx, vy, vz = s_local[4], s_local[5], s_local[6] # in global axis
@@ -27,7 +27,7 @@ function compute_6DOF_equations_of_motion(s_local, force_control_inputs, moment_
     beta_RAD  = -1.0 * angle(complex(v_body[1], v_body[3]))  # defined as per eq. 7.1.4 Phillips 1st Edition
     
     # Compute thrust force value in Newtons from the position of the thrust lever, the altitude and the speed
-    propulsive_force_vector_body_N = compute_net_thrust_force_vector_body(force_control_inputs.thrust_setting_demand, altitude, v_body_mag, aircraft_data)
+    propulsive_force_vector_body_N = compute_net_thrust_force_vector_body(control_demand_vector_attained.thrust_setting_demand, altitude, v_body_mag, aircraft_data)
 
     # Compute aerodynamic force coefficients in wind axis
     CL = compute_lift_coefficient(alpha_RAD, beta_RAD, v_body_mag, aircraft_data) # lift coefficient
@@ -75,12 +75,12 @@ function compute_6DOF_equations_of_motion(s_local, force_control_inputs, moment_
 
         # Compute aircraft control moments in body axes
         control_moment_body_vector = aircraft_data.wing_mean_aerodynamic_chord * aircraft_data.reference_area * dynamic_pressure .* [
-            compute_rolling_moment_coefficient(moment_control_inputs.roll_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )      ,    
-            compute_yawing_moment_coefficient(moment_control_inputs.yaw_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data ) ,
-            compute_pitching_moment_coefficient(moment_control_inputs.pitch_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )    
+            compute_rolling_moment_coefficient(control_demand_vector_attained.roll_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )      ,    
+            compute_yawing_moment_coefficient(control_demand_vector_attained.yaw_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data ) ,
+            compute_pitching_moment_coefficient(control_demand_vector_attained.pitch_demand_attained, alpha_RAD, beta_RAD, v_body_mag, aircraft_data )    
             ]
 
-            #println( string(moment_control_inputs.roll_demand_attained) * "  " * string(moment_control_inputs.roll_demand))
+            #println( string(control_demand_vector_attained.roll_demand_attained) * "  " * string(control_demand_vector_attained.roll_demand))
     
         # Compute aircraft static stability moments in body axes
         static_stability_moment_body_vector = aircraft_data.wing_mean_aerodynamic_chord * aircraft_data.reference_area * dynamic_pressure .* [  # Move all these ad-hoc coefficient to aircraft_data, like all the others
