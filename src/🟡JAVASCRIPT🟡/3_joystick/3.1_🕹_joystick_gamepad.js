@@ -130,7 +130,9 @@ function detectControllerType(gamepad) {
       // XBOX Controller
       if (type === 'XBOX') {
         // Map axes
-        thrust_setting_demand = -1 * axes[1]; // Left stick vertical
+        
+        thrust_setting_demand =  (-1 * axes[1]  + 1 ) / 2              // Left stick vertical
+
         roll_demand = -1.0 * axes[2];         // Right stick horizontal
         pitch_demand = 1.0 * axes[3];         // Right stick vertical
         yaw_demand = 1.0 * axes[0];          // Left stick horizontal
@@ -161,10 +163,10 @@ function detectControllerType(gamepad) {
         }
       }
   
-      // GENERIC Controller
+      // GENERIC Controller (Joystick)
       else {
         // Map axes
-        thrust_setting_demand = -1 * axes[2]; // Possibly left stick vertical
+        thrust_setting_demand = -1 * axes[2]   // Thrust lever
         roll_demand = -1.0 * axes[0];
         pitch_demand = 1.0 * axes[1];
         yaw_demand = 1.0 * axes[5];

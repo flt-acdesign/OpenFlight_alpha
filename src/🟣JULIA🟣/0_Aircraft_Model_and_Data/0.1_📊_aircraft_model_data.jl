@@ -26,7 +26,10 @@ struct Aircraft_Model_Data_structure
     thrust_installation_angle_DEG::Float64  # Angle of tilt of thrust line with respect to x axis, positive upwards
     I_body::Matrix{Float64} # Inertia tensor in body axes. General 3x3 matrix
 
-    control_actuator_speed::Float64  # Actuator speed in rad/s
+    control_actuator_speed::Float64  # Actuator speed in ratio of amplitude per second
+    engine_spool_up_speed::Float64  # Engine spool-up speed in ratio of max thrust per second
+    engine_spool_down_speed::Float64  # Engine spool-down speed in ratio of max thrust per second
+
 
 end
 
@@ -59,7 +62,7 @@ const aircraft_model_data = Aircraft_Model_Data_structure(
     -0.0001,     # Yaw damping coefficient
 
     # Thrust parameters
-    90.0,        # maximum_thrust_at_sea_level, Maximum static thrust at sea level (N)
+    120.0,        # maximum_thrust_at_sea_level, Maximum static thrust at sea level (N)
     0.0,         # thrust_installation_angle_DEG, Angle of tilt of thrust line with respect to x axis, positive upwards
 
     # Aircraft inertia tensor
@@ -68,18 +71,23 @@ const aircraft_model_data = Aircraft_Model_Data_structure(
       0.0 0.0 1/6 ], # Aircraft Inertial tensor in body axes. General 3x3 inertia tensor.
 
 
-    3.0         # control_actuator_speed, 300% of amplitude per second
+    3.0,         # control_actuator_speed, 300% of amplitude per second
+    1.3,  # Engine spool-up speed in ratio of max thrust per second
+    1.1  # Engine spool-up speed in ratio of max thrust per second
+
+
 
 )
 
 
 
 function compute_net_thrust_force_vector_body(thrust_setting_demand, alt, tas, aircraft_data)  
-        # Calculate thrust force based on thrust lever input
+        
+    # Calculate thrust force based on thrust lever input
         if thrust_setting_demand >= 0.0
             thrust_ratio = thrust_setting_demand 
         else
-            thrust_ratio = thrust_setting_demand * 0.3
+            thrust_ratio = thrust_setting_demand * 0.3   # Max. reverse thrust is 30% of forward thrust (not implemented yet)
         end   
         thrust_force = thrust_ratio * aircraft_data.maximum_thrust_at_sea_level 
         return [thrust_force * cos(deg2rad(aircraft_data.thrust_installation_angle_DEG)), thrust_force * sin(deg2rad(aircraft_data.thrust_installation_angle_DEG)),  0.0]

@@ -148,6 +148,9 @@ function Runge_Kutta_4_integrator(
         :alpha_avg        => alpha_avg,
         :beta_avg         => beta_avg,
 
+        :thrust_setting_demand => control_demand_vector_attained.thrust_setting_demand,
+        :thrust_attained => control_demand_vector_attained.thrust_attained,
+
         :pitch_demand_attained => control_demand_vector_attained.pitch_demand_attained,
         :roll_demand_attained  => control_demand_vector_attained.roll_demand_attained,
         :yaw_demand_attained   => control_demand_vector_attained.yaw_demand_attained,

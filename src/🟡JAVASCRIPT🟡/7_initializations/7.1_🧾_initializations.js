@@ -27,6 +27,7 @@ let material; // Material for the aircraft
 let forceX = 0.0;
 let forceY = 0.0;
 let thrust_setting_demand = 0.0
+let thrust_attained = 0.0
 
 let roll_demand = 0.0;
 let pitch_demand = 0.0

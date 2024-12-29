@@ -27,7 +27,7 @@ function compute_6DOF_equations_of_motion(s_local,  control_demand_vector_attain
     beta_RAD  = -1.0 * angle(complex(v_body[1], v_body[3]))  # defined as per eq. 7.1.4 Phillips 1st Edition
     
     # Compute thrust force value in Newtons from the position of the thrust lever, the altitude and the speed
-    propulsive_force_vector_body_N = compute_net_thrust_force_vector_body(control_demand_vector_attained.thrust_setting_demand, altitude, v_body_mag, aircraft_data)
+    propulsive_force_vector_body_N = compute_net_thrust_force_vector_body(control_demand_vector_attained.thrust_attained, altitude, v_body_mag, aircraft_data)
 
     # Compute aerodynamic force coefficients in wind axis
     CL = compute_lift_coefficient(alpha_RAD, beta_RAD, v_body_mag, aircraft_data) # lift coefficient
