@@ -48,6 +48,8 @@ function setupCameras(scene, canvas, shadowGenerator) {
         scene
     );
     cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
+  
+
 
     // Create wing camera (external view)
     const wingCamera = new BABYLON.UniversalCamera(
@@ -83,10 +85,13 @@ function setupCameras(scene, canvas, shadowGenerator) {
             0
         );
 
+
         // Configure wing camera
         wingCamera.parent = aircraft;
-        wingCamera.position.set(-0.5, 1, -7);
-        wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, 0, 0);
+        wingCamera.position.set(-1.5, .5, -3.2);
+        wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0);
+            // Set a wider FOV (default is ~0.8 radians or 45 degrees)
+            wingCamera.fov = 1.9; // Approximately 85 degrees in radians
     };
 
     // Initial camera update if aircraft exists
