@@ -8,14 +8,11 @@
  *   - y is the vertical axis (height).
  **************************************************************/
 function createWorldScenery(scene, shadowGenerator, camera) {
-    // Wavelengths along the x and z axes:
-    // Larger wavelengths => broader "hills" in that direction.
-    const xWavelength = 833;   // "Valley size" in X
-    const zWavelength = 500;   // "Valley size" in Z
+    // Wavelengths along the x and z axes (for the undulationMap)
+    const xWavelength = 833;   
+    const zWavelength = 500;   
 
-    // Store config parameters for ground undulation in the scene.
-    // freqX and freqZ determine how "quickly" the ground waves repeat.
-    // amplitude controls the overall height variation.
+    // Store config parameters for ground undulation in the scene
     scene.groundConfig = {
         freqX: 1 / xWavelength,
         freqZ: 1 / zWavelength,
@@ -25,16 +22,12 @@ function createWorldScenery(scene, shadowGenerator, camera) {
     // Create the sky sphere behind/around everything
     createSkySphere(scene, camera);
 
-    // Create the segmented ground based on our ground config
+    // Create the segmented ground with custom vertex colors
     createSegmentedGround(scene, scene.groundConfig);
 
-    // Create a reference cube tower (for orientation near origin)
+    // (Optional) create reference objects, trees, runway, etc.
     createReferenceCube(scene, shadowGenerator);
-
-    // Scatter some random trees around the terrain
     createRandomTrees(scene, shadowGenerator, scene.groundConfig);
-
-    // Create a runway that follows the terrain waves
     createRunway(scene, scene.groundConfig);
 
     // Configure linear fog for atmospheric depth
@@ -94,21 +87,7 @@ function createSkySphere(scene, camera) {
     skySphere.position.copyFrom(camera.target);
 }
 
-/***************************************************************
- * Updates the sky sphere position so that it always follows
- * the active camera in the scene. This prevents the sky from
- * getting clipped in large worlds.
- **************************************************************/
-function updateSkySpherePosition(scene) {
-    const skySphere = scene.getMeshByName("skySphere");
-    if (skySphere && scene.activeCamera) {
-        skySphere.position.x = scene.activeCamera.position.x;
-        skySphere.position.z = scene.activeCamera.position.z;
-        // We typically leave y alone if the sky is large enough,
-        // but you could also track y if desired:
-        // skySphere.position.y = scene.activeCamera.position.y;
-    }
-}
+
 
 /***************************************************************
  * Creates a segmented ground out of multiple "tiles."
@@ -121,69 +100,166 @@ function updateSkySpherePosition(scene) {
  *   amplitude: number
  * }
  **************************************************************/
+/***************************************************************
+ * Creates a segmented ground out of multiple "tiles."
+ * Each tile is subdivided so we can raise/lower its vertices
+ * to create rolling hills.
+ * 
+ * We use per-vertex coloring:
+ *   - If vertex height < 0.1*amplitude => checkerboard pattern
+ *   - Otherwise => color gradient from dark green to white.
+ *
+ * groundConfig = {
+ *   freqX: number,
+ *   freqZ: number,
+ *   amplitude: number
+ * }
+ **************************************************************/
+
+/***************************************************************
+ * Creates a segmented ground out of multiple "tiles."
+ * Each tile is subdivided so we can raise/lower its vertices
+ * to create rolling hills.
+ *
+ * Uses per-vertex coloring:
+ *   1) If original y < -11, clamp y to -11 and color dark blue.
+ *   2) If -11 <= y < -10, color sand.
+ *   3) Otherwise, if y < threshold => checkerboard of 3-tone green vs 3-tone brown.
+ *   4) Else use color gradient: dark green -> light brown -> dark brown -> white
+ *
+ * groundConfig = {
+ *   freqX: number,
+ *   freqZ: number,
+ *   amplitude: number
+ * }
+ **************************************************************/
+/***************************************************************
+ * Creates a segmented ground out of multiple "tiles."
+ * Each tile is subdivided so we can raise/lower its vertices
+ * to create rolling hills.
+ *
+ * Logic overview:
+ *   1) If yVal < -11 => clamp to -11, color deep blue.
+ *   2) Else if -11 <= yVal < -10 => sand color.
+ *   3) Else if inside region (x in -300..300, z in -200..200):
+ *       - if yVal < threshold => checkerboard
+ *       - else => gradient
+ *   4) Else (outside region):
+ *       - if yVal < 30 => dark green
+ *       - else => white
+ **************************************************************/
+/***************************************************************
+ * Creates a segmented ground out of multiple "tiles."
+ * Each tile is subdivided so we can raise/lower its vertices
+ * to create rolling hills. We'll use per-vertex coloring:
+ *
+ *  1) If yVal < -11  => clamp to -11, color deep blue.
+ *  2) If -11 <= yVal < -10 => sand color.
+ *  3) If yVal >= -10 and we're inside region (x in -300..300, z in -200..200):
+ *     - if yVal < threshold => checkerboard
+ *     - else => color gradient (dark green -> light brown -> dark brown -> white)
+ *  4) Outside region:
+ *     - A multi-stop gradient from dark green at y=30 to dark brown at y=70, to white at y=100+.
+ *
+ * groundConfig = {
+ *   freqX: number,  // wave frequency in X
+ *   freqZ: number,  // wave frequency in Z
+ *   amplitude: number // overall vertical scale
+ * }
+ *
+ * This function requires:
+ *   - undulationMap(x, z, freqX, freqZ, amplitude)   // calculates terrain height
+ *   - randomGreenColor() and randomBrownColor()      // generate random color3
+ **************************************************************/
 function createSegmentedGround(scene, groundConfig) {
-    // Number of tiles (segments) in each dimension
-    const segmentCount = 20;
+    // 1) Basic parameters
+    const segmentCount = 40;     // how many segments in each dimension
+    const segmentSize = 200;     // size of each segment
+    const threshold = 0.1 * groundConfig.amplitude;
 
-    // Physical size of each tile in world units
-    const segmentSize = 300;
-
-    // Dynamic texture size (checkerboard)
-    const textureSize = 128;
-
-    // Prepare a checkerboard dynamic texture for the ground
-    const groundTexture = new BABYLON.DynamicTexture(
-        "groundTexture",
-        { width: textureSize, height: textureSize },
-        scene
-    );
-    const ctx = groundTexture.getContext();
-
-    // Colors for the checker pattern
-    const halfSize = textureSize / 2;
-    const color1 = "#228B22"; // ForestGreen
-    const color2 = "#006400"; // DarkGreen
-
-    // Draw top-left square
-    ctx.fillStyle = color1;
-    ctx.fillRect(0, 0, halfSize, halfSize);
-
-    // Draw top-right square
-    ctx.fillStyle = color2;
-    ctx.fillRect(halfSize, 0, halfSize, halfSize);
-
-    // Draw bottom-left square
-    ctx.fillStyle = color2;
-    ctx.fillRect(0, halfSize, halfSize, halfSize);
-
-    // Draw bottom-right square
-    ctx.fillStyle = color1;
-    ctx.fillRect(halfSize, halfSize, halfSize, halfSize);
-
-    // Commit the texture changes
-    groundTexture.update();
-
-    // Material for the ground
+    // 2) Create one material that uses vertex colors
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-    groundMaterial.diffuseTexture = groundTexture;
+    groundMaterial.useVertexColors = true;
     groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     groundMaterial.fogEnabled = true;
 
-    // Set texture wrapping so it repeats across each tile
-    groundTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
-    groundTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
+    // 3) Define an array of green tones (for patches below threshold)
+    const greenColors = [
+        new BABYLON.Color3(67/255, 122/255, 27/255),
+        new BABYLON.Color3(10/255, 79/255, 10/255),
+        new BABYLON.Color3(19/255, 89/255, 20/255),
+        new BABYLON.Color3(57/255, 132/255, 27/255),
+        new BABYLON.Color3(10/255, 99/255, 10/255),
+        new BABYLON.Color3(29/255, 89/255, 30/255),
+        new BABYLON.Color3(245/255, 163/255, 18/255),
+        new BABYLON.Color3(171/255, 110/255, 4/255)
+    ];
 
-    // Extract relevant config
+    // We'll store a random color for each patch so it's consistent
+    const patchColorMap = {};
+
+    /**
+     * Assign a random color from greenColors to the patch
+     * determined by (patchX, patchZ). Then reuse that color
+     * for all vertices in the same patch.
+     */
+    function getPatchColor(worldX, worldZ) {
+        const patchSize = 200;  // each square is 200×200
+        const patchX = Math.floor(worldX / patchSize);
+        const patchZ = Math.floor(worldZ / patchSize);
+
+        // Unique key to identify each patch
+        const patchKey = `${patchX}_${patchZ}`;
+
+        // If we haven't stored a color yet for this patch, pick one randomly
+        if (!patchColorMap[patchKey]) {
+            const randomIndex = Math.floor(Math.random() * greenColors.length);
+            patchColorMap[patchKey] = greenColors[randomIndex];
+        }
+
+        return patchColorMap[patchKey];
+    }
+
+    // 4) Helper for smooth color transitions
+    function lerpColor(c1, c2, t) {
+        // clamp t into [0..1]
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        return new BABYLON.Color3(
+            c1.r * (1 - t) + c2.r * t,
+            c1.g * (1 - t) + c2.g * t,
+            c1.b * (1 - t) + c2.b * t
+        );
+    }
+
+    /**
+     * 5) Add randomness to a color to reduce uniform appearance.
+     *    Range determines how large the random offset can be for each channel.
+     *    Example: range=0.05 => ±5% random variation in each channel.
+     */
+    function randomizeColor(color, range = 0.05) {
+        const newR = clamp01(color.r + (Math.random() - 0.5) * range);
+        const newG = clamp01(color.g + (Math.random() - 0.5) * range);
+        const newB = clamp01(color.b + (Math.random() - 0.5) * range);
+        return new BABYLON.Color3(newR, newG, newB);
+    }
+
+    // Helper to clamp a value to [0..1]
+    function clamp01(value) {
+        return Math.max(0, Math.min(1, value));
+    }
+
+    // 6) Extract config
     const { freqX, freqZ, amplitude } = groundConfig;
 
-    // Generate multiple ground segments
+    // 7) Build each ground segment
     for (let i = 0; i < segmentCount; i++) {
         for (let j = 0; j < segmentCount; j++) {
-            // Compute the center X and Z positions for each tile
+            // Center X, Z of this tile
             const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
             const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
 
-            // Build a ground mesh with subdivisions, so we can "bend" it
+            // Create subdivided ground tile
             const groundSegment = BABYLON.MeshBuilder.CreateGround(
                 `groundSegment_${i}_${j}`,
                 {
@@ -195,39 +271,118 @@ function createSegmentedGround(scene, groundConfig) {
                 scene
             );
 
-            // Position this tile so it lines up in the grid
-            groundSegment.position.x = centerX;
-            groundSegment.position.z = centerZ;
-
-            // Assign our checker material
+            groundSegment.position.set(centerX, 0, centerZ);
             groundSegment.material = groundMaterial;
             groundSegment.receiveShadows = true;
             groundSegment.isAlwaysActive = true;
 
-            // Retrieve the vertex data so we can displace it
+            // Pull out vertex data
             const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
             const indices = groundSegment.getIndices();
+            const colors = [];
 
-            // Adjust each vertex's y (height) based on a wave function
             for (let v = 0; v < positions.length; v += 3) {
                 const localX = positions[v];
                 const localZ = positions[v + 2];
 
-                // Convert local coordinates to world coordinates
+                // Convert to world coords
                 const worldX = localX + centerX;
                 const worldZ = localZ + centerZ;
 
-                // Compute the new height in y
-                const newHeight = undulationMap(worldX, worldZ, freqX, freqZ, amplitude);
+                // Terrain height from undulation
+                let yVal = undulationMap(worldX, worldZ, freqX, freqZ, amplitude);
 
-                // If you want a "floor" effect, clamp negative heights
-                positions[v + 1] = Math.max(newHeight, 0);
+                // 1) Very low => clamp to -14, deep blue
+                if (yVal < -14) {
+                    yVal = -14;
+                    // Slight randomness in the blue color (range ~0.02)
+                    const deepBlue = randomizeColor(new BABYLON.Color3(0.040, 0.0, 0.12), 0.02);
+                    colors.push(deepBlue.r, deepBlue.g, deepBlue.b, 1.0);
+                }
+                // 2) Next band => -11..-10 => sand
+                else if (yVal < -10) {
+                    // Slight randomness in sand color
+                    const sand = randomizeColor(new BABYLON.Color3(0.76, 0.70, 0.50), 0.02);
+                    colors.push(sand.r, sand.g, sand.b, 1.0);
+                }
+                // 3) Above -10, check if we're inside the special region
+                else {
+                    const insideRegion =
+                        worldX > -450 && worldX < 350 &&
+                        worldZ > -3000 && worldZ < 3000;
+
+                    if (insideRegion) {
+                        // If yVal < threshold => checker patches, else 4-band gradient
+                        if (yVal < threshold) {
+                            // Each 200×200 patch picks one random color from greenColors
+                            const patchColor = getPatchColor(worldX, worldZ);
+                            // Add slight randomness
+                            const patchColorRandom = randomizeColor(patchColor, 0.05);
+                            colors.push(patchColorRandom.r, patchColorRandom.g, patchColorRandom.b, 1.0);
+                        } else {
+                            // 4-band gradient: dark green -> light brown -> dark brown -> white
+                            let finalColor;
+                            if (yVal < 0.3 * amplitude) {
+                                // Dark Green
+                                finalColor = new BABYLON.Color3(0.0, 0.3, 0.0);
+                            } else if (yVal < 0.5 * amplitude) {
+                                // Light Brown
+                                finalColor = new BABYLON.Color3(0.4, 0.4, 0.2);
+                            } else if (yVal < 0.8 * amplitude) {
+                                // Dark Brown
+                                finalColor = new BABYLON.Color3(0.3, 0.12, 0.01);
+                            } else {
+                                // White
+                                finalColor = new BABYLON.Color3(1.0, 1.0, 1.0);
+                            }
+                            // Randomize each vertex’s final color slightly
+                            finalColor = randomizeColor(finalColor, 0.05);
+                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                        }
+                    } else {
+                        // Outside region => multi-stop gradient from y=30 to 220 to 250
+                        if (yVal < 30) {
+                            // Dark Green
+                            let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.3, 0.0), 0.05);
+                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                        } 
+                        else if (yVal < 220) {
+                            // Dark Green -> Dark Brown
+                            const t = (yVal - 30) / (220 - 30);
+                            const grad1 = new BABYLON.Color3(0.0, 0.3, 0.0); 
+                            const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
+                            let finalColor = lerpColor(grad1, grad2, t);
+                            // Add random offset
+                            finalColor = randomizeColor(finalColor, 0.05);
+                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                        } 
+                        else if (yVal < 250) {
+                            // Dark Brown -> White
+                            const t = (yVal - 220) / (250 - 220);
+                            const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
+                            const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
+                            let finalColor = lerpColor(grad1, grad2, t);
+                            // Add random offset
+                            finalColor = randomizeColor(finalColor, 0.05);
+                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                        } 
+                        else {
+                            // yVal >= 250 => white
+                            let finalColor = randomizeColor(new BABYLON.Color3(1.0, 1.0, 1.0), 0.05);
+                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                        }
+                    }
+                }
+
+                // Write final y back
+                positions[v + 1] = yVal;
             }
 
-            // Push the updated positions back into the mesh
-            groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions, true);
+            // Store updated geometry
+            groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+            groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
 
-            // Recompute normals for correct lighting/shading
+            // Recompute normals for proper shading
             const normals = [];
             BABYLON.VertexData.ComputeNormals(positions, indices, normals);
             groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
@@ -235,24 +390,20 @@ function createSegmentedGround(scene, groundConfig) {
     }
 }
 
+
+
+
+
+
 /***************************************************************
- * Custom function to calculate a "wave height" (undulation) at
- * any (x, z) coordinate. Uses multiple sine wave octaves to
- * create more interesting terrain.
- *
- * freqX, freqZ: wave frequencies along X and Z
- * amplitude:    overall vertical scale
- *
- * Returns the height y at coordinate (x, z).
- **************************************************************/
+ * Example terrain function for generating terrain heights
+ ***************************************************************/
 function undulationMap(x, z, freqX, freqZ, amplitude) {
-    // baseWave introduces a wave that depends on x and z
     let baseWave =
-        (Math.sin(freqX * x * 1.1)) ** 1 *
-        (Math.sin(freqZ * z * x / 1000)) ** 1 *
+        (Math.sin(freqX * x * 1.1)) *
+        (Math.sin(freqZ * z * x / 1000)) *
         2;
 
-    // octave1, octave2, octave3 are additional wave layers
     let octave1 =
         (Math.sin(freqX * 2 * x)) ** 2 *
         (Math.cos(freqZ * 2 * z)) ** 2 *
@@ -261,24 +412,23 @@ function undulationMap(x, z, freqX, freqZ, amplitude) {
     let octave2 =
         (Math.sin(freqX * 5 * x)) ** 4 *
         (Math.sin(freqZ * 5 * z)) ** 6 *
-        0.3
+        0.3;
 
     let octave3 =
         (Math.sin(freqX * 8 * x)) ** 8 *
         (Math.sin(freqZ * 8 * z)) ** 8 *
-        0.06
+        0.06;
 
-    // Combine them and scale by amplitude
+    // Combine them and scale
     let heightY = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1000);
 
-    // Flatten region near the origin if desired (e.g., runway area).
-    // Example: if (|x| < 100 and |z| < 300), we force height=0
+    // Flatten near origin if desired
     if (Math.abs(x) < 100 && Math.abs(z) < 300) {
         heightY = 0;
     }
-
     return heightY;
 }
+
 
 /***************************************************************
  * Creates a number of random "trees" across the terrain.
@@ -299,7 +449,7 @@ function createRandomTrees(scene, shadowGenerator, groundConfig) {
 
         // Random position in the x-z plane
         // (Adjust range to whatever region you want the trees scattered)
-        const xCoord = Math.random() * 580 + 90;   // e.g., 90 -> 670
+        const xCoord = Math.random() * 580 + 390;   // e.g., 90 -> 670
         const zCoord = Math.random() * 580 - 90;   // e.g., -90 -> 490
 
         // Find the terrain height at (xCoord, zCoord)

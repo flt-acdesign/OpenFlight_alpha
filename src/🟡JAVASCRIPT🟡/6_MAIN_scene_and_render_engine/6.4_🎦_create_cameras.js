@@ -19,7 +19,7 @@ function setupCameras(scene, canvas, shadowGenerator) {
     // Configure main camera properties
     camera.minZ = 0.1;                    // Nearest viewing distance
     camera.maxZ = 5000;                   // Farthest viewing distance
-    camera.fov = 0.647;                   // Field of view in radians
+    camera.fov = 0.47;                   // Field of view in radians
     camera.attachControl(canvas, true);    // Enable camera controls
     camera.upperBetaLimit = Math.PI;      // Maximum vertical rotation
     camera.lowerBetaLimit = 0;            // Minimum vertical rotation
@@ -32,14 +32,14 @@ function setupCameras(scene, canvas, shadowGenerator) {
     // Create and configure the follow (chase) camera
     const pilotCamera = new BABYLON.FollowCamera(
         "pilotCamera",
-        new BABYLON.Vector3(0, 10, -10),  // Initial position
+        new BABYLON.Vector3(0, 10, -1),  // Initial position
         scene
     );
     pilotCamera.heightOffset = 5;         // Height above target
     pilotCamera.rotationOffset = 180;     // Rotation around target
     pilotCamera.cameraAcceleration = 0.0005;  // Follow movement smoothing
-    pilotCamera.maxCameraSpeed = 1;       // Maximum follow speed
-    pilotCamera.radius = -15;             // Distance from target
+    pilotCamera.maxCameraSpeed = 30;       // Maximum follow speed
+    pilotCamera.radius = -10;             // Distance from target
 
     // Create cockpit camera (first-person view)
     const cockpitCamera = new BABYLON.UniversalCamera(
@@ -48,6 +48,7 @@ function setupCameras(scene, canvas, shadowGenerator) {
         scene
     );
     cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
+    cockpitCamera.fov = 0.87; 
   
 
 
