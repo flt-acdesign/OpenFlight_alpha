@@ -5,7 +5,7 @@ function createScene(engine, canvas) {
   const {lights, shadowGenerator} = setupLights_and_shadows(scene);
   createAircraft(shadowGenerator, scene)
   const {camera, pilotCamera, cockpitCamera} = setupCameras(scene, canvas);
-  create_world_scenery(scene, shadowGenerator, camera);
+  createWorldScenery(scene, shadowGenerator, camera);
   createVelocityLine();
   createForceLine();
   createGUI();
@@ -25,7 +25,7 @@ function setupEventListeners(scene, shadowGenerator) {
 
 function setupAnimations(scene) {
   scene.onBeforeRenderObservable.add(() => {
-      updateSkySpherePosition(scene);
+      //updateSkySpherePosition(scene);
   });
 }
 
