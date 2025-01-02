@@ -1,24 +1,24 @@
 # This function is called by the Runge-Kutta integrator.
 function compute_6DOF_equations_of_motion(
-    aircraft_state,
+    aircraft_state_vector,
     control_demand_vector_attained,
     aircraft_data :: NamedTuple  # now a named tuple, not a Dict
 )
 
     # === UNPACK THE AIRCRAFT STATE ===
     # Reordered to match the parameter naming in the original code:
-    #    aircraft_state[1] = latitude
-    #    aircraft_state[2] = altitude
-    #    aircraft_state[3] = longitude
-    latitude  = aircraft_state[1]
-    altitude  = aircraft_state[2]
-    longitude = aircraft_state[3]
+    #    aircraft_state_vector[1] = latitude
+    #    aircraft_state_vector[2] = altitude
+    #    aircraft_state_vector[3] = longitude
+    latitude  = aircraft_state_vector[1]
+    altitude  = aircraft_state_vector[2]
+    longitude = aircraft_state_vector[3]
 
-    vx, vy, vz = aircraft_state[4], aircraft_state[5], aircraft_state[6]
+    vx, vy, vz = aircraft_state_vector[4], aircraft_state_vector[5], aircraft_state_vector[6]
 
-    qx, qy, qz, qw = aircraft_state[7], aircraft_state[8], aircraft_state[9], aircraft_state[10]
+    qx, qy, qz, qw = aircraft_state_vector[7], aircraft_state_vector[8], aircraft_state_vector[9], aircraft_state_vector[10]
 
-    p_roll_rate, r_yaw_rate, q_pitch_rate = aircraft_state[11], aircraft_state[12], aircraft_state[13]
+    p_roll_rate, r_yaw_rate, q_pitch_rate = aircraft_state_vector[11], aircraft_state_vector[12], aircraft_state_vector[13]
 
     # Reconstruct quaternion for orientation state and ensure normalization to prevent numerical drift
     global_orientation_quaternion = quat_normalize([qw, qx, qy, qz])
@@ -49,7 +49,7 @@ function compute_6DOF_equations_of_motion(
         altitude,
         v_body_mag,
         aircraft_data,  # now a named tuple
-        aircraft_state,
+        aircraft_state_vector,
         control_demand_vector_attained
     )
 
@@ -57,20 +57,20 @@ function compute_6DOF_equations_of_motion(
     CL = 🟢_compute_lift_coefficient(
              alpha_RAD, beta_RAD, v_body_mag,
              aircraft_data,  # named tuple
-             aircraft_state,
+             aircraft_state_vector,
              control_demand_vector_attained
          )
     CD = 🟢_compute_drag_coefficient(
              alpha_RAD, beta_RAD, v_body_mag,
              aircraft_data,  # named tuple
              CL,
-             aircraft_state,
+             aircraft_state_vector,
              control_demand_vector_attained
          )
     CS = 🟢_compute_sideforce_coefficient(
              alpha_RAD, beta_RAD, v_body_mag,
              aircraft_data,  # named tuple
-             aircraft_state,
+             aircraft_state_vector,
              control_demand_vector_attained
          )
 
@@ -134,21 +134,21 @@ function compute_6DOF_equations_of_motion(
                 control_demand_vector_attained.roll_demand_attained,
                 alpha_RAD, beta_RAD, v_body_mag,
                 aircraft_data,  # named tuple
-                aircraft_state,
+                aircraft_state_vector,
                 control_demand_vector_attained
             ),
             🟢_compute_yawing_moment_coefficient(
                 control_demand_vector_attained.yaw_demand_attained,
                 alpha_RAD, beta_RAD, v_body_mag,
                 aircraft_data,  # named tuple
-                aircraft_state,
+                aircraft_state_vector,
                 control_demand_vector_attained
             ),
             🟢_compute_pitching_moment_coefficient(
                 control_demand_vector_attained.pitch_demand_attained,
                 alpha_RAD, beta_RAD, v_body_mag,
                 aircraft_data,  # named tuple
-                aircraft_state,
+                aircraft_state_vector,
                 control_demand_vector_attained
             )
         ]
@@ -199,7 +199,7 @@ function compute_6DOF_equations_of_motion(
             alpha_ang_body[2],
             alpha_ang_body[3]  # dωx/dt, dωy/dt, dωz/dt
         ],
-        total_propulsive_plus_aerodynamic_force_vector_global_N,
+        total_propulsive_plus_aerodynamic_force_vector_global_N,  # OJO!!! actualizar estructura de datos y cómo se recibe
         rad2deg(alpha_RAD),  # Angle of attack (deg)
         rad2deg(beta_RAD),   # Sideslip angle (deg)
         p_roll_rate, r_yaw_rate, q_pitch_rate
