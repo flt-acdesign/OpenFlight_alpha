@@ -92,65 +92,6 @@ function createSkySphere(scene, camera) {
 /***************************************************************
  * Creates a segmented ground out of multiple "tiles."
  * Each tile is subdivided so we can raise/lower its vertices
- * to create rolling hills. Uses a simple checker pattern as the texture.
- *
- * groundConfig = {
- *   freqX: number,
- *   freqZ: number,
- *   amplitude: number
- * }
- **************************************************************/
-/***************************************************************
- * Creates a segmented ground out of multiple "tiles."
- * Each tile is subdivided so we can raise/lower its vertices
- * to create rolling hills.
- * 
- * We use per-vertex coloring:
- *   - If vertex height < 0.1*amplitude => checkerboard pattern
- *   - Otherwise => color gradient from dark green to white.
- *
- * groundConfig = {
- *   freqX: number,
- *   freqZ: number,
- *   amplitude: number
- * }
- **************************************************************/
-
-/***************************************************************
- * Creates a segmented ground out of multiple "tiles."
- * Each tile is subdivided so we can raise/lower its vertices
- * to create rolling hills.
- *
- * Uses per-vertex coloring:
- *   1) If original y < -11, clamp y to -11 and color dark blue.
- *   2) If -11 <= y < -10, color sand.
- *   3) Otherwise, if y < threshold => checkerboard of 3-tone green vs 3-tone brown.
- *   4) Else use color gradient: dark green -> light brown -> dark brown -> white
- *
- * groundConfig = {
- *   freqX: number,
- *   freqZ: number,
- *   amplitude: number
- * }
- **************************************************************/
-/***************************************************************
- * Creates a segmented ground out of multiple "tiles."
- * Each tile is subdivided so we can raise/lower its vertices
- * to create rolling hills.
- *
- * Logic overview:
- *   1) If yVal < -11 => clamp to -11, color deep blue.
- *   2) Else if -11 <= yVal < -10 => sand color.
- *   3) Else if inside region (x in -300..300, z in -200..200):
- *       - if yVal < threshold => checkerboard
- *       - else => gradient
- *   4) Else (outside region):
- *       - if yVal < 30 => dark green
- *       - else => white
- **************************************************************/
-/***************************************************************
- * Creates a segmented ground out of multiple "tiles."
- * Each tile is subdivided so we can raise/lower its vertices
  * to create rolling hills. We'll use per-vertex coloring:
  *
  *  1) If yVal < -11  => clamp to -11, color deep blue.
@@ -173,8 +114,8 @@ function createSkySphere(scene, camera) {
  **************************************************************/
 function createSegmentedGround(scene, groundConfig) {
     // 1) Basic parameters
-    const segmentCount = 40;     // how many segments in each dimension
-    const segmentSize = 200;     // size of each segment
+    const segmentCount = 30;     // how many segments in each dimension
+    const segmentSize = 200     // size of each segment
     const threshold = 0.1 * groundConfig.amplitude;
 
     // 2) Create one material that uses vertex colors
@@ -324,7 +265,7 @@ function createSegmentedGround(scene, groundConfig) {
                             let finalColor;
                             if (yVal < 0.3 * amplitude) {
                                 // Dark Green
-                                finalColor = new BABYLON.Color3(0.0, 0.3, 0.0);
+                                finalColor = new BABYLON.Color3(0.90, 0.3, 0.0);
                             } else if (yVal < 0.5 * amplitude) {
                                 // Light Brown
                                 finalColor = new BABYLON.Color3(0.4, 0.4, 0.2);
@@ -343,22 +284,22 @@ function createSegmentedGround(scene, groundConfig) {
                         // Outside region => multi-stop gradient from y=30 to 220 to 250
                         if (yVal < 30) {
                             // Dark Green
-                            let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.3, 0.0), 0.05);
+                            let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
                         } 
                         else if (yVal < 220) {
                             // Dark Green -> Dark Brown
-                            const t = (yVal - 30) / (220 - 30);
-                            const grad1 = new BABYLON.Color3(0.0, 0.3, 0.0); 
+                            const t = (yVal - 30) / (200 - 30);
+                            const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0); 
                             const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             let finalColor = lerpColor(grad1, grad2, t);
                             // Add random offset
                             finalColor = randomizeColor(finalColor, 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
                         } 
-                        else if (yVal < 250) {
+                        else if (yVal < 370) {
                             // Dark Brown -> White
-                            const t = (yVal - 220) / (250 - 220);
+                            const t = (yVal - 220) / (370 - 220);
                             const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
                             let finalColor = lerpColor(grad1, grad2, t);

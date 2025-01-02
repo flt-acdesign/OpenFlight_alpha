@@ -26,7 +26,7 @@ function sendStateToServer(deltaTime) {
 
     // Create aircraft state object
     const aircraftState = {
-        // Position coordinates
+        // Position coordinates from Babylon.js object
         x: aircraft.position.x,
         y: aircraft.position.y,
         z: aircraft.position.z,
@@ -36,13 +36,13 @@ function sendStateToServer(deltaTime) {
         vy: velocity.y,
         vz: velocity.z,
         
-        // Quaternion orientation
+        // Quaternion orientation from Babylon.js object
         qx: orientation.x,
         qy: orientation.y,
         qz: orientation.z,
         qw: orientation.w,
         
-        // Angular velocity
+        // Angular velocity in body frame
         wx: angularVelocity.x,
         wy: angularVelocity.y,
         wz: angularVelocity.z,
@@ -52,13 +52,13 @@ function sendStateToServer(deltaTime) {
         fy: forceY,
         thrust_setting_demand: thrust_setting_demand,
 
-        // Forces attained (interpreted as setting, not actual force value)
-        thrust_attained: thrust_attained,
-
         // Control demands
         roll_demand: roll_demand,
         pitch_demand: pitch_demand,
-        yaw_demand: yaw_demand,       
+        yaw_demand: yaw_demand,    
+
+        // Forces attained (interpreted as setting, not actual force value)
+        thrust_attained: thrust_attained,
 
         // Attained control values
         roll_demand_attained: roll_demand_attained,

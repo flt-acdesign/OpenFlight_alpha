@@ -15,8 +15,9 @@ include(raw"./SRC/🟣JULIA🟣/2_Physics/2.1_⭐_runge_kutta_integrator.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Physics/2.2_🤸‍♀️_compute_6DOF_equations_of_motion.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Physics/2.3_💥_handle_collisions.jl")
 
-include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🔁_connect_and_transfer_state.jl") 
-include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.2_📈_record_and_save_flight_data.jl")
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🤝_Establish_WebSockets_connection.jl") 
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.2_🔁_Update_and_transfer_aircraft_state.jl")
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.3_📈_record_and_save_flight_data.jl")
 
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_and_anemometry/4.1_🎯_physical_constants.jl")
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_and_anemometry/4.2_🌍_ISA76.jl")
@@ -27,8 +28,8 @@ include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actu
 
 
 
-function launch_client()
-    html_file = joinpath(script_dir, "./src/🟡JAVASCRIPT🟡/✅_front_end_and_client.html") 
+function launch_client() 
+    html_file = joinpath(script_dir, "./src/🟡JAVASCRIPT🟡/✅_front_end_and_client.html")   # Launch the client in Microsoft Edge
     try
         run(`cmd /c start msedge "$html_file"`)
         println("Microsoft Edge launched successfully.")
@@ -38,6 +39,12 @@ function launch_client()
 end
 
 
+
+
 launch_client()
+
+# Global timestamp for simulation start
+const start_time = time()
+
 establish_websockets_connection()
 

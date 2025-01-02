@@ -6,7 +6,7 @@ function setupLights_and_shadows(scene) {
         new BABYLON.Vector3(0, 1, 0),
         scene
     );
-    lightDown.intensity = 0.2;
+    lightDown.intensity = 0.3;
     lightDown.diffuse = new BABYLON.Color3(1, 0.98, 0.8); // Light sun 
 
   
