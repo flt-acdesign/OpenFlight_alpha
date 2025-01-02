@@ -1,7 +1,7 @@
 
 
 # Main function to process and update aircraft state
-function update_aircraft_state(aircraft_state_data)
+function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_propulsive_data)
     try
         state_variables = (
         # Extract position data from incoming state
@@ -63,7 +63,7 @@ function update_aircraft_state(aircraft_state_data)
             aircraft_current_state_vector, 
             control_demand_vector, 
             deltaTime, 
-            aircraft_model_data
+            aircraft_flight_physics_and_propulsive_data
         )
 
         # Record telemetry data during specific time window

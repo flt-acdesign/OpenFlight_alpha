@@ -13,7 +13,7 @@ function websocket_handler(ws)
                 current_aircraft_state_vector = JSON.parse(String(aircraft_state_data))
                 
                 # Update aircraft state using physics simulation
-                updated_aircraft_state_vector = update_aircraft_state(current_aircraft_state_vector)
+                updated_aircraft_state_vector = update_aircraft_state(current_aircraft_state_vector, aircraft_flight_physics_and_propulsive_data)
                 
                 # Send updated state back to client if available
                 if updated_aircraft_state_vector !== nothing

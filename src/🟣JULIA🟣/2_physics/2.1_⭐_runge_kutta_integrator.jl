@@ -31,14 +31,14 @@ function Runge_Kutta_4_integrator(
     state_vector,
     control_demand_vector,
     deltaTime,
-    aircraft_model_data
+    aircraft_flight_physics_and_propulsive_data
 )
 
     # -------------------------------------------------------------------------
     # 1. Convert demanded controls to the actually attainable controls
     #    (accounting for actuator dynamics).
     control_demand_vector_attained = convert_control_demanded_to_attained(
-        aircraft_model_data,
+        aircraft_flight_physics_and_propulsive_data,
         control_demand_vector,
         deltaTime
     )
@@ -50,28 +50,28 @@ function Runge_Kutta_4_integrator(
     k1, force_total_k1, alpha_k1, beta_k1 = compute_6DOF_equations_of_motion(
         state_vector,
         control_demand_vector_attained,
-        aircraft_model_data
+        aircraft_flight_physics_and_propulsive_data
     )
 
     # k2
     k2, force_total_k2, alpha_k2, beta_k2 = compute_6DOF_equations_of_motion(
         state_vector .+ (deltaTime / 2) .* k1,
         control_demand_vector_attained,
-        aircraft_model_data
+        aircraft_flight_physics_and_propulsive_data
     )
 
     # k3
     k3, force_total_k3, alpha_k3, beta_k3 = compute_6DOF_equations_of_motion(
         state_vector .+ (deltaTime / 2) .* k2,
         control_demand_vector_attained,
-        aircraft_model_data
+        aircraft_flight_physics_and_propulsive_data
     )
 
     # k4
     k4, force_total_k4, alpha_k4, beta_k4 = compute_6DOF_equations_of_motion(
         state_vector .+ deltaTime .* k3,
         control_demand_vector_attained,
-        aircraft_model_data
+        aircraft_flight_physics_and_propulsive_data
     )
 
     # -------------------------------------------------------------------------

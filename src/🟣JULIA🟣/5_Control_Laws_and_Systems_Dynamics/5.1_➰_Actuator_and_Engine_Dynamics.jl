@@ -6,11 +6,11 @@ function convert_control_demanded_to_attained(
 
 
     # Retrieve actuator speed (for control surfaces) or fall back to 1.0 if not provided
-    actuator_speed = aircraft_model_data["control_actuator_speed"]
+    actuator_speed = aircraft_model_data.control_actuator_speed
 
     # Retrieve engine spool-up/down speeds (for thrust), multiplied by deltaTime
-    engine_spool_up_speed   = aircraft_model_data["engine_spool_up_speed"]
-    engine_spool_down_speed = aircraft_model_data["engine_spool_down_speed"]
+    engine_spool_up_speed   = aircraft_model_data.engine_spool_up_speed
+    engine_spool_down_speed = aircraft_model_data.engine_spool_down_speed
 
 
     # Utility to compute new attained value, limited by a max step per update
