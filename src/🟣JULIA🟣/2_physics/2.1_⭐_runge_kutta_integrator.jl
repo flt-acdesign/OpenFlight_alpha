@@ -132,19 +132,24 @@ function Runge_Kutta_4_integrator(
         :new_position_x   => new_position_x,
         :new_position_y   => new_position_y,
         :new_position_z   => new_position_z,
+
         :new_velocity_x   => new_velocity_x,
         :new_velocity_y   => new_velocity_y,
         :new_velocity_z   => new_velocity_z,
+
         :new_qx           => new_qx,
         :new_qy           => new_qy,
         :new_qz           => new_qz,
         :new_qw           => new_qw,
+
         :new_wx           => new_wx,
         :new_wy           => new_wy,
         :new_wz           => new_wz,
+
         :fx_global        => fx_global,
         :fy_global        => fy_global,
         :fz_global        => fz_global,
+        
         :alpha_avg        => alpha_avg,
         :beta_avg         => beta_avg,
 

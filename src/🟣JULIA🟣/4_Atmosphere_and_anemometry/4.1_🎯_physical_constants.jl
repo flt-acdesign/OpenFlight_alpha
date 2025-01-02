@@ -90,3 +90,4 @@ const PA2PSF = 0.02088543  # Pascal to Pounds per square foot
 const PSF2PA = 47.880258  # Pounds per square foot to Pascal
 const RANK2KEL = 0.555556  # Rankine to Kelvin
 const KEL2RANK = 1.8  # Kelvin to Rankine
+

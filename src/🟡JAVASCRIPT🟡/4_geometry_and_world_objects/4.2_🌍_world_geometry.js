@@ -206,7 +206,7 @@ function createSegmentedGround(scene, groundConfig) {
                 {
                     width: segmentSize,
                     height: segmentSize,
-                    subdivisions: 50,
+                    subdivisions: 40,
                     updatable: true
                 },
                 scene
@@ -249,7 +249,7 @@ function createSegmentedGround(scene, groundConfig) {
                 // 3) Above -10, check if we're inside the special region
                 else {
                     const insideRegion =
-                        worldX > -450 && worldX < 350 &&
+                        worldX > -400 && worldX < 200 &&
                         worldZ > -3000 && worldZ < 3000;
 
                     if (insideRegion) {
