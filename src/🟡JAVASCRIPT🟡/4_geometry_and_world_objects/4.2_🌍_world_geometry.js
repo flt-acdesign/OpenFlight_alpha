@@ -342,6 +342,40 @@ function createSegmentedGround(scene, groundConfig) {
 function undulationMap(x, z, freqX, freqZ, amplitude) {
     let baseWave =
         (Math.sin(freqX * x * 1.1)) *
+        (Math.sin(freqZ * z * x / 1300)) *
+        2;
+
+    let octave1 =
+        (Math.sin(freqX * 2 * x)) ** 2 *
+        (Math.cos(freqZ * 2 * z)) ** 2 *
+        1;
+
+    let octave2 =
+        (Math.sin(freqX * 6 * x)) ** 4 *
+        (Math.sin(freqZ * 4 * z)) ** 6 *
+        0.3;
+
+    let octave3 =
+        (Math.sin(freqX * 8 * x)) ** 8 *
+        (Math.sin(freqZ * 7 * z)) ** 8 *
+        0.06;
+
+    // Combine them and scale
+         heightY = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1200 ) 
+
+    // Flatten near origin if desired
+    if (Math.abs(x) < 100 && Math.abs(z) < 300) {
+        heightY = 0;
+    }
+    return heightY;
+}
+
+
+
+
+function undulationMap_old(x, z, freqX, freqZ, amplitude) {
+    let baseWave =
+        (Math.sin(freqX * x * 1.1)) *
         (Math.sin(freqZ * z * x / 1000)) *
         2;
 

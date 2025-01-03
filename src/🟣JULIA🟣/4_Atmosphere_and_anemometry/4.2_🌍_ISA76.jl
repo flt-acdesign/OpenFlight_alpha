@@ -29,7 +29,10 @@ From: https://en.wikipedia.org/wiki/U.S._Standard_Atmosphere
 """
 function atmosphere_isa(height)
 
-    if 0 <= height < 11000  # Troposphere
+
+
+
+    if  height < 11000  # Troposphere
         alpha = -0.0065  # K/m
         T0 = 288.15      # K
         p0 = 101325.0    # Pa
@@ -89,7 +92,7 @@ function atmosphere_isa(height)
         p = p0 * (T0 / T) ^ (G0 / (R_AIR * alpha))
 
     else
-        throw(DomainError(height, "height must be between 0 m and 84500 m"))
+        throw(DomainError(height, "height must be less than 84500 m"))
     end
 
     rho = p / (R_AIR * T)

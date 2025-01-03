@@ -102,27 +102,3 @@ function convert_control_demanded_to_attained(
     return control_demand_vector_attained
 end
 
-# Example initialization
-function initialize_control_inputs()
-    control_demand_vector = (
-        # Demanded thrust
-        thrust_setting_demand = 0.0,
-        # Optional additional forces
-        Fx = 0.0,
-        Fy = 0.0,
-
-        # Initial demands (angles, etc.)
-        roll_demand  = 0.0,
-        pitch_demand = 0.0,
-        yaw_demand   = 0.0,
-
-        # Initial *attained* values
-        roll_demand_attained  = 0.0,
-        pitch_demand_attained = 0.0,
-        yaw_demand_attained   = 0.0,
-
-        # Thrust must also have an initial 'attained' value
-        thrust_attained = 0.0
-    )
-    return control_demand_vector
-end

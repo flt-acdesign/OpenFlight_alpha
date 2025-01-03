@@ -1,5 +1,6 @@
 # Convert your dictionary to a NamedTuple
 aircraft_flight_physics_and_propulsive_data = (
+
     aircraft_mass = 3.0,                # Kg  Aircraft total mass
     reference_area = 8.0,               # m^2  Wing reference area
     Cl_vs_alpha_RAD = 0.3,              # 1/rad, dCL/dalpha
@@ -33,18 +34,21 @@ aircraft_flight_physics_and_propulsive_data = (
         0.0  1/6  0.0;
         0.0  0.0  1/6
     ]       # 3×3 inertia tensor matrix
+    
 )
 
+# Pre-compute the inverse of the inertia tensor matrix
+pre_computed_I_body_inverse = inv(aircraft_flight_physics_and_propulsive_data.I_body)     # pre-compute 3×3 inverse inertia tensor matrix
 
 # ---------------------------------------------------------------------------
 # The following functions must also use string keys when accessing dictionary fields:
 
-function 🟢_compute_net_thrust_force_vector_body(thrust_setting_demand, alt, tas, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+function 🟢_compute_net_thrust_force_vector_body(alt, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
     # Calculate thrust force based on thrust lever input
-    if thrust_setting_demand >= 0.0
-        thrust_ratio = thrust_setting_demand
+    if control_demand_vector_attained.thrust_attained >= 0.0
+        thrust_ratio = control_demand_vector_attained.thrust_attained
     else
-        thrust_ratio = thrust_setting_demand * 0.3  # Max reverse thrust is 30% of forward thrust
+        thrust_ratio = control_demand_vector_attained.thrust_attained * 0.3  # Max reverse thrust is 30% of forward thrust
     end
     
     # Use the dictionary key with quotes:
@@ -59,31 +63,67 @@ function 🟢_compute_net_thrust_force_vector_body(thrust_setting_demand, alt, t
     ]
 end
 
-function 🟢_compute_lift_coefficient(alpha_RAD, beta_RAD, v_body_mag, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+function 🟢_compute_lift_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
     alpha_stall = deg2rad(15.0)  # Stall angle in radians
     alpha_effective = clamp(alpha_RAD, -alpha_stall, alpha_stall)
     # Note the string key "Cl_vs_alpha_RAD"
     return aircraft_flight_physics_and_propulsive_data.Cl_vs_alpha_RAD * alpha_effective
 end
 
-function 🟢_compute_drag_coefficient(alpha_RAD, beta_RAD, v_body_mag, aircraft_flight_physics_and_propulsive_data, CL, aircraft_state, control_demand_vector_attained)
+function 🟢_compute_drag_coefficient(alpha_RAD, beta_RAD, MAch, aircraft_flight_physics_and_propulsive_data, CL, aircraft_state, control_demand_vector_attained)
     # Again, use string keys: "CD0", "AR", "Oswald_factor"
     return aircraft_flight_physics_and_propulsive_data.CD0 + CL^2 / (π * aircraft_flight_physics_and_propulsive_data.AR * aircraft_flight_physics_and_propulsive_data.Oswald_factor)
 end
 
-function 🟢_compute_sideforce_coefficient(alpha_RAD, beta_RAD, v_body_mag, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+function 🟢_compute_sideforce_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
     # Not yet implemented
     return 0.0
 end
 
-function 🟢_compute_rolling_moment_coefficient(roll_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
-    return aircraft_flight_physics_and_propulsive_data.derivative_roll_vs_aileron * roll_demand
+
+
+
+function 🟢_rolling_moment_coefficient_due_to_control_attained(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+    return aircraft_flight_physics_and_propulsive_data.derivative_roll_vs_aileron * control_demand_vector_attained.roll_demand_attained
 end
 
-function 🟢_compute_pitching_moment_coefficient(pitch_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
-    return aircraft_flight_physics_and_propulsive_data.derivative_pitch_vs_elevator * pitch_demand + aircraft_flight_physics_and_propulsive_data.CM0
+function 🟢_yawing_moment_coefficient_due_to_control_attained(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+    return aircraft_flight_physics_and_propulsive_data.derivative_yaw_vs_rudder * control_demand_vector_attained.yaw_demand_attained
 end
 
-function 🟢_compute_yawing_moment_coefficient(yaw_demand, alpha_RAD, beta_RAD, v_body_mag, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
-    return aircraft_flight_physics_and_propulsive_data.derivative_yaw_vs_rudder * yaw_demand
+function 🟢_pitching_moment_coefficient_due_to_control_attained(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+    return aircraft_flight_physics_and_propulsive_data.derivative_pitch_vs_elevator * control_demand_vector_attained.pitch_demand_attained + aircraft_flight_physics_and_propulsive_data.CM0
 end
+
+
+
+
+
+
+function 🟢_rolling_moment_coefficient_due_to_aerodynamic_stiffness(alpha_RAD, beta_RAD, Mach_number, aircraft_data, control_demand_vector_attained)
+    return 0.0
+end
+
+function 🟢_yawing_moment_coefficient_due_to_aerodynamic_stiffness(alpha_RAD, beta_RAD, Mach_number, aircraft_data, control_demand_vector_attained)
+    return aircraft_flight_physics_and_propulsive_data.CN_beta * beta_RAD
+end
+
+function 🟢_pitching_moment_coefficient_due_to_aerodynamic_stiffness(alpha_RAD, beta_RAD, Mach_number, aircraft_data, control_demand_vector_attained)
+    return aircraft_flight_physics_and_propulsive_data.CM_alpha * alpha_RAD
+end
+
+
+
+function 🟢_rolling_moment_coefficient_due_to_aerodynamic_damping(p_roll_rate, alpha_RAD, beta_RAD, Mach_number, aircraft_data)
+    return aircraft_flight_physics_and_propulsive_data.Cl_p * p_roll_rate
+end
+
+function 🟢_yawing_moment_coefficient_due_to_aerodynamic_damping(r_yaw_rate, alpha_RAD, beta_RAD, Mach_number, aircraft_data)
+    return aircraft_flight_physics_and_propulsive_data.Cn_r * r_yaw_rate
+end
+
+function 🟢_pitching_moment_coefficient_due_to_aerodynamic_damping(q_pitch_rate, alpha_RAD, beta_RAD, Mach_number, aircraft_data)
+    return aircraft_flight_physics_and_propulsive_data.Cm_q * q_pitch_rate
+end
+
+
