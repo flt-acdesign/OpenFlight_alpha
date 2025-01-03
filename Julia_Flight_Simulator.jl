@@ -12,7 +12,7 @@ include(raw"./src/🟣JULIA🟣/0_Aircraft_Model_and_Data/0.1_📊_aircraft_aero
 include(raw"./SRC/🟣JULIA🟣/1_Maths/1.1_🔮_quaternions_and_transformations.jl")
 include(raw"./src/🟣JULIA🟣/1_Maths/1.2_🛠_auxiliary_functions.jl")
 
-include(raw"./SRC/🟣JULIA🟣/2_Physics/2.1_⭐_runge_kutta_integrator.jl")
+include(raw"./SRC/🟣JULIA🟣/2_Physics/2.1_⭐_Runge_Kutta_4_integrator.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Physics/2.2_🤸‍♀️_compute_6DOF_equations_of_motion.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Physics/2.3_💥_handle_collisions.jl")
 
