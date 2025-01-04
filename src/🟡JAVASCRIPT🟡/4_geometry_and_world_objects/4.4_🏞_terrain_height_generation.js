@@ -28,8 +28,13 @@ function undulationMap(x, z, freqX, freqZ, amplitude) {
     // Combine them and scale
         
         distance = (x**2 + z**2) **.5 
+        island_radius = 2500
 
-        heightY = (distance < 2500) ? amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1300 ) : -15
+        modulation  = (distance < island_radius) ? 0 : (distance - island_radius) / 1000
+
+        //heightY = (distance < 2500) ? amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1300 ) : -15
+        heightY = amplitude * (((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1300 ) -  modulation)
+
 
     // Flatten near origin if desired
     if (Math.abs(x) < 100 && Math.abs(z) < 300) {
