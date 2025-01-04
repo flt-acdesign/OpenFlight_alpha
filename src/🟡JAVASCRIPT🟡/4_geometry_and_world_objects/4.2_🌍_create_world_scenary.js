@@ -32,10 +32,10 @@ function createWorldScenery(scene, shadowGenerator, camera) {
 
     // Configure linear fog for atmospheric depth
     scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR;
-    scene.fogStart  = 1500.0;
-    scene.fogEnd    = 3800.0;
+    scene.fogStart  = 600.0;
+    scene.fogEnd    = 2800.0;
     scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
-    scene.fogDensity = 0.00058;
+    scene.fogDensity = 0.0058;
 }
 
 /***************************************************************
@@ -334,78 +334,6 @@ function createSegmentedGround(scene, groundConfig) {
 
 
 
-
-
-/***************************************************************
- * Example terrain function for generating terrain heights
- ***************************************************************/
-function undulationMap(x, z, freqX, freqZ, amplitude) {
-    let baseWave =
-        (Math.sin(freqX * x * 1.1)) ** 3 *
-        (Math.sin(freqZ * z * x / 1100)) ** 3 *
-        2;
-
-    let octave1 =
-        (Math.sin(freqX * 2 * x)) ** 4 *
-        (Math.cos(freqZ * 1.7 * z)) ** 4 *
-        1;
-
-    let octave2 =
-        (Math.sin(freqX * 6 * x)) ** 5 *
-        (Math.sin(freqZ * 4 * z)) ** 5 *
-        .3;
-
-    let octave3 =
-        (Math.sin(freqX * 7 * x + z / 100)) ** 8 *
-        (Math.sin(freqZ * 6 * z)) ** 8 *
-        0.06;
-
-    // Combine them and scale
-         heightY = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1300 ) 
-
-
-    // Flatten near origin if desired
-    if (Math.abs(x) < 100 && Math.abs(z) < 300) {
-        heightY = 0;
-    }
-    return heightY;
-}
-
-
-
-
-function undulationMap_old(x, z, freqX, freqZ, amplitude) {
-    let baseWave =
-        (Math.sin(freqX * x * 1.1)) *
-        (Math.sin(freqZ * z * x / 1000)) *
-        2;
-
-    let octave1 =
-        (Math.sin(freqX * 2 * x)) ** 2 *
-        (Math.cos(freqZ * 2 * z)) ** 2 *
-        1;
-
-    let octave2 =
-        (Math.sin(freqX * 5 * x)) ** 4 *
-        (Math.sin(freqZ * 5 * z)) ** 6 *
-        0.3;
-
-    let octave3 =
-        (Math.sin(freqX * 8 * x)) ** 8 *
-        (Math.sin(freqZ * 8 * z)) ** 8 *
-        0.06;
-
-    // Combine them and scale
-    let heightY = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1000);
-
-    // Flatten near origin if desired
-    if (Math.abs(x) < 100 && Math.abs(z) < 300) {
-        heightY = 0;
-    }
-    return heightY;
-}
-
-
 /***************************************************************
  * Creates a number of random "trees" across the terrain.
  * Each tree is a simple tapered cylinder placed at the local
@@ -420,7 +348,7 @@ function createRandomTrees(scene, shadowGenerator, groundConfig) {
 
     for (let i = 0; i < treeCount; i++) {
         // Random dimension
-        const treeHeight = Math.random() * 15 + 3;  // between 3 and 18
+        const treeHeight = Math.random() * 15 + 7;  // between 7 and 18
         const treeBaseRadius = Math.random() * 4 + 2; // between 2 and 6
 
         // Random position in the x-z plane
@@ -429,7 +357,7 @@ function createRandomTrees(scene, shadowGenerator, groundConfig) {
         const zCoord = Math.random() * 580 - 90;   // e.g., -90 -> 490
 
         // Find the terrain height at (xCoord, zCoord)
-        const groundY = undulationMap(xCoord, zCoord, freqX, freqZ, amplitude);
+        const groundY = undulationMap(xCoord, zCoord, freqX, freqZ, amplitude) - 1
 
         // We'll position the cylinder so that it emerges out of the ground
         const treeY = groundY + (treeHeight / 2);
@@ -481,7 +409,7 @@ function createReferenceCube(scene, shadowGenerator) {
                 // Position so the entire base is centered around x=40, z=0
                 cube.position = new BABYLON.Vector3(
                     40 + (xIndex - (baseSize - 1) / 2) * 2, // shift to center
-                    1 + yLayer * 2,                        // stack height
+                     yLayer * 2,                        // stack height
                     (zIndex - (baseSize - 1) / 2) * 2
                 );
 
