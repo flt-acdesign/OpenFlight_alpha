@@ -1,6 +1,6 @@
 
 
-# code below from https://github.com/AlexS12/FlightMechanics.jl/blob/master/src/atmosphere.jl
+# code below modified from https://github.com/AlexS12/FlightMechanics.jl/blob/master/src/atmosphere.jl
 
 const G0 = GRAVITY_ACCEL
 

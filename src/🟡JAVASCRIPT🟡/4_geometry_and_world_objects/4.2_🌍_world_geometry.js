@@ -16,7 +16,7 @@ function createWorldScenery(scene, shadowGenerator, camera) {
     scene.groundConfig = {
         freqX: 1 / xWavelength,
         freqZ: 1 / zWavelength,
-        amplitude: 320
+        amplitude: 500
     };
 
     // Create the sky sphere behind/around everything
@@ -287,9 +287,9 @@ function createSegmentedGround(scene, groundConfig) {
                             let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
                         } 
-                        else if (yVal < 220) {
+                        else if (yVal < 180) {
                             // Dark Green -> Dark Brown
-                            const t = (yVal - 30) / (200 - 30);
+                            const t = (yVal - 30) / (180 - 30);
                             const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0); 
                             const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             let finalColor = lerpColor(grad1, grad2, t);
@@ -297,9 +297,9 @@ function createSegmentedGround(scene, groundConfig) {
                             finalColor = randomizeColor(finalColor, 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
                         } 
-                        else if (yVal < 370) {
+                        else if (yVal < 220) {
                             // Dark Brown -> White
-                            const t = (yVal - 220) / (370 - 220);
+                            const t = (yVal - 200) / (220 - 200);
                             const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
                             let finalColor = lerpColor(grad1, grad2, t);
@@ -341,27 +341,28 @@ function createSegmentedGround(scene, groundConfig) {
  ***************************************************************/
 function undulationMap(x, z, freqX, freqZ, amplitude) {
     let baseWave =
-        (Math.sin(freqX * x * 1.1)) *
-        (Math.sin(freqZ * z * x / 1300)) *
+        (Math.sin(freqX * x * 1.1)) ** 3 *
+        (Math.sin(freqZ * z * x / 1100)) ** 3 *
         2;
 
     let octave1 =
-        (Math.sin(freqX * 2 * x)) ** 2 *
-        (Math.cos(freqZ * 2 * z)) ** 2 *
+        (Math.sin(freqX * 2 * x)) ** 4 *
+        (Math.cos(freqZ * 1.7 * z)) ** 4 *
         1;
 
     let octave2 =
-        (Math.sin(freqX * 6 * x)) ** 4 *
-        (Math.sin(freqZ * 4 * z)) ** 6 *
-        0.3;
+        (Math.sin(freqX * 6 * x)) ** 5 *
+        (Math.sin(freqZ * 4 * z)) ** 5 *
+        .3;
 
     let octave3 =
-        (Math.sin(freqX * 8 * x)) ** 8 *
-        (Math.sin(freqZ * 7 * z)) ** 8 *
+        (Math.sin(freqX * 7 * x + z / 100)) ** 8 *
+        (Math.sin(freqZ * 6 * z)) ** 8 *
         0.06;
 
     // Combine them and scale
-         heightY = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1200 ) 
+         heightY = amplitude * ((baseWave + octave1 + octave2 + octave3) / 4) * (x / 1300 ) 
+
 
     // Flatten near origin if desired
     if (Math.abs(x) < 100 && Math.abs(z) < 300) {
