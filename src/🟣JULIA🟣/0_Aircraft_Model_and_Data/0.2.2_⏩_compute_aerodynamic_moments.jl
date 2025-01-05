@@ -1,5 +1,4 @@
 
-
 function 🟢_rolling_moment_coefficient_due_to_control_attained(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
     return aircraft_flight_physics_and_propulsive_data.derivative_roll_vs_aileron * control_demand_vector_attained.roll_demand_attained
 end

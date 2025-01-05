@@ -37,9 +37,3 @@ aircraft_flight_physics_and_propulsive_data = (
     
 )
 
-# Pre-compute the inverse of the inertia tensor matrix
-pre_computed_I_body_inverse = inv(aircraft_flight_physics_and_propulsive_data.I_body)     # pre-compute 3×3 inverse inertia tensor matrix
-
-# ---------------------------------------------------------------------------
-# The following functions must also use string keys when accessing dictionary fields:
-
