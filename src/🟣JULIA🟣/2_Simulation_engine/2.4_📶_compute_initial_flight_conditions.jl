@@ -116,7 +116,7 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         aircraft_mass = aircraft_mass,  # this and the inertia could change due to fuel burn
         I_body = I_body,
         # Pre-compute the inverse of the inertia tensor matrix
-        I_body_inverse = I_body_inverse     # pre-compute 3×3 inverse inertia tensor matrix
+        I_body_inverse = I_body_inverse     # pre-compute 3×3 inverse inertia tensor matrix to save time in RK4 evaluations
 
     )
 end

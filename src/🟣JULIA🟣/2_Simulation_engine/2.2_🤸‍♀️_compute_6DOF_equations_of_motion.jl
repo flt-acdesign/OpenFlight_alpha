@@ -190,8 +190,6 @@ function compute_6DOF_equations_of_motion(
         angular_acceleration_body[3],   # 13) wz
     ]
 
-
-
     total_propulsive_plus_aerodynamic_force_vector_global_N = [
         total_propulsive_plus_aerodynamic_force_vector_global_N[1], 
         total_propulsive_plus_aerodynamic_force_vector_global_N[2], 
