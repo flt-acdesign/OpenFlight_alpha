@@ -244,25 +244,25 @@ end
 
 
 # Example usage:
-json_data = JSON.parsefile("data9.json")
-aero_data = parse_aero_data(json_data)
+# json_data = JSON.parsefile("data9.json")
+# aero_data = parse_aero_data(json_data)
 
 
     # Get CL value
-    #cl = fetch_value_from_aero_database(aero_data, "CL", Dict{String, Float64}("Mach" => 0.4, "beta" => 2.5, "alpha" => 5.0))
+    # For multiple parameters
+  #  cl = fetch_value_from_aero_database(aero_data, "CL", Mach=0.05, beta = 0.0, alpha=2.0)
 
-# For multiple parameters
-    cl = fetch_value_from_aero_database(aero_data, "CL", Mach=0.05, beta = 0.0, alpha=2.0)
-
-    println("CL: $cl")
+  #  println("CL: $cl")
     
     # Get CD0 value
-    cd0 = fetch_value_from_aero_database(aero_data, "CD0", Mach=0.05)
-    println("CD0: $cd0")
+  #  cd0 = fetch_value_from_aero_database(aero_data, "CD0", Mach=0.05)
+  #  println("CD0: $cd0")
     
 
     # For constants
-    mass0 = fetch_value_from_aero_database(aero_data, "aircraft_mass")
-    println("Mass: $mass")
+  #  mass0 = fetch_value_from_aero_database(aero_data, "aircraft_mass")
+  #  println("Mass: $mass")
+
     
+
 

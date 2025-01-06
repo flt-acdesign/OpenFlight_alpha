@@ -7,6 +7,7 @@ script_dir = @__DIR__
 
 
 # Load general code and functions
+include(raw"./src/🟣JULIA🟣/6_Aero_data/6.1_📈_get_constants_and_interpolate_coefficients.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Model_and_Data/0.1_📊_aircraft_aerodynamic_and_propulsive_data.jl")
 
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Model_and_Data/0.2.1_▶_compute_aerodynamic_forces.jl")
@@ -32,7 +33,7 @@ include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.3_🕑_a
 
 include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actuator_and_Engine_Dynamics.jl")
 
-include(raw"./src/🟣JULIA🟣/6_Aero_data/6.1_📈_get_constants_and_interpolate_coefficients.jl")
+
 
 
 function launch_client() 
