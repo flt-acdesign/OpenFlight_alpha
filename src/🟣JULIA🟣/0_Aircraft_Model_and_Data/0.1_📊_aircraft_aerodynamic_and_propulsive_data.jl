@@ -12,7 +12,11 @@ aircraft_flight_physics_and_propulsive_data = (
     Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
     AR = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "AR"),
     Oswald_factor = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Oswald_factor"),
-    CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0"),
+
+    #CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0"),
+
+    CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=0.0),
+
     wing_mean_aerodynamic_chord = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"),
 
     # Control derivatives

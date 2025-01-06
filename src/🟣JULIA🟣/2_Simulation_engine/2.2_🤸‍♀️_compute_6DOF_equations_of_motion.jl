@@ -38,20 +38,20 @@ function compute_6DOF_equations_of_motion(
 
     # Compute aerodynamic force coefficients (wind axes)
     CL = 🟢_compute_lift_coefficient(
-        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.v_body_magnitude,
+        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
         aircraft_data,
         aircraft_state_vector,
         control_demand_vector_attained
     )
     CD = 🟢_compute_drag_coefficient(
-        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.v_body_magnitude,
+        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
         aircraft_data,
         CL,
         aircraft_state_vector,
         control_demand_vector_attained
     )
     CS = 🟢_compute_sideforce_coefficient(
-        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.v_body_magnitude,
+        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
         aircraft_data,
         aircraft_state_vector,
         control_demand_vector_attained

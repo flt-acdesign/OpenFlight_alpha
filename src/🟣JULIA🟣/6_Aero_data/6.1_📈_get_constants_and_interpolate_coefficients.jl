@@ -89,10 +89,10 @@ end
 
 function clip_value(value::Float64, bounds::ParameterBounds)
     if value < bounds.min_val
-        @warn "Value $value below minimum $(bounds.min_val) for parameter. Using $(bounds.min_val)"
+        #@warn "Value $value below minimum $(bounds.min_val) for parameter. Using $(bounds.min_val)"
         return bounds.min_val
     elseif value > bounds.max_val
-        @warn "Value $value above maximum $(bounds.max_val) for parameter. Using $(bounds.max_val)"
+        #@warn "Value $value above maximum $(bounds.max_val) for parameter. Using $(bounds.max_val)"
         return bounds.max_val
     end
     return value
