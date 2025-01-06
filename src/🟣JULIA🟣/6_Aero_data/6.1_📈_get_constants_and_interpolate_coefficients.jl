@@ -140,11 +140,21 @@ function get_value_at_params(data::Vector, params::Vector{String}, values::Vecto
     end
 end
 
-function interpolate_coefficient(aero_data::AeroData, coeff_name::String, params::Dict{String, Float64})
+
+
+function fetch_value_from_aero_database(aero_data::AeroData, coeff_name::String; kwargs...)
     # Check if it's a constant
     if haskey(aero_data.constants, coeff_name)
         return aero_data.constants[coeff_name]
     end
+    
+    # If no parameters provided and it's not a constant, throw error
+    if isempty(kwargs)
+        throw(ArgumentError("No parameters provided for non-constant coefficient $coeff_name"))
+    end
+    
+    # Convert kwargs to Dict{String, Float64}
+    params = Dict{String, Float64}(string(k) => Float64(v) for (k,v) in kwargs)
     
     # Get coefficient data and metadata
     coeff_data = aero_data.coefficients[coeff_name]
@@ -229,21 +239,30 @@ function interpolate_coefficient(aero_data::AeroData, coeff_name::String, params
     return interpolated_value / total_weight
 end
 
+
+
+
+
 # Example usage:
 json_data = JSON.parsefile("data9.json")
 aero_data = parse_aero_data(json_data)
 
 
     # Get CL value
-    cl = interpolate_coefficient(aero_data, "CL", Dict{String, Float64}("Mach" => 0.4, "beta" => 2.5, "alpha" => 5.0))
+    #cl = fetch_value_from_aero_database(aero_data, "CL", Dict{String, Float64}("Mach" => 0.4, "beta" => 2.5, "alpha" => 5.0))
+
+# For multiple parameters
+    cl = fetch_value_from_aero_database(aero_data, "CL", Mach=0.05, beta = 0.0, alpha=2.0)
+
     println("CL: $cl")
     
     # Get CD0 value
-    cd0 = interpolate_coefficient(aero_data, "CD0", Dict{String, Float64}("Mach" => 0.05))
+    cd0 = fetch_value_from_aero_database(aero_data, "CD0", Mach=0.05)
     println("CD0: $cd0")
     
-    # Get aircraft mass (constant)
-    mass = interpolate_coefficient(aero_data, "aircraft_mass", Dict{String, Float64}())
+
+    # For constants
+    mass0 = fetch_value_from_aero_database(aero_data, "aircraft_mass")
     println("Mass: $mass")
     
 

@@ -1,4 +1,4 @@
-# Convert your dictionary to a NamedTuple
+
 aircraft_flight_physics_and_propulsive_data = (
 
     aircraft_mass = 3.0,                # Kg  Aircraft total mass
