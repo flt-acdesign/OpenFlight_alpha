@@ -40,7 +40,7 @@ function undulationMap(x, z, freqX, freqZ, amplitude) {
     if (Math.abs(x) < 100 && Math.abs(z) < 300) {
         heightY = 0;
     }
-    return heightY;
+    return heightY +14
 }
 
 

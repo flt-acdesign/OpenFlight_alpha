@@ -113,8 +113,8 @@ ws.onmessage = (event) => {
     );
 
     // Update aerodynamic angles
-    alpha_DEG = parseFloat(responseData.alpha);
-    beta_DEG = parseFloat(responseData.beta);
+    alpha_DEG = parseFloat(responseData.alpha_DEG);
+    beta_DEG = parseFloat(responseData.beta_DEG);
 
     // Update control feedback
     pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);

@@ -85,8 +85,8 @@ initial_flight_conditions = compute_flight_conditions_from_state_vector(initial_
         "fx_global" => total_aero_and_propulsive_force_resultant[1], "fy_global" => total_aero_and_propulsive_force_resultant[2], "fz_global" => total_aero_and_propulsive_force_resultant[3],      
 
         # Aerodynamic angles (of previous state)
-        "alpha" => initial_flight_conditions.alpha_rad  ,
-        "beta"  => initial_flight_conditions.beta_rad ,
+        "alpha_RAD" => initial_flight_conditions.alpha_rad  ,
+        "beta_RAD"  => initial_flight_conditions.beta_rad ,
 
         # Rates of rotation (p, q, r) in body frame (of previous state)
         "p_roll_rate" => initial_flight_conditions.p_roll_rate, "r_yaw_rate" => initial_flight_conditions.r_yaw_rate, "q_pitch_rate" => initial_flight_conditions.q_pitch_rate ,

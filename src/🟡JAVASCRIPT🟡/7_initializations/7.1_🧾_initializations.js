@@ -6,7 +6,7 @@ let glbNode = null;   // TransformNode holding the loaded GLB
 
 
 let engine, scene;
-let velocity = { x: 20, y: 0, z: 0 }; // Initial velocity
+let velocity = { x: 40, y: 0, z: 0 }; // Initial velocity
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
 let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
 let isPaused = false;

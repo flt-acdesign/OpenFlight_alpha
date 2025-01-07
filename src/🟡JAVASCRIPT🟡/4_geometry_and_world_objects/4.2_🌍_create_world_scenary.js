@@ -112,19 +112,20 @@ function createSkySphere(scene, camera) {
  *   - undulationMap(x, z, freqX, freqZ, amplitude)   // calculates terrain height
  *   - randomGreenColor() and randomBrownColor()      // generate random color3
  **************************************************************/
+
 function createSegmentedGround(scene, groundConfig) {
-    // 1) Basic parameters
-    const segmentCount = 30;     // how many segments in each dimension
-    const segmentSize = 200     // size of each segment
+    // Basic parameters
+    const segmentCount = 30;
+    const segmentSize = 200;
     const threshold = 0.1 * groundConfig.amplitude;
 
-    // 2) Create one material that uses vertex colors
+    // Create material with vertex colors
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
     groundMaterial.useVertexColors = true;
     groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     groundMaterial.fogEnabled = true;
 
-    // 3) Define an array of green tones (for patches below threshold)
+    // Define green tones array
     const greenColors = [
         new BABYLON.Color3(67/255, 122/255, 27/255),
         new BABYLON.Color3(10/255, 79/255, 10/255),
@@ -136,34 +137,22 @@ function createSegmentedGround(scene, groundConfig) {
         new BABYLON.Color3(171/255, 110/255, 4/255)
     ];
 
-    // We'll store a random color for each patch so it's consistent
     const patchColorMap = {};
 
-    /**
-     * Assign a random color from greenColors to the patch
-     * determined by (patchX, patchZ). Then reuse that color
-     * for all vertices in the same patch.
-     */
     function getPatchColor(worldX, worldZ) {
-        const patchSize = 200;  // each square is 200×200
+        const patchSize = 200;
         const patchX = Math.floor(worldX / patchSize);
         const patchZ = Math.floor(worldZ / patchSize);
-
-        // Unique key to identify each patch
         const patchKey = `${patchX}_${patchZ}`;
-
-        // If we haven't stored a color yet for this patch, pick one randomly
+        
         if (!patchColorMap[patchKey]) {
             const randomIndex = Math.floor(Math.random() * greenColors.length);
             patchColorMap[patchKey] = greenColors[randomIndex];
         }
-
         return patchColorMap[patchKey];
     }
 
-    // 4) Helper for smooth color transitions
     function lerpColor(c1, c2, t) {
-        // clamp t into [0..1]
         if (t < 0) t = 0;
         if (t > 1) t = 1;
         return new BABYLON.Color3(
@@ -173,11 +162,6 @@ function createSegmentedGround(scene, groundConfig) {
         );
     }
 
-    /**
-     * 5) Add randomness to a color to reduce uniform appearance.
-     *    Range determines how large the random offset can be for each channel.
-     *    Example: range=0.05 => ±5% random variation in each channel.
-     */
     function randomizeColor(color, range = 0.05) {
         const newR = clamp01(color.r + (Math.random() - 0.5) * range);
         const newG = clamp01(color.g + (Math.random() - 0.5) * range);
@@ -185,22 +169,17 @@ function createSegmentedGround(scene, groundConfig) {
         return new BABYLON.Color3(newR, newG, newB);
     }
 
-    // Helper to clamp a value to [0..1]
     function clamp01(value) {
         return Math.max(0, Math.min(1, value));
     }
 
-    // 6) Extract config
     const { freqX, freqZ, amplitude } = groundConfig;
 
-    // 7) Build each ground segment
     for (let i = 0; i < segmentCount; i++) {
         for (let j = 0; j < segmentCount; j++) {
-            // Center X, Z of this tile
             const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
             const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
 
-            // Create subdivided ground tile
             const groundSegment = BABYLON.MeshBuilder.CreateGround(
                 `groundSegment_${i}_${j}`,
                 {
@@ -217,7 +196,6 @@ function createSegmentedGround(scene, groundConfig) {
             groundSegment.receiveShadows = true;
             groundSegment.isAlwaysActive = true;
 
-            // Pull out vertex data
             const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
             const indices = groundSegment.getIndices();
             const colors = [];
@@ -225,111 +203,98 @@ function createSegmentedGround(scene, groundConfig) {
             for (let v = 0; v < positions.length; v += 3) {
                 const localX = positions[v];
                 const localZ = positions[v + 2];
-
-                // Convert to world coords
                 const worldX = localX + centerX;
                 const worldZ = localZ + centerZ;
 
-                // Terrain height from undulation
                 let yVal = undulationMap(worldX, worldZ, freqX, freqZ, amplitude);
 
-                // 1) Very low => clamp to -14, deep blue
-                if (yVal < -14) {
-                    yVal = -14;
-                    // Slight randomness in the blue color (range ~0.02)
-                    const deepBlue = randomizeColor(new BABYLON.Color3(0.040, 0.0, 0.12), 0.02);
-                    colors.push(deepBlue.r, deepBlue.g, deepBlue.b, 1.0);
+                if (yVal < -16) {
+                    const deepestBlue = randomizeColor(new BABYLON.Color3(0.020, 0.0, 0.08), 0.02);
+                    if (Math.random() < 0.1) {
+                        const whiteAmount = Math.random() * 0.15;
+                        deepestBlue.r += whiteAmount;
+                        deepestBlue.g += whiteAmount;
+                        deepestBlue.b += whiteAmount;
+                    }
+                    colors.push(deepestBlue.r, deepestBlue.g, deepestBlue.b, 1.0);
                 }
-                // 2) Next band => -11..-10 => sand
-                else if (yVal < -10) {
-                    // Slight randomness in sand color
+                else if (yVal < 0) {
+                    const t = (yVal + 16) / 16;
+                    const deepBlue = new BABYLON.Color3(0.020, 0.0, 0.08);
+                    const tropicalBlue = new BABYLON.Color3(0.0, 0.4, 0.6);
+                    let finalColor = lerpColor(deepBlue, tropicalBlue, t);
+                    finalColor = randomizeColor(finalColor, 0.03);
+                    if (Math.random() < 0.1 + (t * 0.15)) {
+                        const whiteAmount = Math.random() * 0.15;
+                        finalColor.r += whiteAmount;
+                        finalColor.g += whiteAmount;
+                        finalColor.b += whiteAmount;
+                    }
+                    colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                }
+                else if (yVal < 4) {
                     const sand = randomizeColor(new BABYLON.Color3(0.76, 0.70, 0.50), 0.02);
                     colors.push(sand.r, sand.g, sand.b, 1.0);
                 }
-                // 3) Above -10, check if we're inside the special region
                 else {
-                    const insideRegion =
-                        worldX > -400 && worldX < 200 &&
-                        worldZ > -3000 && worldZ < 3000;
-
+                    const insideRegion = worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000;
+                    
                     if (insideRegion) {
-                        // If yVal < threshold => checker patches, else 4-band gradient
                         if (yVal < threshold) {
-                            // Each 200×200 patch picks one random color from greenColors
                             const patchColor = getPatchColor(worldX, worldZ);
-                            // Add slight randomness
                             const patchColorRandom = randomizeColor(patchColor, 0.05);
                             colors.push(patchColorRandom.r, patchColorRandom.g, patchColorRandom.b, 1.0);
                         } else {
-                            // 4-band gradient: dark green -> light brown -> dark brown -> white
                             let finalColor;
                             if (yVal < 0.3 * amplitude) {
-                                // Dark Green
                                 finalColor = new BABYLON.Color3(0.90, 0.3, 0.0);
                             } else if (yVal < 0.5 * amplitude) {
-                                // Light Brown
                                 finalColor = new BABYLON.Color3(0.4, 0.4, 0.2);
                             } else if (yVal < 0.8 * amplitude) {
-                                // Dark Brown
                                 finalColor = new BABYLON.Color3(0.3, 0.12, 0.01);
                             } else {
-                                // White
                                 finalColor = new BABYLON.Color3(1.0, 1.0, 1.0);
                             }
-                            // Randomize each vertex’s final color slightly
                             finalColor = randomizeColor(finalColor, 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
                         }
                     } else {
-                        // Outside region => multi-stop gradient from y=30 to 220 to 250
-                        if (yVal < 30) {
-                            // Dark Green
+                        if (yVal < 44) {
                             let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
-                        } 
-                        else if (yVal < 180) {
-                            // Dark Green -> Dark Brown
-                            const t = (yVal - 30) / (180 - 30);
-                            const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0); 
+                        } else if (yVal < 194) {
+                            const t = (yVal - 44) / (194 - 44);
+                            const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0);
                             const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             let finalColor = lerpColor(grad1, grad2, t);
-                            // Add random offset
                             finalColor = randomizeColor(finalColor, 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
-                        } 
-                        else if (yVal < 220) {
-                            // Dark Brown -> White
-                            const t = (yVal - 200) / (220 - 200);
+                        } else if (yVal < 234) {
+                            const t = (yVal - 214) / (234 - 214);
                             const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
                             let finalColor = lerpColor(grad1, grad2, t);
-                            // Add random offset
                             finalColor = randomizeColor(finalColor, 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
-                        } 
-                        else {
-                            // yVal >= 250 => white
+                        } else {
                             let finalColor = randomizeColor(new BABYLON.Color3(1.0, 1.0, 1.0), 0.05);
                             colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
                         }
                     }
                 }
-
-                // Write final y back
-                positions[v + 1] = yVal;
+                positions[v + 1] = yVal <0 ? 0 : yVal  // force sea surface to h = 0 
             }
 
-            // Store updated geometry
             groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
             groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
 
-            // Recompute normals for proper shading
             const normals = [];
             BABYLON.VertexData.ComputeNormals(positions, indices, normals);
             groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
         }
     }
 }
+
 
 
 
@@ -409,7 +374,7 @@ function createReferenceCube(scene, shadowGenerator) {
                 // Position so the entire base is centered around x=40, z=0
                 cube.position = new BABYLON.Vector3(
                     40 + (xIndex - (baseSize - 1) / 2) * 2, // shift to center
-                     yLayer * 2,                        // stack height
+                     yLayer * 2 + 14,                        // stack height, 14 is the altitude over the sea level
                     (zIndex - (baseSize - 1) / 2) * 2
                 );
 

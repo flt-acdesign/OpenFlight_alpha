@@ -1,15 +1,39 @@
 
-
-
-json_data = JSON.parsefile("data9.json")
+json_data = JSON.parsefile("SF25B.json")
 aircraft_aero_and_propulsive_database = parse_aero_data(json_data)
+
+ # OJO!!! revisar completamente y validar
+function compute_inertial_tensor_body_frame(aircraft_mass, radius_of_giration_pitch, radius_of_giration_roll, radius_of_giration_yaw, principal_axis_pitch_up_DEG  ) 
+    I_body_principal_axes = [
+        aircraft_mass * radius_of_giration_roll^2  0.0  0.0;
+        0.0  aircraft_mass * radius_of_giration_yaw^2   0.0;
+        0.0  0.0  aircraft_mass * radius_of_giration_pitch^2
+    ]
+
+    # Convert angle to radians
+    θ = deg2rad(principal_axis_pitch_up_DEG)
+    
+    # Rotation matrix around z-axis
+    R = [
+        cos(θ)  -sin(θ)  0.0;
+        sin(θ)   cos(θ)  0.0;
+        0.0      0.0     1.0
+    ]
+    
+    # Compute rotated inertia tensor: I_body = R * I_body_principal_axes * R'
+    I_body = R * I_body_principal_axes * transpose(R)
+
+    return I_body
+end
+
 
 
 aircraft_flight_physics_and_propulsive_data = (
     # Aircraft mass and geometry
     aircraft_mass = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
+
     reference_area = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_area"),
-    Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
+    #Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
     AR = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "AR"),
     Oswald_factor = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Oswald_factor"),
 
@@ -44,11 +68,13 @@ aircraft_flight_physics_and_propulsive_data = (
     engine_spool_down_speed = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "engine_spool_down_speed"),     # Spool-down speed (fraction of max thrust/sec)
 
     # Inertia matrix
-    I_body = [
-        1/6  0.0  0.0;
-        0.0  1/6  0.0;
-        0.0  0.0  1/6
-       ]    
+    I_body = compute_inertial_tensor_body_frame(
+            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
+            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_pitch"),
+            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_roll"),
+            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_yaw"),
+            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "principal_axis_pitch_up_DEG"),
+    )
 
 )
 

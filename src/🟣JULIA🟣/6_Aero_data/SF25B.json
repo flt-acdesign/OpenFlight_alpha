@@ -5,24 +5,24 @@
     "radius_of_giration_pitch": 3.5,
     "radius_of_giration_yaw": 4.0,
     "radius_of_giration_roll": 4.0,
-    "principal_axis_pitch_up_DEG": 3.0,
+    "principal_axis_pitch_up_DEG": -2.0,
 
     "reference_area": 18.2,       
     "AR": 13.8,
     "Oswald_factor": 0.7, 
-    "wing_mean_aerodynamic_chord": 1.2,
+    "wing_mean_aerodynamic_chord": 1.35,
     
-    "derivative_roll_vs_aileron": 0.0001,
-    "derivative_pitch_vs_elevator": 0.00025,
-    "derivative_yaw_vs_rudder": 0.00004,
+    "derivative_roll_vs_aileron": 0.14,
+    "derivative_pitch_vs_elevator": 0.2,
+    "derivative_yaw_vs_rudder": 0.1,
     
-    "CM0": 0.00013,
-    "CN_beta": 0.0003,
-    "CM_alpha": -0.004,
+    "CM0": 0.014,
+    "CN_beta": 0.3,
+    "CM_alpha": -0.4,
     
-    "Cl_p": -0.00006,
-    "Cm_q": -0.00002,
-    "Cn_r": -0.0001,
+    "Cl_p": -0.07,
+    "Cm_q": -0.04,
+    "Cn_r": -0.2,
     
     "maximum_thrust_at_sea_level": 3000.0,
     "thrust_installation_angle_DEG": 0.0,
@@ -42,11 +42,11 @@
                         {
                             "beta": 0.0,
                             "data": [
-                                {"alpha": -3.14, "CL": 0.0},
-                                {"alpha": -0.34, "CL": -0.1},
+                                {"alpha": -180, "CL": 0.0},
+                                {"alpha": -15, "CL": -0.9},
                                 {"alpha": 0.0, "CL": 0.0},
-                                {"alpha": 0.34, "CL": 0.1},
-                                {"alpha": 3.14, "CL": 0.0}
+                                {"alpha": 15, "CL": 1.1},
+                                {"alpha": 180, "CL": 0.0}
                             ]
                         }
                     ]
@@ -108,7 +108,7 @@
         "CD0": {
             "parameters": ["Mach"],
             "data": [
-                {"Mach": 0.0, "CD0": 0.02}
+                {"Mach": 0.0, "CD0": 0.024}
             ]
         },
         "CM_dq1": {

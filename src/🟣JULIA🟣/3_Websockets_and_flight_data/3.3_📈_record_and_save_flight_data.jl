@@ -9,7 +9,7 @@ df = DataFrame(
     qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
     wx=Float64[], wy=Float64[], wz=Float64[],
     fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
-    alpha=Float64[], beta=Float64[],
+    alpha_DEG=Float64[], beta_DEG=Float64[],
     pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
     pitch_demand_attained=Float64[], roll_demand_attained=Float64[], yaw_demand_attained=Float64[],
     thrust_setting_demand=Float64[], thrust_attained=Float64[]
@@ -21,6 +21,8 @@ has_written_to_csv = false
 function gather_flight_data(aircraft_state_data::Dict{String,Float64}, elapsed_time::Float64, df::DataFrame)
     # Make the flag variable accessible inside the function
     global has_written_to_csv
+
+#println(aircraft_state_data)
     
     # Gather flight_data data with rounded values
     push!(df, (
@@ -47,8 +49,8 @@ function gather_flight_data(aircraft_state_data::Dict{String,Float64}, elapsed_t
         fy_global = round(aircraft_state_data["fy_global"], digits=DECIMAL_PLACES),
         fz_global = round(aircraft_state_data["fz_global"], digits=DECIMAL_PLACES),
 
-        alpha = round(aircraft_state_data["alpha"], digits=DECIMAL_PLACES),
-        beta  = round(aircraft_state_data["beta"],  digits=DECIMAL_PLACES),
+        alpha_DEG = round(rad2deg(aircraft_state_data["alpha_RAD"]), digits=DECIMAL_PLACES),
+        beta_DEG  = round(rad2deg(aircraft_state_data["beta_RAD"]),  digits=DECIMAL_PLACES),
 
         pitch_demand           = round(aircraft_state_data["pitch_demand"],           digits=DECIMAL_PLACES),
         roll_demand            = round(aircraft_state_data["roll_demand"],            digits=DECIMAL_PLACES),

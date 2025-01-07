@@ -7,7 +7,7 @@ function 🟢_compute_lift_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_fligh
 
     # Note, beta is made positive as it is assumed that the aircraft is symmetric
 
-    CL = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CL", Mach=Mach, beta = abs(beta_RAD), alpha=alpha_RAD)
+    CL = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CL", Mach=Mach, beta = abs(rad2deg(beta_RAD)), alpha=rad2deg(alpha_RAD))
     return CL
 
 
