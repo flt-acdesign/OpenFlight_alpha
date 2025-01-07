@@ -6,6 +6,21 @@ function createScene(engine, canvas) {
   createAircraft(shadowGenerator, scene)
   const {camera, pilotCamera, cockpitCamera} = setupCameras(scene, canvas);
   createWorldScenery(scene, shadowGenerator, camera);
+
+// Example usage:
+createBlinkingSphere(scene, 120, 20, 120, {
+  sphereColor: new BABYLON.Color3(1, 1, 1),  // Green color
+  diameter: 1,                               // Larger sphere
+  lightRange: 25,                           // Larger light radius
+  blinkInterval: 250,                       // Faster blinking
+  lightIntensity: 2,                        // Brighter light
+  glowIntensity: 1.5                        // Stronger glow
+});
+//
+// // To remove the sphere later:
+// // blinkingSphere.dispose();
+
+
   createVelocityLine();
   createForceLine();
   createGUI();

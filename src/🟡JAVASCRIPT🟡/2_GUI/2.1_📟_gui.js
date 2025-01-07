@@ -86,7 +86,11 @@ function createGUI() {
 function updateInfo() {
   // Update GUI text blocks
   positionText.text = `Position: x = ${aircraft.position.x.toFixed(2)}, y = ${aircraft.position.y.toFixed(2)}, z = ${aircraft.position.z.toFixed(2)}`
-  velocityText.text = `Velocity: vx = ${velocity.x.toFixed(2)} m/s, vy = ${velocity.y.toFixed(2)} m/s, vz = ${velocity.z.toFixed(2)} m/s`
+
+
+  velocityText.text = `Speed: vx = ${((velocity.x**2 + velocity.y**2 + velocity.y**2)**0.5).toFixed(2) } m/s, VSI = ${velocity.y.toFixed(2)} m/s`
+
+
   forceText.text = `Force: fx = ${forceGlobalX.toFixed(2)} N, fy = ${forceGlobalX.toFixed(2)} N, fz = ${forceGlobalX.toFixed(2)} N`
   angularVelocityText.text = `Angular Velocity: wx = ${angularVelocity.x.toFixed(2)} rad/s, wy = ${angularVelocity.y.toFixed(2)} rad/s, wz = ${angularVelocity.z.toFixed(2)} rad/s`
   //momentText.text = `Moment: mx = ${momentX.toFixed(2)} Nm, my = ${momentY.toFixed(2)} Nm, mz = ${momentZ.toFixed(2)} Nm`

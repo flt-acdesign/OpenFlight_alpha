@@ -26,7 +26,7 @@ function createWorldScenery(scene, shadowGenerator, camera) {
     createSegmentedGround(scene, scene.groundConfig);
 
     // (Optional) create reference objects, trees, runway, etc.
-    createReferenceCube(scene, shadowGenerator);
+    create_control_tower(scene, shadowGenerator);
     createRandomTrees(scene, shadowGenerator, scene.groundConfig);
     createRunway(scene, scene.groundConfig);
 
@@ -361,42 +361,132 @@ function createRandomTrees(scene, shadowGenerator, groundConfig) {
  * players can see a "landmark" in the scene for orientation.
  * It stacks multiple colored cubes in a small 3x3 base.
  **************************************************************/
-function createReferenceCube(scene, shadowGenerator) {
+function create_control_tower(scene, shadowGenerator) {
     const baseSize = 3;  // NxN cubes in each layer
     const height = 10;   // how many layers to stack
 
+    // Create the tower structure
     for (let yLayer = 0; yLayer < height; yLayer++) {
         for (let xIndex = 0; xIndex < baseSize; xIndex++) {
             for (let zIndex = 0; zIndex < baseSize; zIndex++) {
-                // Each cube has size=2
                 const cube = BABYLON.MeshBuilder.CreateBox("cube", { size: 2 }, scene);
 
-                // Position so the entire base is centered around x=40, z=0
                 cube.position = new BABYLON.Vector3(
-                    40 + (xIndex - (baseSize - 1) / 2) * 2, // shift to center
-                     yLayer * 2 + 14,                        // stack height, 14 is the altitude over the sea level
+                    40 + (xIndex - (baseSize - 1) / 2) * 2,
+                    yLayer * 2 + 14,
                     (zIndex - (baseSize - 1) / 2) * 2
                 );
 
-                // Alternate colors between red and white
                 const cubeMaterial = new BABYLON.StandardMaterial("cubeMaterial", scene);
                 if ((xIndex + yLayer + zIndex) % 2 === 0) {
-                    cubeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0); // Red
+                    cubeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
                 } else {
-                    cubeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // White
+                    cubeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
                 }
                 cubeMaterial.fogEnabled = true;
                 cube.material = cubeMaterial;
 
-                // Cast shadows for realism
                 shadowGenerator.addShadowCaster(cube);
-
-                // Always keep it active
                 cube.isAlwaysActive = true;
             }
         }
     }
+
+    // Create blinking sphere at the top of the tower
+    const blinkingSphere = createBlinkingSphere(scene, 
+        40,                     // x coordinate (tower center)
+        height * 2 + 13,       // y coordinate (top of tower)
+        0,                     // z coordinate (tower center)
+        {
+            sphereColor: new BABYLON.Color3(1, 0, 0),  // Red color
+            diameter: 4,                               // 2x original size
+            lightRange: 10,                           // 10 units light radius
+            blinkInterval: 1000,                      // 1 second interval
+            lightIntensity: 1,                        // Normal light intensity
+            glowIntensity: 1                          // Normal glow intensity
+        }
+    );
+
+    // Add shadow casting for the sphere
+    shadowGenerator.addShadowCaster(blinkingSphere.sphere);
+    blinkingSphere.sphere.isAlwaysActive = true;
+
+    // Return the blinking sphere controller in case we need to dispose it later
+    return blinkingSphere;
 }
+function createBlinkingSphere(scene, x, y, z, options = {}) {
+    const defaults = {
+        sphereColor: new BABYLON.Color3(1, 0, 0),
+        diameter: 4,
+        lightRange: 10,
+        blinkInterval: 1000,
+        lightIntensity: 1,
+        glowIntensity: 1
+    };
+
+    const settings = { ...defaults, ...options };
+
+    const sphere = BABYLON.MeshBuilder.CreateSphere("blinkingSphere", { 
+        diameter: settings.diameter 
+    }, scene);
+    sphere.position = new BABYLON.Vector3(x, y, z);
+
+    const sphereMaterial = new BABYLON.StandardMaterial("sphereMaterial", scene);
+    sphereMaterial.emissiveColor = settings.sphereColor;
+    sphereMaterial.fogEnabled = true;
+    sphere.material = sphereMaterial;
+
+    const light = new BABYLON.PointLight("sphereLight", sphere.position, scene);
+    light.intensity = 0;
+    light.diffuse = settings.sphereColor;
+    light.range = settings.lightRange;
+
+    const glowLayer = new BABYLON.GlowLayer("glow", scene);
+    glowLayer.intensity = settings.glowIntensity;
+    glowLayer.addIncludedOnlyMesh(sphere);
+
+    let isOn = false;
+    const observer = scene.onBeforeRenderObservable.add(() => {
+        const currentTime = Date.now();
+        if (currentTime % (settings.blinkInterval * 2) < settings.blinkInterval) {
+            if (!isOn) {
+                sphereMaterial.emissiveColor = settings.sphereColor;
+                sphereMaterial.diffuseColor = settings.sphereColor;
+                light.intensity = settings.lightIntensity;
+                glowLayer.intensity = settings.glowIntensity;
+                isOn = true;
+            }
+        } else {
+            if (isOn) {
+                sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+                light.intensity = 0;
+                glowLayer.intensity = 0;
+                isOn = false;
+            }
+        }
+    });
+
+    return {
+        sphere,
+        light,
+        glowLayer,
+        dispose: () => {
+            scene.onBeforeRenderObservable.remove(observer);
+            sphere.dispose();
+            light.dispose();
+            glowLayer.dispose();
+        }
+    };
+}
+
+
+
+
+
+
+
+
 
 /***************************************************************
  * Creates a runway that also follows the terrain undulations.
