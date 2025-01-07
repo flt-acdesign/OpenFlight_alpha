@@ -1,37 +1,34 @@
 {
-"constants": {
-    "aircraft_mass": 600.0,
+    "constants": {
+        "aircraft_mass": 600.0,
+        "radius_of_giration_pitch": 3.5,
+        "radius_of_giration_yaw": 4.0,
+        "radius_of_giration_roll": 4.0,
+        "principal_axis_pitch_up_DEG": -2.0,
 
-    "radius_of_giration_pitch": 3.5,
-    "radius_of_giration_yaw": 4.0,
-    "radius_of_giration_roll": 4.0,
-    "principal_axis_pitch_up_DEG": -2.0,
 
-    "reference_area": 18.2,       
-    "AR": 13.8,
-    "Oswald_factor": 0.7, 
-    "wing_mean_aerodynamic_chord": 1.35,
-    
-    "derivative_roll_vs_aileron": 0.14,
-    "derivative_pitch_vs_elevator": 0.2,
-    "derivative_yaw_vs_rudder": 0.1,
-    
-    "CM0": 0.014,
-    "CN_beta": 0.3,
-    "CM_alpha": -0.4,
-    
-    "Cl_p": -0.07,
-    "Cm_q": -0.04,
-    "Cn_r": -0.2,
-    
-    "maximum_thrust_at_sea_level": 3000.0,
-    "thrust_installation_angle_DEG": 0.0,
-    
-    "control_actuator_speed": 3.0,
-    "engine_spool_up_speed": 1.3,
-    "engine_spool_down_speed": 1.1
+        "x_CoG": 2.4,
+        "x_wing_aerodynamic_center": 2.9,
 
-},
+        "reference_area": 18.2,
+        "AR": 13.8,
+        "Oswald_factor": 0.7,
+        "wing_mean_aerodynamic_chord": 1.35,
+        "derivative_roll_vs_aileron": 0.17,
+        "derivative_pitch_vs_elevator": 0.15,
+        "derivative_yaw_vs_rudder": 0.1,
+        "CM0": 0.19,
+        "CN_beta": 0.3,
+        "CM_alpha": -0.4,
+        "Cl_p": -0.19,
+        "Cm_q": -0.04,
+        "Cn_r": -0.2,
+        "maximum_thrust_at_sea_level": 2000.0,
+        "thrust_installation_angle_DEG": 0.0,
+        "control_actuator_speed": 5.0,
+        "engine_spool_up_speed": 1.3,
+        "engine_spool_down_speed": 1.1
+    },
     "coefficients": {
         "CL": {
             "parameters": ["Mach", "beta", "alpha"],
@@ -53,7 +50,49 @@
                 }
             ]
         },
-        "CL_p1": {
+        "CS": {
+            "parameters": ["Mach", "alpha", "beta"],
+            "data": [
+                {
+                    "Mach": 0.0,
+                    "data": [
+                        {
+                            "alpha": 0.0,
+                            "data": [
+                                {"beta": -180, "CS": 0.0},
+                                {"beta": -9, "CS": 0.02},
+                                {"beta": 0.0, "CS": 0.0},
+                                {"beta": 9, "CS": -0.02},
+                                {"beta": 180, "CS": 0.0}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "CD0": {
+            "parameters": ["Mach", "beta", "alpha"],
+            "data": [
+                {
+                    "Mach": 0.0,
+                    "data": [
+                        {
+                            "beta": 0.0,
+                            "data": [
+                                {"alpha": -180, "CD0": 0.05},
+                                {"alpha": -90, "CD0": 1.5},
+                                {"alpha": -10, "CD0": 0.025},
+                                {"alpha": 0.0, "CD0": 0.024},
+                                {"alpha": 10, "CD0": 0.025},
+                                {"alpha": 90, "CD0": 1.6},
+                                {"alpha": 180, "CD0": 0.05}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "CP": {
             "parameters": ["Mach", "beta", "alpha", "p"],
             "data": [
                 {
@@ -65,17 +104,17 @@
                                 {
                                     "alpha": 0.0,
                                     "data": [
-                                        {"p": -1.0, "CL_p": -0.1},
-                                        {"p": 0.0, "CL_p": 0.0},
-                                        {"p": 1.0, "CL_p": 0.1}
+                                        {"p": -1.0, "CP": -0.1},
+                                        {"p": 0.0, "CP": 0.0},
+                                        {"p": 1.0, "CP": 0.1}
                                     ]
                                 },
                                 {
                                     "alpha": 10.0,
                                     "data": [
-                                        {"p": -1.0, "CL_p": -0.15},
-                                        {"p": 0.0, "CL_p": 0.0},
-                                        {"p": 1.0, "CL_p": 0.15}
+                                        {"p": -1.0, "CP": -0.15},
+                                        {"p": 0.0, "CP": 0.0},
+                                        {"p": 1.0, "CP": 0.15}
                                     ]
                                 }
                             ]
@@ -86,17 +125,17 @@
                                 {
                                     "alpha": 0.0,
                                     "data": [
-                                        {"p": -1.0, "CL_p": -0.12},
-                                        {"p": 0.0, "CL_p": 0.0},
-                                        {"p": 1.0, "CL_p": 0.12}
+                                        {"p": -1.0, "CP": -0.12},
+                                        {"p": 0.0, "CP": 0.0},
+                                        {"p": 1.0, "CP": 0.12}
                                     ]
                                 },
                                 {
                                     "alpha": 10.0,
                                     "data": [
-                                        {"p": -1.0, "CL_p": -0.17},
-                                        {"p": 0.0, "CL_p": 0.0},
-                                        {"p": 1.0, "CL_p": 0.17}
+                                        {"p": -1.0, "CP": -0.17},
+                                        {"p": 0.0, "CP": 0.0},
+                                        {"p": 1.0, "CP": 0.17}
                                     ]
                                 }
                             ]
@@ -105,13 +144,13 @@
                 }
             ]
         },
-        "CD0": {
+        "Cx": {
             "parameters": ["Mach"],
             "data": [
                 {"Mach": 0.0, "CD0": 0.024}
             ]
         },
-        "CM_dq1": {
+        "CM": {
             "parameters": ["Mach", "alpha", "dq"],
             "data": [
                 {
@@ -120,17 +159,17 @@
                         {
                             "alpha": 0.0,
                             "data": [
-                                {"dq": -0.4, "CM_dq": -0.2},
-                                {"dq": 0.0, "CM_dq": 0.0},
-                                {"dq": 0.4, "CM_dq": 0.2}
+                                {"dq": -0.4, "CM": -0.2},
+                                {"dq": 0.0, "CM": 0.0},
+                                {"dq": 0.4, "CM": 0.2}
                             ]
                         },
                         {
                             "alpha": 10.0,
                             "data": [
-                                {"dq": -0.4, "CM_dq": -0.25},
-                                {"dq": 0.0, "CM_dq": 0.0},
-                                {"dq": 0.4, "CM_dq": 0.25}
+                                {"dq": -0.4, "CM": -0.25},
+                                {"dq": 0.0, "CM": 0.0},
+                                {"dq": 0.4, "CM": 0.25}
                             ]
                         }
                     ]
@@ -141,24 +180,24 @@
                         {
                             "alpha": 0.0,
                             "data": [
-                                {"dq": -0.4, "CM_dq": -0.15},
-                                {"dq": 0.0, "CM_dq": 0.0},
-                                {"dq": 0.4, "CM_dq": 0.15}
+                                {"dq": -0.4, "CM": -0.15},
+                                {"dq": 0.0, "CM": 0.0},
+                                {"dq": 0.4, "CM": 0.15}
                             ]
                         },
                         {
                             "alpha": 10.0,
                             "data": [
-                                {"dq": -0.4, "CM_dq": -0.18},
-                                {"dq": 0.0, "CM_dq": 0.0},
-                                {"dq": 0.4, "CM_dq": 0.18}
+                                {"dq": -0.4, "CM": -0.18},
+                                {"dq": 0.0, "CM": 0.0},
+                                {"dq": 0.4, "CM": 0.18}
                             ]
                         }
                     ]
                 }
             ]
         },
-        "CT1": {
+        "CT": {
             "parameters": ["alpha", "beta", "tau"],
             "data": [
                 {

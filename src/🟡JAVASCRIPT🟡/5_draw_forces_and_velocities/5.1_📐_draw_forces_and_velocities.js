@@ -1,5 +1,9 @@
 
 
+
+
+
+
 // Array to store trajectory points
 let trajectoryPoints = [];
 

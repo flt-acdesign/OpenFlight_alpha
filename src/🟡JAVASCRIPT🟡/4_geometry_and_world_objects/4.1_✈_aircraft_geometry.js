@@ -10,7 +10,7 @@ async function createAircraft(shadowGenerator, scene) {
     }
     // Create the main sphere named "aircraft"
     aircraft = BABYLON.MeshBuilder.CreateSphere("aircraft", { diameter: .1 }, scene);
-    aircraft.position.y = 130;
+    aircraft.position.y = 430;
     aircraft.rotationQuaternion = new BABYLON.Quaternion(0, 0, 0, 1);
 
     // Create the transform node for the simple aircraft geometry

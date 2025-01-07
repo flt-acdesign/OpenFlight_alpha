@@ -7,25 +7,35 @@ function 🟢_compute_lift_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_fligh
 
     # Note, beta is made positive as it is assumed that the aircraft is symmetric
 
-    CL = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CL", Mach=Mach, beta = abs(rad2deg(beta_RAD)), alpha=rad2deg(alpha_RAD))
+    CL = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CL", Mach=Mach, beta = abs(rad2deg(beta_RAD)), alpha=rad2deg(alpha_RAD))  
     return CL
-
-
+    
 end
 
 
 
 function 🟢_compute_sideforce_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
-    # Not yet implemented
-    return 0.0
+
+    CS = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CS", Mach=Mach, beta = rad2deg(beta_RAD), alpha=rad2deg(alpha_RAD))
+    return CS
+
 end
 
 
 
 # OJO!!!  añadir efecto de derrape en resistencia
-function 🟢_compute_drag_coefficient(alpha_RAD, beta_RAD, MAch, aircraft_flight_physics_and_propulsive_data, CL, aircraft_state, control_demand_vector_attained)
+function 🟢_compute_drag_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, CL, CS, aircraft_state, control_demand_vector_attained)
     # Again, use string keys: "CD0", "AR", "Oswald_factor"
-    return aircraft_flight_physics_and_propulsive_data.CD0 + CL^2 / (π * aircraft_flight_physics_and_propulsive_data.AR * aircraft_flight_physics_and_propulsive_data.Oswald_factor)
+
+    CD0_pure_parasitic = 0.024 #fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=Mach, beta = abs(rad2deg(beta_RAD)), alpha=rad2deg(alpha_RAD))
+
+
+    CDi_Lift = CL^2 / (π * aircraft_flight_physics_and_propulsive_data.AR * aircraft_flight_physics_and_propulsive_data.Oswald_factor)
+    CDi_Sideslip = abs(CS^2 )   # OJO! Still need to correct to convert sideforce to drag
+
+    CD_Total = CD0_pure_parasitic + CDi_Lift + CDi_Sideslip
+
+    return CD_Total
 end
 
 

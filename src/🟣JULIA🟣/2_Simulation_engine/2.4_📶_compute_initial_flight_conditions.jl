@@ -26,7 +26,6 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     # Normalize the orientation quaternion to avoid numerical drift
     global_orientation_quaternion = quat_normalize([qw, qx, qy, qz])
 
-
     # Body angular velocity vector
     omega_body = SVector(p_roll_rate, r_yaw_rate, q_pitch_rate)
 
@@ -36,8 +35,6 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     # Quaternion derivative 
     # q_dot = 0.5 * (global_orientation_quaternion ⨂ ω_body)
     q_dot = 0.5 * quat_multiply(global_orientation_quaternion, omega_body_quaternion)
-
-
 
 
     # === 2) FORCES & LINEAR ACCELERATIONS ===
@@ -59,18 +56,12 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     alpha_rad = -my_atan2(v_body[2], v_body[1])
     beta_rad  = -my_atan2(v_body[3], v_body[1])
 
-
-
-
-
     aircraft_mass = aircraft_data.aircraft_mass  # this and the inertia could change due to fuel burn
 
     I_body = aircraft_data.I_body
 
     # Pre-compute the inverse of the inertia tensor matrix
     I_body_inverse = inv(aircraft_data.I_body)     # pre-compute 3×3 inverse inertia tensor matrix
-
-
 
     return ( # named tuple with current flight conditions derived from the state vector
         # Unpacked variables
@@ -101,7 +92,6 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         alpha_rad           = alpha_rad,
         beta_rad            = beta_rad,
     
-
         omega_body = omega_body, 
 
         # Angular velocity as a quaternion
@@ -111,12 +101,9 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         # q_dot = 0.5 * (global_orientation_quaternion ⨂ ω_body)
         q_dot = q_dot,
 
-
-
         aircraft_mass = aircraft_mass,  # this and the inertia could change due to fuel burn
         I_body = I_body,
         # Pre-compute the inverse of the inertia tensor matrix
         I_body_inverse = I_body_inverse     # pre-compute 3×3 inverse inertia tensor matrix to save time in RK4 evaluations
-
     )
 end

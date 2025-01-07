@@ -6,7 +6,7 @@ let glbNode = null;   // TransformNode holding the loaded GLB
 
 
 let engine, scene;
-let velocity = { x: 40, y: 0, z: 0 }; // Initial velocity
+let velocity = { x: 30, y: 0, z: 0 }; // Initial velocity
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
 let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
 let isPaused = false;
@@ -43,8 +43,8 @@ let forceGlobalX = 0.0;
 let forceGlobalY = 0.0;
 let forceGlobalZ = 0.0;
 
-let alpha_DEG = 0.0;
-let beta_DEG = 0.0;
+let alpha_RAD = 0.0;
+let beta_RAD = 0.0;
 
 // Gamepad variables
 let gamepadIndex = null;

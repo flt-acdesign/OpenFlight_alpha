@@ -1,3 +1,8 @@
+const rad2deg = rad => (rad * 180.0) / Math.PI;
+
+// rad2deg(Math.PI / 2); // 90
+
+
 function createGUI() {
   advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI")
 
@@ -87,8 +92,10 @@ function updateInfo() {
   //momentText.text = `Moment: mx = ${momentX.toFixed(2)} Nm, my = ${momentY.toFixed(2)} Nm, mz = ${momentZ.toFixed(2)} Nm`
   timeText.text = `Time: ${elapsedTime.toFixed(2)} s`
 
-  alphaText.text = `Alpha: ${alpha_DEG.toFixed(2)}`
-  betaText.text = `Beta: ${beta_DEG.toFixed(2)}`
+  alphaText.text = `Alpha: ${rad2deg(alpha_RAD).toFixed(2)}`
+  betaText.text = `Beta: ${rad2deg(beta_RAD).toFixed(2)}`
+
+
 
   // Update joystick input display with input channel numbers
   const axesInfo = joystickAxes.map((value, index) => `[${index}]: ${value.toFixed(2)}`).join(", ")

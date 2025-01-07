@@ -36,20 +36,14 @@ function compute_6DOF_equations_of_motion(
         control_demand_vector_attained
     )
 
-    # Compute aerodynamic force coefficients (wind axes)
-    CL = 🟢_compute_lift_coefficient(
+    # Compute aerodynamic force coefficients and associated moments (wind axes)
+    CL  = 🟢_compute_lift_coefficient(
         initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
         aircraft_data,
         aircraft_state_vector,
         control_demand_vector_attained
     )
-    CD = 🟢_compute_drag_coefficient(
-        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
-        aircraft_data,
-        CL,
-        aircraft_state_vector,
-        control_demand_vector_attained
-    )
+
     CS = 🟢_compute_sideforce_coefficient(
         initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
         aircraft_data,
@@ -57,6 +51,17 @@ function compute_6DOF_equations_of_motion(
         control_demand_vector_attained
     )
 
+    CD = 🟢_compute_drag_coefficient(
+        initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
+        aircraft_data,
+        CL,CS, 
+        aircraft_state_vector,
+        control_demand_vector_attained
+    )
+
+
+
+    
     # Aerodynamic forces in wind frame [CD, CL, CS]
     aerodynamic_force_vector_wind_N = initial_flight_conditions.dynamic_pressure * aircraft_data.reference_area .* [CD, CL, CS]
 
@@ -96,6 +101,14 @@ function compute_6DOF_equations_of_motion(
     
     # === 3) MOMENTS & ANGULAR ACCELERATIONS ===
 
+    vector_of_moment_coefficients_due_to_aero_forces_body =
+        [
+            0.0,  # roll
+            0.0,  # yaw,
+            aircraft_flight_physics_and_propulsive_data.wing_lift_lever_arm_wrt_CoG_over_MAC * CL
+        ]
+
+
     # Control moments in body axes
     vector_of_moment_coefficients_of_control_body =
         [
@@ -116,7 +129,7 @@ function compute_6DOF_equations_of_motion(
                 aircraft_data,
                 aircraft_state_vector,
                 control_demand_vector_attained
-            )
+            ) 
         ]
 
     # Static stability moment coefficients in body axes
@@ -159,9 +172,10 @@ function compute_6DOF_equations_of_motion(
     # Dimensionalize the sum all moment coefficients into total moments in body frame
     total_moment_in_body_frame =  aircraft_data.wing_mean_aerodynamic_chord * aircraft_data.reference_area * initial_flight_conditions.dynamic_pressure .* 
         (
+        vector_of_moment_coefficients_due_to_aero_forces_body +
         vector_of_moment_coefficients_of_control_body + 
         vector_of_moment_coefficients_of_static_stability_body + 
-        vector_of_moment_coefficients_of_aerodynamic_damping_body
+        vector_of_moment_coefficients_of_aerodynamic_damping_body         
         )
 
     # Inverse dynamics for angular acceleration in body frame

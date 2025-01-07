@@ -32,6 +32,15 @@ aircraft_flight_physics_and_propulsive_data = (
     # Aircraft mass and geometry
     aircraft_mass = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
 
+    x_CoG = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_CoG"),
+    x_wing_aerodynamic_center = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_wing_aerodynamic_center"),
+
+    wing_lift_lever_arm_wrt_CoG_over_MAC = -1 * (
+        (fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_wing_aerodynamic_center")) - 
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_CoG")) 
+        / fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"), 
+
+
     reference_area = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_area"),
     #Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
     AR = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "AR"),
@@ -39,7 +48,7 @@ aircraft_flight_physics_and_propulsive_data = (
 
     #CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0"),
 
-    CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=0.0),
+    #CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=0.0),
 
     wing_mean_aerodynamic_chord = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"),
 
