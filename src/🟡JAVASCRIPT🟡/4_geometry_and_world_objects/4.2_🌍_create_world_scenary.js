@@ -177,8 +177,8 @@ function createSegmentedGround(scene, groundConfig) {
 
     // For shading with normal direction
     // We'll define a direction d = (-1, -1, -1), normalized:
-    const dVec = new BABYLON.Vector3(-1, -.2, -1);
-    dVec.normalize(); // direction we compare with
+    const dVec = new BABYLON.Vector3(-1, -.2, -1)
+    dVec.normalize()
 
     const { freqX, freqZ, amplitude } = groundConfig;
 
@@ -299,13 +299,19 @@ function createSegmentedGround(scene, groundConfig) {
 
                 // 1) Darken if normal is close to dVec = (-1, -1, -1)
                 //    We can measure dot product with dVec
-                const nVec = new BABYLON.Vector3(normal[0], normal[1], normal[2]);
-                const dot = BABYLON.Vector3.Dot(nVec, dVec);
+                const nVec = new BABYLON.Vector3(normal[0], normal[1], normal[2])
+                const dot = BABYLON.Vector3.Dot(nVec, dVec)
+
+                const brownish = new BABYLON.Color3(0.678, .412, 0.031);
+
                 // If dot is large => they're pointing similarly (since both are unit vectors).
                 // Choose your threshold, e.g. 0.8
-                if (dot > 0.1) {
+                if (dot > 0.0) {
                     // scale color down
-                    vertColor = vertColor.scale(0.9); // e.g. 40% darker
+                    vertColor = vertColor.scale(1 - dot) // darkness proportional to the dot product
+
+                    //vertColor = new BABYLON.Color3(dot, 0, 0); // e.g. 40% darker
+
                 }
 
                 // 2) If Laplacian ~ 0 => lighten with a "yellowish" tint,
@@ -316,8 +322,8 @@ function createSegmentedGround(scene, groundConfig) {
 //console.log(laplacian)
                 if (laplacian < nearZeroThreshold) {
                     // e.g. blend 30% toward yellow
-                    const brownish = new BABYLON.Color3(0.678, .412, 0.031);
-                    vertColor = lerpColor(vertColor, brownish, 0.2);
+                    //const brownish = new BABYLON.Color3(0.678, .412, 0.031);
+                    vertColor = lerpColor(vertColor, brownish, -20 * laplacian) // blend the curvature effect with the vertex color
                 }
                 } // if yVal
 
