@@ -27,8 +27,63 @@ function createWorldScenery(scene, shadowGenerator, camera) {
 
     // (Optional) create reference objects, trees, runway, etc.
     create_control_tower(scene, shadowGenerator);
+
+    // Create the Morse tower at position (10,0,5) with 8 segments,
+// each 3 units tall, radius 1.5, top sphere diameter 2.5, 
+// Morse code "SOS", etc.
+const morseTower = createMorseTower(scene, shadowGenerator, {
+
+    // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
+    basePosition: new BABYLON.Vector3(1971, 249, 955),
+    towerHeightInSegments: 8,
+    segmentHeight: 2.5,
+    towerRadius: 2,
+    topSphereDiameter: 3,
+    morseCode: "-.-- --- ..-    .- .-. .    - --- ---    ... -- .- .-. -", 
+    blinkUnit: 300,         // ms for a dot
+    separationTime: 1000    // ms of pause after pattern
+});
+
+const lighthouse = createMorseTower(scene, shadowGenerator, {
+
+    // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
+    basePosition: new BABYLON.Vector3(-1986, 25, -1380),
+    towerHeightInSegments: 8,
+    segmentHeight: 2.5,
+    towerRadius: 2,
+    topSphereDiameter: 3,
+    morseCode: "-.-. ..- .-. .. --- ... .. - -.--   -.- .. .-.. .-.. . -..   - .... .   -.-. .- -", 
+    blinkUnit: 300,         // ms for a dot
+    separationTime: 1000    // ms of pause after pattern
+});
+
     createRandomTrees(scene, shadowGenerator, scene.groundConfig);
     createRunway(scene, scene.groundConfig);
+
+
+    const myHouse = createHouse(scene, shadowGenerator, {
+        basePosition: new BABYLON.Vector3(-435, 12, 572),
+        bodyWidth: 10,
+        bodyDepth: 7,
+        bodyHeight: 5,
+        bodyColor: new BABYLON.Color3(0.8, 0.7, 0.5),
+        roofColor: new BABYLON.Color3(0.4, 0.1, 0.1),
+        roofHeight: 2
+    });
+
+
+    const cottage = createHouse(scene, shadowGenerator, {
+        basePosition: new BABYLON.Vector3(-2231, 8.5, 336),
+        bodyWidth: 15,
+        bodyDepth: 10,
+        bodyHeight: 7,
+        bodyColor: new BABYLON.Color3(0.8, 0.7, 0.5),
+        roofColor: new BABYLON.Color3(0.4, 0.1, 0.1),
+        roofHeight: 3
+    });
+
+
+
 
     // Configure linear fog for atmospheric depth
     scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR;
@@ -37,6 +92,14 @@ function createWorldScenery(scene, shadowGenerator, camera) {
     scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
     scene.fogDensity = 0.0058;
 }
+
+
+
+
+
+
+
+
 
 /***************************************************************
  * Creates a large sky sphere with a vertical gradient texture.
@@ -339,288 +402,5 @@ function createSegmentedGround(scene, groundConfig) {
             BABYLON.VertexData.ComputeNormals(positions, indices, normals);
             groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
         }
-    }
-}
-
-
-
-
-
-/***************************************************************
- * Creates a number of random "trees" across the terrain.
- * Each tree is a simple tapered cylinder placed at the local
- * terrain height (the trunk top extends upward from that height).
- **************************************************************/
-function createRandomTrees(scene, shadowGenerator, groundConfig) {
-    // How many trees to scatter
-    const treeCount = 150;
-
-    // Extract config
-    const { freqX, freqZ, amplitude } = groundConfig;
-
-    for (let i = 0; i < treeCount; i++) {
-        // Random dimension
-        const treeHeight = Math.random() * 15 + 7;  // between 7 and 18
-        const treeBaseRadius = Math.random() * 4 + 2; // between 2 and 6
-
-        // Random position in the x-z plane
-        // (Adjust range to whatever region you want the trees scattered)
-        const xCoord = Math.random() * 580 + 390;   // e.g., 90 -> 670
-        const zCoord = Math.random() * 580 - 90;   // e.g., -90 -> 490
-
-        // Find the terrain height at (xCoord, zCoord)
-        const groundY = undulationMap(xCoord, zCoord, freqX, freqZ, amplitude) - 1
-
-        // We'll position the cylinder so that it emerges out of the ground
-        const treeY = groundY + (treeHeight / 2);
-
-        // Create a simple tapered cylinder
-        const tree = BABYLON.MeshBuilder.CreateCylinder(
-            "tree",
-            {
-                diameterTop: 0,
-                diameterBottom: treeBaseRadius,
-                height: treeHeight,
-                tessellation: 6
-            },
-            scene
-        );
-
-        // Set the final position of the tree
-        tree.position = new BABYLON.Vector3(xCoord, treeY, zCoord);
-
-        // Simple material (green)
-        const treeMaterial = new BABYLON.StandardMaterial("treeMaterial", scene);
-        treeMaterial.diffuseColor = new BABYLON.Color3(0.13, 0.55, 0.13);
-        treeMaterial.fogEnabled = true;
-        tree.material = treeMaterial;
-
-        // Let the tree cast shadows
-        shadowGenerator.addShadowCaster(tree);
-
-        // Keep the tree active at all times (useful in large scenes)
-        tree.isAlwaysActive = true;
-    }
-}
-
-/***************************************************************
- * Creates a small reference "cube tower" near the origin so
- * players can see a "landmark" in the scene for orientation.
- * It stacks multiple colored cubes in a small 3x3 base.
- **************************************************************/
-function create_control_tower(scene, shadowGenerator) {
-    const baseSize = 3;  // NxN cubes in each layer
-    const height = 10;   // how many layers to stack
-
-    // Create the tower structure
-    for (let yLayer = 0; yLayer < height; yLayer++) {
-        for (let xIndex = 0; xIndex < baseSize; xIndex++) {
-            for (let zIndex = 0; zIndex < baseSize; zIndex++) {
-                const cube = BABYLON.MeshBuilder.CreateBox("cube", { size: 2 }, scene);
-
-                cube.position = new BABYLON.Vector3(
-                    40 + (xIndex - (baseSize - 1) / 2) * 2,
-                    yLayer * 2 + 14,
-                    (zIndex - (baseSize - 1) / 2) * 2
-                );
-
-                const cubeMaterial = new BABYLON.StandardMaterial("cubeMaterial", scene);
-                if ((xIndex + yLayer + zIndex) % 2 === 0) {
-                    cubeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
-                } else {
-                    cubeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-                }
-                cubeMaterial.fogEnabled = true;
-                cube.material = cubeMaterial;
-
-                shadowGenerator.addShadowCaster(cube);
-                cube.isAlwaysActive = true;
-            }
-        }
-    }
-
-    // Create blinking sphere at the top of the tower
-    const blinkingSphere = createBlinkingSphere(scene, 
-        40,                     // x coordinate (tower center)
-        height * 2 + 13,       // y coordinate (top of tower)
-        0,                     // z coordinate (tower center)
-        {
-            sphereColor: new BABYLON.Color3(1, 0, 0),  // Red color
-            diameter: 4,                               // 2x original size
-            lightRange: 10,                           // 10 units light radius
-            blinkInterval: 1000,                      // 1 second interval
-            lightIntensity: 1,                        // Normal light intensity
-            glowIntensity: 1                          // Normal glow intensity
-        }
-    );
-
-    // Add shadow casting for the sphere
-    shadowGenerator.addShadowCaster(blinkingSphere.sphere);
-    blinkingSphere.sphere.isAlwaysActive = true;
-
-    // Return the blinking sphere controller in case we need to dispose it later
-    return blinkingSphere;
-}
-function createBlinkingSphere(scene, x, y, z, options = {}) {
-    const defaults = {
-        sphereColor: new BABYLON.Color3(1, 0, 0),
-        diameter: 4,
-        lightRange: 10,
-        blinkInterval: 1000,
-        lightIntensity: 1,
-        glowIntensity: 1
-    };
-
-    const settings = { ...defaults, ...options };
-
-    const sphere = BABYLON.MeshBuilder.CreateSphere("blinkingSphere", { 
-        diameter: settings.diameter 
-    }, scene);
-    sphere.position = new BABYLON.Vector3(x, y, z);
-
-    const sphereMaterial = new BABYLON.StandardMaterial("sphereMaterial", scene);
-    sphereMaterial.emissiveColor = settings.sphereColor;
-    sphereMaterial.fogEnabled = true;
-    sphere.material = sphereMaterial;
-
-    const light = new BABYLON.PointLight("sphereLight", sphere.position, scene);
-    light.intensity = 0;
-    light.diffuse = settings.sphereColor;
-    light.range = settings.lightRange;
-
-    const glowLayer = new BABYLON.GlowLayer("glow", scene);
-    glowLayer.intensity = settings.glowIntensity;
-    glowLayer.addIncludedOnlyMesh(sphere);
-
-    let isOn = false;
-    const observer = scene.onBeforeRenderObservable.add(() => {
-        const currentTime = Date.now();
-        if (currentTime % (settings.blinkInterval * 2) < settings.blinkInterval) {
-            if (!isOn) {
-                sphereMaterial.emissiveColor = settings.sphereColor;
-                sphereMaterial.diffuseColor = settings.sphereColor;
-                light.intensity = settings.lightIntensity;
-                glowLayer.intensity = settings.glowIntensity;
-                isOn = true;
-            }
-        } else {
-            if (isOn) {
-                sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                light.intensity = 0;
-                glowLayer.intensity = 0;
-                isOn = false;
-            }
-        }
-    });
-
-    return {
-        sphere,
-        light,
-        glowLayer,
-        dispose: () => {
-            scene.onBeforeRenderObservable.remove(observer);
-            sphere.dispose();
-            light.dispose();
-            glowLayer.dispose();
-        }
-    };
-}
-
-
-
-
-
-
-
-
-
-/***************************************************************
- * Creates a runway that also follows the terrain undulations.
- * We slightly raise it so that it doesn't intersect with the ground.
- * Then we add small divider boxes as runway markers.
- **************************************************************/
-function createRunway(scene, groundConfig) {
-    // Extract frequency config
-    const { freqX, freqZ, amplitude } = groundConfig;
-
-    // Create a single ground strip for the runway
-    const runwayMaterial = new BABYLON.StandardMaterial("runwayMaterial", scene);
-    runwayMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2); // dark grey
-
-    // Build a ground-like mesh for the runway
-    const runway = BABYLON.MeshBuilder.CreateGround(
-        "runway",
-        {
-            width: 15,       // runway width
-            height: 400,     // runway length
-            subdivisions: 50,
-            updatable: true
-        },
-        scene
-    );
-    runway.material = runwayMaterial;
-
-    // Retrieve runway vertex data for manipulation
-    const runwayPositions = runway.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-    const runwayIndices = runway.getIndices();
-
-    // Adjust the runway so it sits on top of the terrain shape
-    for (let v = 0; v < runwayPositions.length; v += 3) {
-        const xCoord = runwayPositions[v];
-        const zCoord = runwayPositions[v + 2];
-
-        // Terrain height at (xCoord, zCoord)
-        const terrainHeight = undulationMap(xCoord, zCoord, freqX, freqZ, amplitude);
-
-        // Raise the runway a bit above the terrain
-        runwayPositions[v + 1] = terrainHeight + 0.15;
-    }
-    runway.setVerticesData(BABYLON.VertexBuffer.PositionKind, runwayPositions, true);
-
-    // Recompute normals for proper lighting
-    const runwayNormals = [];
-    BABYLON.VertexData.ComputeNormals(runwayPositions, runwayIndices, runwayNormals);
-    runway.setVerticesData(BABYLON.VertexBuffer.NormalKind, runwayNormals, true);
-
-    // Enable receiving shadows or collisions if desired
-    runway.receiveShadows = true;
-    runway.physicsImpostor = new BABYLON.PhysicsImpostor(
-        runway,
-        BABYLON.PhysicsImpostor.MeshImpostor,
-        { mass: 0, friction: 0.5, restitution: 0.1 },
-        scene
-    );
-
-    // Add small divider boxes down the center of the runway
-    const dividerMaterial = new BABYLON.StandardMaterial("dividerMaterial", scene);
-    dividerMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // white lines
-
-    // We'll place them every 20 units along the runway length
-    for (let i = -200; i < 200; i += 20) {
-        // Keep the divider in the center x=0 (relative to runway local coords),
-        // but vary z from -200 to 200 in steps of 20.
-        const xCoord = 0;
-        const zCoord = i;
-
-        // Compute the terrain height here
-        const dividerHeight = undulationMap(xCoord, zCoord, freqX, freqZ, amplitude) + 0.3;
-
-        // Create a small box as the runway marker
-        const divider = BABYLON.MeshBuilder.CreateBox(
-            "divider",
-            { width: 0.3, height: 0.1, depth: 3 },
-            scene
-        );
-        divider.position.set(xCoord, dividerHeight, zCoord);
-        divider.material = dividerMaterial;
-
-        // Optional: give each divider a physics impostor
-        divider.physicsImpostor = new BABYLON.PhysicsImpostor(
-            divider,
-            BABYLON.PhysicsImpostor.BoxImpostor,
-            { mass: 0 },
-            scene
-        );
     }
 }
