@@ -113,6 +113,8 @@ function createSkySphere(scene, camera) {
  *   - randomGreenColor() and randomBrownColor()      // generate random color3
  **************************************************************/
 
+
+
 function createSegmentedGround(scene, groundConfig) {
     // Basic parameters
     const segmentCount = 30;
@@ -173,6 +175,11 @@ function createSegmentedGround(scene, groundConfig) {
         return Math.max(0, Math.min(1, value));
     }
 
+    // For shading with normal direction
+    // We'll define a direction d = (-1, -1, -1), normalized:
+    const dVec = new BABYLON.Vector3(-1, -.2, -1);
+    dVec.normalize(); // direction we compare with
+
     const { freqX, freqZ, amplitude } = groundConfig;
 
     for (let i = 0; i < segmentCount; i++) {
@@ -206,8 +213,11 @@ function createSegmentedGround(scene, groundConfig) {
                 const worldX = localX + centerX;
                 const worldZ = localZ + centerZ;
 
+                // (A) Compute height from your terrain function
                 let yVal = undulationMap(worldX, worldZ, freqX, freqZ, amplitude);
-
+                
+                // (B) Get color based on yVal (existing logic)
+                let vertColor;
                 if (yVal < -16) {
                     const deepestBlue = randomizeColor(new BABYLON.Color3(0.020, 0.0, 0.08), 0.02);
                     if (Math.random() < 0.1) {
@@ -216,9 +226,8 @@ function createSegmentedGround(scene, groundConfig) {
                         deepestBlue.g += whiteAmount;
                         deepestBlue.b += whiteAmount;
                     }
-                    colors.push(deepestBlue.r, deepestBlue.g, deepestBlue.b, 1.0);
-                }
-                else if (yVal < 0) {
+                    vertColor = deepestBlue;
+                } else if (yVal < 0) {
                     const t = (yVal + 16) / 16;
                     const deepBlue = new BABYLON.Color3(0.020, 0.0, 0.08);
                     const tropicalBlue = new BABYLON.Color3(0.0, 0.4, 0.6);
@@ -230,20 +239,18 @@ function createSegmentedGround(scene, groundConfig) {
                         finalColor.g += whiteAmount;
                         finalColor.b += whiteAmount;
                     }
-                    colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
-                }
-                else if (yVal < 4) {
+                    vertColor = finalColor;
+                } else if (yVal < 4) {
                     const sand = randomizeColor(new BABYLON.Color3(0.76, 0.70, 0.50), 0.02);
-                    colors.push(sand.r, sand.g, sand.b, 1.0);
-                }
-                else {
-                    const insideRegion = worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000;
-                    
+                    vertColor = sand;
+                } else {
+                    const insideRegion = (worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000);
+
                     if (insideRegion) {
                         if (yVal < threshold) {
                             const patchColor = getPatchColor(worldX, worldZ);
                             const patchColorRandom = randomizeColor(patchColor, 0.05);
-                            colors.push(patchColorRandom.r, patchColorRandom.g, patchColorRandom.b, 1.0);
+                            vertColor = patchColorRandom;
                         } else {
                             let finalColor;
                             if (yVal < 0.3 * amplitude) {
@@ -256,35 +263,69 @@ function createSegmentedGround(scene, groundConfig) {
                                 finalColor = new BABYLON.Color3(1.0, 1.0, 1.0);
                             }
                             finalColor = randomizeColor(finalColor, 0.05);
-                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                            vertColor = finalColor;
                         }
                     } else {
                         if (yVal < 44) {
                             let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
-                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                            vertColor = finalColor;
                         } else if (yVal < 194) {
                             const t = (yVal - 44) / (194 - 44);
                             const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0);
                             const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             let finalColor = lerpColor(grad1, grad2, t);
                             finalColor = randomizeColor(finalColor, 0.05);
-                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                            vertColor = finalColor;
                         } else if (yVal < 234) {
                             const t = (yVal - 214) / (234 - 214);
                             const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
                             const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
                             let finalColor = lerpColor(grad1, grad2, t);
                             finalColor = randomizeColor(finalColor, 0.05);
-                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                            vertColor = finalColor;
                         } else {
                             let finalColor = randomizeColor(new BABYLON.Color3(1.0, 1.0, 1.0), 0.05);
-                            colors.push(finalColor.r, finalColor.g, finalColor.b, 1.0);
+                            vertColor = finalColor;
                         }
                     }
                 }
-                positions[v + 1] = yVal <0 ? 0 : yVal  // force sea surface to h = 0 
+
+                // (C) Optionally "flatten" the sea surface to 0
+                positions[v + 1] = (yVal < 0) ? 0 : yVal;
+
+                // (D) Compute derivatives => normal & laplacian at this vertex
+                const { normal, laplacian } = computeDerivatives(worldX, worldZ, freqX, freqZ, amplitude, 1.0);
+                // normal is [nx, ny, nz]
+
+                // 1) Darken if normal is close to dVec = (-1, -1, -1)
+                //    We can measure dot product with dVec
+                const nVec = new BABYLON.Vector3(normal[0], normal[1], normal[2]);
+                const dot = BABYLON.Vector3.Dot(nVec, dVec);
+                // If dot is large => they're pointing similarly (since both are unit vectors).
+                // Choose your threshold, e.g. 0.8
+                if (dot > 0.1) {
+                    // scale color down
+                    vertColor = vertColor.scale(0.9); // e.g. 40% darker
+                }
+
+                // 2) If Laplacian ~ 0 => lighten with a "yellowish" tint,
+                //    except if color is white
+
+                if  ((yVal > 1) && (yVal < 230)) {
+                const nearZeroThreshold = -0.003;
+//console.log(laplacian)
+                if (laplacian < nearZeroThreshold) {
+                    // e.g. blend 30% toward yellow
+                    const brownish = new BABYLON.Color3(0.678, .412, 0.031);
+                    vertColor = lerpColor(vertColor, brownish, 0.2);
+                }
+                } // if yVal
+
+                // (E) Finally push RGBA to the color array
+                colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
             }
 
+            // Update mesh geometry
             groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
             groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
 

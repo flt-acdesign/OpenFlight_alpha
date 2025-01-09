@@ -88,7 +88,7 @@ function updateInfo() {
   positionText.text = `Position: x = ${aircraft.position.x.toFixed(2)}, y = ${aircraft.position.y.toFixed(2)}, z = ${aircraft.position.z.toFixed(2)}`
 
 
-  velocityText.text = `Speed: vx = ${((velocity.x**2 + velocity.y**2 + velocity.y**2)**0.5).toFixed(2) } m/s, VSI = ${velocity.y.toFixed(2)} m/s`
+  velocityText.text = `Speed:  = ${(((velocity.x**2 + velocity.y**2 + velocity.z**2)**0.5)*3.6).toFixed(0) } Km/h, VSI = ${velocity.y.toFixed(1)} m/s`
 
 
   forceText.text = `Force: fx = ${forceGlobalX.toFixed(2)} N, fy = ${forceGlobalX.toFixed(2)} N, fz = ${forceGlobalX.toFixed(2)} N`
