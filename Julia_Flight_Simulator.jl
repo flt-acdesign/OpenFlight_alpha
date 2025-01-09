@@ -1,5 +1,5 @@
 
-using HTTP, WebSockets, JSON, CSV, DataFrames, LinearAlgebra, StaticArrays, Dates
+using HTTP, WebSockets, JSON, CSV, DataFrames, LinearAlgebra, StaticArrays, Dates, YAML
 
 # absolute path of the directory containing the current script file
 script_dir = @__DIR__

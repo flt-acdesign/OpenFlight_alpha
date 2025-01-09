@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>YAML Coefficients Viewer</title>
+
+  <!-- Include Plotly.js from CDN -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- Include js-yaml from CDN for parsing YAML -->
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    td, th {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+    .plot-container {
+      margin-bottom: 50px;
+    }
+    .file-input-area {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>YAML Coefficients Viewer</h1>
+
+  <div class="file-input-area">
+    <label for="yamlFile">Select YAML file:</label>
+    <input type="file" id="yamlFile" accept=".yaml,.yml" />
+  </div>
+
+  <h3>Constants</h3>
+  <div id="constantsContainer">
+    <!-- A table of constants will be generated here -->
+  </div>
+
+  <div id="plotsContainer">
+    <!-- Each coefficient's plot will be appended here dynamically -->
+  </div>
+
+  <script>
+    // Fixed color palette for the first-level grouping parameter.
+    // We always restart from the same index for each *coefficient*.
+    const FIRST_PARAM_COLORS = [
+      "#377eb8", // Medium Blue1
+      "#e41a1c", // Dark Red1
+      "#4daf4a", // Forest Green1
+      "#ff7f00", // Orange1
+      "#984ea3", // Purple1
+      "#4477aa", // Navy Blue2
+      "#cc6677", // Rose1
+      "#117733", // Deep Green1
+      "#882255", // Burgundy1
+      "#88ccee"  // Light Blue1
+    ];
+
+    // Marker shapes for the second grouping parameter
+    const MARKER_SHAPES = [
+      "circle", "square", "diamond", "triangle-up", "triangle-down", "hexagon", "star"
+    ];
+
+    // Outline/stroke colors for the third grouping parameter
+    const OUTLINE_COLORS = [
+      "black", "red", "green", "orange", "purple", "brown", "pink"
+    ];
+
+    // When user selects a file, immediately load & process
+    document.getElementById('yamlFile').addEventListener('change', event => {
+      if (!event.target.files.length) return;
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const yamlData = jsyaml.load(e.target.result);
+          renderConstantsTable(yamlData);
+          renderAllCoefficients(yamlData);
+        } catch (err) {
+          console.error("Error parsing YAML:", err);
+          alert("Could not parse YAML file. Check console for details.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // --------------------------------------------------------------------------
+    // 1) Show constants in a *tabular* format
+    // --------------------------------------------------------------------------
+    function renderConstantsTable(data) {
+      const container = document.getElementById("constantsContainer");
+      container.innerHTML = ""; // clear previous
+
+      if (!data || !data.constants) {
+        container.textContent = "(No constants found in YAML.)";
+        return;
+      }
+
+      const constants = data.constants;
+      const names = Object.keys(constants).sort();
+
+      // Build a table
+      const table = document.createElement("table");
+      // Table header
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      let thName = document.createElement("th");
+      thName.textContent = "Constant Name";
+      let thValue = document.createElement("th");
+      thValue.textContent = "Value";
+      headRow.appendChild(thName);
+      headRow.appendChild(thValue);
+      thead.appendChild(headRow);
+
+      // Table body
+      const tbody = document.createElement("tbody");
+      names.forEach(name => {
+        const val = constants[name];
+        const row = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        tdName.textContent = name;
+
+        const tdValue = document.createElement("td");
+        tdValue.textContent = String(val);
+
+        row.appendChild(tdName);
+        row.appendChild(tdValue);
+        tbody.appendChild(row);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      container.appendChild(table);
+    }
+
+    // --------------------------------------------------------------------------
+    // 2) Render all coefficients (plot each one). 
+    //    We replicate the grouping logic from your Julia code.
+    // --------------------------------------------------------------------------
+    function renderAllCoefficients(yamlData) {
+      const plotsContainer = document.getElementById("plotsContainer");
+      plotsContainer.innerHTML = "";
+
+      if (!yamlData.coefficients) {
+        alert("No coefficients found in the YAML file.");
+        return;
+      }
+
+      // For each coefficient, build and show a plot
+      const coeffNames = Object.keys(yamlData.coefficients);
+      coeffNames.forEach(coeffName => {
+        const df = extractCoefficientData(yamlData, coeffName);
+        if (!df.length) {
+          console.warn(`No data extracted for coefficient: ${coeffName}`);
+          return;
+        }
+        const paramHierarchy = findParameterHierarchy(yamlData, coeffName);
+
+        // Create a container div for this coefficient's plot
+        const divId = "plot_" + coeffName;
+        const plotDiv = document.createElement("div");
+        plotDiv.id = divId;
+        plotDiv.className = "plot-container";
+        plotsContainer.appendChild(plotDiv);
+
+        // Build the plot with Plotly
+        plotCoefficient(divId, df, coeffName, paramHierarchy);
+      });
+    }
+
+    // Extract data from nested structure (similar to Julia's extract_coefficient_data)
+    function extractCoefficientData(data, coeffName) {
+      if (!data.coefficients || !data.coefficients[coeffName]) {
+        console.log(`Coefficient ${coeffName} not found in data`);
+        return [];
+      }
+      const coeffObj = data.coefficients[coeffName];
+      const parameters = coeffObj.parameters || [];
+      const rows = [];
+
+      function processNested(entry, paramsSoFar = {}) {
+        if (entry.hasOwnProperty(coeffName)) {
+          // Build a row
+          const row = {};
+          parameters.forEach(p => {
+            row[p] = paramsSoFar[p] !== undefined ? paramsSoFar[p] : 0;
+          });
+          row[coeffName] = entry[coeffName];
+          rows.push(row);
+        }
+        if (entry.data && Array.isArray(entry.data)) {
+          entry.data.forEach(item => {
+            const newParams = {...paramsSoFar};
+            parameters.forEach(p => {
+              if (item.hasOwnProperty(p)) {
+                newParams[p] = item[p];
+              }
+            });
+            processNested(item, newParams);
+          });
+        } else {
+          // no further "data"
+          parameters.forEach(p => {
+            if (entry.hasOwnProperty(p)) {
+              paramsSoFar[p] = entry[p];
+            }
+          });
+        }
+      }
+
+      processNested(coeffObj);
+      return rows;
+    }
+
+    // Retrieve the parameter array from the YAML
+    function findParameterHierarchy(yamlData, coeffName) {
+      return yamlData.coefficients[coeffName].parameters.slice();
+    }
+
+    // Build one Plotly plot for the given data array and coefficient
+    function plotCoefficient(plotDivId, df, coeffName, paramHierarchy) {
+      if (!df.length || !df[0].hasOwnProperty(coeffName)) {
+        Plotly.newPlot(plotDivId, [], {
+          title: `No data for ${coeffName}`
+        });
+        return;
+      }
+
+      // The last parameter is x-axis
+      const xParam = paramHierarchy[paramHierarchy.length - 1];
+      // The rest are grouping parameters
+      const groupParams = paramHierarchy.slice(0, -1);
+      const numGroups = groupParams.length;
+
+      // Group the data by groupParams
+      // groupKey -> { rows: [...], groupValues: {...} }
+      const groupMap = {};
+      df.forEach(row => {
+        const keyParts = groupParams.map(gp => `${gp}=${row[gp]}`);
+        const groupKey = keyParts.join("; ");
+        if (!groupMap[groupKey]) {
+          groupMap[groupKey] = {
+            rows: [],
+            groupValues: {}
+          };
+          groupParams.forEach(gp => {
+            groupMap[groupKey].groupValues[gp] = row[gp];
+          });
+        }
+        groupMap[groupKey].rows.push(row);
+      });
+
+      // For the first-level parameter, we want each distinct value in the order we see them.
+      // So let's gather them in a stable array, so the first group always starts with color #377eb8.
+      // We'll do that by scanning each groupKey in the order we encountered it, extracting the first param's value.
+      // Then we can build a dictionary firstParamValue -> colorIndex for this coefficient.
+      let firstParamIndexMap = {};
+      let nextColorIndex = 0;
+
+      // We'll store the group keys in the order they were inserted:
+      const allGroupKeys = Object.keys(groupMap);
+
+      // The first grouping param (if any)
+      const firstParam = groupParams[0];
+
+      if (numGroups >= 1) {
+        // Build a stable mapping from first-param-value => colorIndex
+        allGroupKeys.forEach(gk => {
+          const val = groupMap[gk].groupValues[firstParam];
+          if (!firstParamIndexMap.hasOwnProperty(val)) {
+            firstParamIndexMap[val] = nextColorIndex;
+            nextColorIndex = (nextColorIndex + 1) % FIRST_PARAM_COLORS.length;
+          }
+        });
+      }
+
+      const traces = [];
+
+      // Now build one trace per group
+      allGroupKeys.forEach(groupKey => {
+        const info = groupMap[groupKey];
+        const rows = info.rows.slice();
+        // Sort by xParam
+        rows.sort((a, b) => a[xParam] - b[xParam]);
+
+        // Build arrays for x and y
+        const xData = rows.map(r => r[xParam]);
+        const yData = rows.map(r => r[coeffName]);
+
+        // Default styles
+        let colorStyle = "#0000ff";
+        let markerSymbol = "none";
+        let strokeColor = "transparent";
+
+        // If we have at least one grouping param => color by first param
+        if (numGroups >= 1) {
+          const firstVal = info.groupValues[firstParam];
+          const colorIdx = firstParamIndexMap[firstVal];
+          colorStyle = FIRST_PARAM_COLORS[colorIdx % FIRST_PARAM_COLORS.length];
+        }
+
+        // If we have at least two grouping params => marker shape by second param
+        if (numGroups >= 2) {
+          const secondParam = groupParams[1];
+          const secondVal = info.groupValues[secondParam];
+          const secondIdx = stableIndexForParamValue(secondVal, secondParam);
+          markerSymbol = MARKER_SHAPES[secondIdx % MARKER_SHAPES.length];
+        }
+
+        // If we have at least three => outline color by third param
+        if (numGroups >= 3) {
+          const thirdParam = groupParams[2];
+          const thirdVal = info.groupValues[thirdParam];
+          const thirdIdx = stableIndexForParamValue(thirdVal, thirdParam);
+          strokeColor = OUTLINE_COLORS[thirdIdx % OUTLINE_COLORS.length];
+        }
+
+        // Lines vs. lines+markers vs. lines+markers+outline
+        let showMarkers = false;
+        let markerSize = 0;
+        let markerLineWidth = 0;
+
+        if (numGroups === 1) {
+          // lines only
+          showMarkers = false;
+        } else if (numGroups === 2) {
+          // lines + markers, no outline
+          showMarkers = true;
+          markerSize = 6;
+          markerLineWidth = 0;
+        } else if (numGroups >= 3) {
+          // lines + markers + outline
+          showMarkers = true;
+          markerSize = 6;
+          markerLineWidth = 1.5;
+        }
+
+        const trace = {
+          x: xData,
+          y: yData,
+          mode: showMarkers ? "lines+markers" : "lines",
+          name: groupKey,
+          line: {
+            color: colorStyle,
+            width: 2
+          },
+          marker: {
+            symbol: markerSymbol,
+            size: markerSize,
+            color: colorStyle,
+            line: {
+              color: strokeColor,
+              width: markerLineWidth
+            }
+          }
+        };
+        traces.push(trace);
+      });
+
+      // Layout
+      const layout = {
+        title: `${coeffName} vs (${paramHierarchy.join(", ")})`,
+        xaxis: { title: xParam },
+        yaxis: { title: coeffName },
+        legend: { x: 1.05, xanchor: "left", y: 1 },
+        margin: { l: 80, r: 20, t: 80, b: 60 }
+      };
+
+      Plotly.newPlot(plotDivId, traces, layout, { responsive: true });
+
+      // A helper function to build stable indexes for param values (beyond the first)
+      // so we don't keep re-hashing them. We'll store them in a global dictionary.
+      function stableIndexForParamValue(val, paramName) {
+        // We'll attach a dictionary to the function object
+        // so that each param name tracks its own encountered values
+        if (!stableIndexForParamValue.paramMaps) {
+          stableIndexForParamValue.paramMaps = {};
+        }
+        if (!stableIndexForParamValue.paramMaps[paramName]) {
+          stableIndexForParamValue.paramMaps[paramName] = {
+            order: [], // array of unique values in the order we see them
+            dict: {}   // map value -> index
+          };
+        }
+        const pm = stableIndexForParamValue.paramMaps[paramName];
+
+        if (!pm.dict.hasOwnProperty(val)) {
+          pm.order.push(val);
+          pm.dict[val] = pm.order.length - 1;
+        }
+        return pm.dict[val];
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,5 +1,15 @@
 
-json_data = JSON.parsefile("SF25B.json")
+#json_data = JSON.parsefile("SF25B.json")
+
+
+# Specify the filename
+filename = "SF25B.yaml"
+
+# Read and parse the YAML file
+json_data = YAML.load_file(filename)
+
+
+
 aircraft_aero_and_propulsive_database = parse_aero_data(json_data)
 
  # OJO!!! revisar completamente y validar
