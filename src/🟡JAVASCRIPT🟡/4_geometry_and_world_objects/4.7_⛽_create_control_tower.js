@@ -397,36 +397,43 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
  *       roofHeight: 2
  *   });
  ***************************************************************/
+
+
 function createHouse(scene, shadowGenerator, options = {}) {
-    /***************************************************************
-     * 1) Define default parameters
-     ***************************************************************/
     const defaults = {
         basePosition: new BABYLON.Vector3(0, 0, 0),
         bodyWidth: 4,
         bodyDepth: 4,
-        bodyHeight_initial: 3,
-        bodyColor: new BABYLON.Color3(0.8, 0.5, 0.4), // light brown
-        roofColor: new BABYLON.Color3(0.5, 0.2, 0.2), // darker brown
-        roofHeight: 2
+        bodyHeight: 3,
+        bodyColor: new BABYLON.Color3(0.95, 0.95, 0.9),
+        roofColor: new BABYLON.Color3(0.2, 0.1, 0.1),
+        roofHeight: 2,
+        roofOverhang: 0.3,
+        rotation: 0
     };
 
     const {
         basePosition,
         bodyWidth,
         bodyDepth,
-        bodyHeight_initial,
+        bodyHeight,
         bodyColor,
         roofColor,
-        roofHeight
+        roofHeight,
+        roofOverhang,
+        rotation
     } = { ...defaults, ...options };
 
+    //------------------------------------------------------
+    // 1) Create a parent TransformNode at basePosition
+    //------------------------------------------------------
+    const houseParent = new BABYLON.TransformNode("houseParent", scene);
+    houseParent.position.copyFrom(basePosition);
+    houseParent.rotation.y = rotation;
 
-    bodyHeight =  bodyHeight_initial + 2  // correct height to dig the house in the ground
-
-    /***************************************************************
-     * 2) Create the house body (box)
-     ***************************************************************/
+    //------------------------------------------------------
+    // 2) Create the house body (box) as a child
+    //------------------------------------------------------
     const bodyMesh = BABYLON.MeshBuilder.CreateBox(
         "houseBody",
         {
@@ -436,162 +443,686 @@ function createHouse(scene, shadowGenerator, options = {}) {
         },
         scene
     );
+    bodyMesh.parent = houseParent;
 
-    // Position the box so that its bottom is at basePosition.y
-    // (by default, a box is centered around the origin, so we move it up half its height)
-    bodyMesh.position.set(
-        basePosition.x,
-        basePosition.y + bodyHeight / 2 - 2,
-        basePosition.z
+    // Place the box so its bottom is at y=0 in local coords
+    // (meaning the box’s center is at y=bodyHeight/2).
+    bodyMesh.position.y = bodyHeight / 2;
+
+    // Body material
+    const bodyMat = new BABYLON.StandardMaterial("bodyMat", scene);
+    bodyMat.diffuseColor = bodyColor;
+    bodyMesh.material = bodyMat;
+
+    //------------------------------------------------------
+    // 3) Roof wedge (extruded triangle), also child
+    //------------------------------------------------------
+    // Cross-section in local X/Y:
+    //   (-W/2 - over, 0) -> (0, roofHeight) -> (W/2 + over, 0)
+    const roofShape = [
+        new BABYLON.Vector3(-bodyWidth / 2 - roofOverhang, 0, 0),
+        new BABYLON.Vector3(0, roofHeight, 0),
+        new BABYLON.Vector3(bodyWidth / 2 + roofOverhang, 0, 0),
+    ];
+    // Extrude along local Z from -(... ) to +(... )
+    const roofPath = [
+        new BABYLON.Vector3(0, 0, -(bodyDepth / 2 + roofOverhang)),
+        new BABYLON.Vector3(0, 0,  (bodyDepth / 2 + roofOverhang))
+    ];
+
+    const roofMesh = BABYLON.MeshBuilder.ExtrudeShape(
+        "roof",
+        {
+            shape: roofShape,
+            path: roofPath,
+            sideOrientation: BABYLON.Mesh.DOUBLESIDE
+        },
+        scene
     );
+    roofMesh.parent = houseParent;
 
-    // Create a material for the house body
-    const bodyMaterial = new BABYLON.StandardMaterial("houseBodyMat", scene);
-    bodyMaterial.diffuseColor = bodyColor;
-    bodyMesh.material = bodyMaterial;
+    // Place it so the bottom of the roof sits on top of the box
+    roofMesh.position.y = bodyHeight;
 
-    // If we have a shadow generator, let the box cast shadows
-    if (shadowGenerator) {
-        shadowGenerator.addShadowCaster(bodyMesh);
-    }
+    // Roof material
+    const roofMat = new BABYLON.StandardMaterial("roofMat", scene);
+    roofMat.diffuseColor = roofColor;
+    roofMat.backFaceCulling = false; // so underside shows if needed
+    roofMesh.material = roofMat;
 
+    //------------------------------------------------------
+    // 4) Front & back capping triangles, also children
+    //------------------------------------------------------
+    // We'll define them in local coordinates, exactly where
+    // the gap is: at the front and back edges between the
+    // box top and the roof apex.
 
-    /***************************************************************
-     * 3) Create the four roof triangles
-     ***************************************************************/
-    function createTriangleMesh(name, p1, p2, p3, color) {
-        const customMesh = new BABYLON.Mesh(name, scene);
-
-        // Positions in [x1,y1,z1, x2,y2,z2, x3,y3,z3]
-        const positions = [
-            p1.x, p1.y, p1.z,
-            p2.x, p2.y, p2.z,
-            p3.x, p3.y, p3.z
-        ];
-
-        // A single triangle => indices [0,1,2]
+    // Helper to build a single-triangle custom mesh
+    function createSingleTriangle(name, positionsArray) {
         const indices = [0, 1, 2];
-
-        // Compute normals
         const normals = [];
-        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+        BABYLON.VertexData.ComputeNormals(positionsArray, indices, normals);
 
-        // Create a VertexData object and apply to the custom mesh
         const vertexData = new BABYLON.VertexData();
-        vertexData.positions = positions;
+        vertexData.positions = positionsArray;
         vertexData.indices = indices;
         vertexData.normals = normals;
-        vertexData.applyToMesh(customMesh);
 
-        // Create a material
-        const mat = new BABYLON.StandardMaterial(`${name}-mat`, scene);
-        mat.diffuseColor = color;
-        // Option 1: Turn off back-face culling for double-sided visibility.
-        mat.backFaceCulling = false;
-        customMesh.material = mat;
-
-        // Option 2 (alternative): set the entire mesh to double-sided:
-        // customMesh.sideOrientation = BABYLON.Mesh.DOUBLESIDE;
-
-        return customMesh;
+        const mesh = new BABYLON.Mesh(name, scene);
+        vertexData.applyToMesh(mesh);
+        return mesh;
     }
 
-    // The apex (peak) of the roof is at the center (x,z) but higher in y by 'roofHeight'
-    const apex = new BABYLON.Vector3(
-        basePosition.x,
-        basePosition.y + bodyHeight + roofHeight - 2,
-        basePosition.z
-    );
+    // front triangle corners:
+    //  front-left corner of box top:   ( -W/2, bodyHeight, -D/2 )
+    //  front-right corner of box top:  ( +W/2, bodyHeight, -D/2 )
+    //  roof apex at front:            ( 0, bodyHeight + roofHeight, -(D/2+roofOverhang) )
+    const frontPositions = [
+        -bodyWidth / 2, bodyHeight, -bodyDepth / 2,
+        +bodyWidth / 2, bodyHeight, -bodyDepth / 2,
+        0, bodyHeight + roofHeight, -(bodyDepth / 2 + roofOverhang)
+    ];
+    const frontTriangleMesh = createSingleTriangle("frontTriangle", frontPositions);
+    frontTriangleMesh.parent = houseParent;
+    frontTriangleMesh.material = bodyMat; // same as house, or your choice
 
-    // Define the top corners of the box
-    const frontLeft = new BABYLON.Vector3(
-        basePosition.x - bodyWidth / 2,
-        basePosition.y + bodyHeight - 2,
-        basePosition.z - bodyDepth / 2
-    );
-    const frontRight = new BABYLON.Vector3(
-        basePosition.x + bodyWidth / 2,
-        basePosition.y + bodyHeight - 2,
-        basePosition.z - bodyDepth / 2
-    );
-    const backRight = new BABYLON.Vector3(
-        basePosition.x + bodyWidth / 2,
-        basePosition.y + bodyHeight - 2,
-        basePosition.z + bodyDepth / 2
-    );
-    const backLeft = new BABYLON.Vector3(
-        basePosition.x - bodyWidth / 2,
-        basePosition.y + bodyHeight - 2,
-        basePosition.z + bodyDepth / 2
-    );
+    // back triangle corners:
+    //  back-left corner of box top:   ( -W/2, bodyHeight, +D/2 )
+    //  back-right corner of box top:  ( +W/2, bodyHeight, +D/2 )
+    //  roof apex at back:            ( 0, bodyHeight + roofHeight, +(D/2+roofOverhang) )
+    const backPositions = [
+        -bodyWidth / 2, bodyHeight, +bodyDepth / 2,
+        +bodyWidth / 2, bodyHeight, +bodyDepth / 2,
+        0, bodyHeight + roofHeight, (bodyDepth / 2 + roofOverhang)
+    ];
+    const backTriangleMesh = createSingleTriangle("backTriangle", backPositions);
+    backTriangleMesh.parent = houseParent;
+    backTriangleMesh.material = bodyMat;
 
-    // Now build four triangles: front, right, back, left
-    const frontRoof = createTriangleMesh(
-        "frontRoof",
-        apex,     // top (apex)
-        frontRight,
-        frontLeft,
-        roofColor
-    );
-    const rightRoof = createTriangleMesh(
-        "rightRoof",
-        apex,
-        backRight,
-        frontRight,
-        roofColor
-    );
-    const backRoof = createTriangleMesh(
-        "backRoof",
-        apex,
-        backLeft,
-        backRight,
-        roofColor
-    );
-    const leftRoof = createTriangleMesh(
-        "leftRoof",
-        apex,
-        frontLeft,
-        backLeft,
-        roofColor
-    );
-
-    // Collect roof meshes in an array
-    const roofMeshes = [frontRoof, rightRoof, backRoof, leftRoof];
-
-    // If we have a shadow generator, let each roof triangle cast shadows
+    //------------------------------------------------------
+    // 5) Shadows (optional)
+    //------------------------------------------------------
     if (shadowGenerator) {
-        roofMeshes.forEach(mesh => shadowGenerator.addShadowCaster(mesh));
+        [bodyMesh, roofMesh, frontTriangleMesh, backTriangleMesh]
+            .forEach(mesh => shadowGenerator.addShadowCaster(mesh));
     }
 
-
-    /***************************************************************
-     * 4) Return references for potential disposal or further use
-     ***************************************************************/
+    //------------------------------------------------------
+    // 6) Return references
+    //------------------------------------------------------
     return {
+        houseParent,
         bodyMesh,
-        roofMeshes,
+        roofMesh,
+        frontTriangleMesh,
+        backTriangleMesh,
         dispose: () => {
             bodyMesh.dispose();
-            roofMeshes.forEach(mesh => mesh.dispose());
+            roofMesh.dispose();
+            frontTriangleMesh.dispose();
+            backTriangleMesh.dispose();
+            houseParent.dispose();
         }
     };
 }
 
-/***************************************************************
- * EXAMPLE USAGE:
- ***************************************************************/
-/*
-// Create a pitched-roof house at position (10,0,5)
-const myHouse = createHouse(scene, shadowGenerator, {
-    basePosition: new BABYLON.Vector3(10, 0, 5),
-    bodyWidth: 6,
-    bodyDepth: 4,
-    bodyHeight: 3,
-    bodyColor: new BABYLON.Color3(0.8, 0.7, 0.5),
-    roofColor: new BABYLON.Color3(0.4, 0.1, 0.1),
-    roofHeight: 2
-});
 
-// Later, to remove it from the scene:
-myHouse.dispose();
-*/
+
+
+
+
+function createSimpleHouse(scene, short, long, height, roof_height, boxColor, roofColor, x, y, z, rotationAngle) {
+    // Create parent transform node for the whole house
+    const house = new BABYLON.TransformNode("house", scene);
+    house.position = new BABYLON.Vector3(x, y, z);
+    house.rotation.y = BABYLON.Tools.ToRadians(rotationAngle);
+
+    // Create the box for the house
+    const houseBox = BABYLON.MeshBuilder.CreateBox("houseBox", {
+        width: short,
+        depth: long,
+        height: height
+    }, scene);
+    houseBox.position.y = height / 2;
+    houseBox.parent = house;
+
+    // Apply color to the box
+    const boxMaterial = new BABYLON.StandardMaterial("boxMaterial", scene);
+    boxMaterial.diffuseColor = BABYLON.Color3.FromHexString(boxColor);
+    boxMaterial.backFaceCulling = false; // Keep if you want double-sided for the box
+    houseBox.material = boxMaterial;
+
+    // Create roof material (with two-sided lighting)
+    const roofMaterial = new BABYLON.StandardMaterial("roofMaterial", scene);
+    roofMaterial.diffuseColor = BABYLON.Color3.FromHexString(roofColor);
+    roofMaterial.backFaceCulling = false;
+    roofMaterial.twoSidedLighting = true; // <-- IMPORTANT FIX
+
+    // Decide if roof should be a 4-sided pyramid or a gabled roof
+    if (long / short < 2) {
+        // Create pyramid roof using custom vertices
+        const positions = [
+            // Front face
+            -short/2, height,    -long/2,   // 0
+             0,        height + roof_height, 0,   // 1
+             short/2,  height,    -long/2,   // 2
+            
+            // Right face
+             short/2,  height,    -long/2,   // 3
+             0,        height + roof_height, 0,   // 4
+             short/2,  height,    long/2,    // 5
+            
+            // Back face
+             short/2,  height,    long/2,    // 6
+             0,        height + roof_height, 0,   // 7
+            -short/2,  height,    long/2,    // 8
+            
+            // Left face
+            -short/2,  height,    long/2,    // 9
+             0,        height + roof_height, 0,   // 10
+            -short/2,  height,    -long/2    // 11
+        ];
+
+        const indices = [
+            // Front face
+            0, 1, 2,
+            // Right face
+            3, 4, 5,
+            // Back face
+            6, 7, 8,
+            // Left face
+            9, 10, 11,
+            // Reverse faces for double-sided viewing
+            2, 1, 0,
+            5, 4, 3,
+            8, 7, 6,
+            11, 10, 9
+        ];
+
+        const roof = new BABYLON.Mesh("roof", scene);
+        const vertexData = new BABYLON.VertexData();
+        vertexData.positions = positions;
+        vertexData.indices = indices;
+
+        // Calculate normals
+        const normals = [];
+        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+        vertexData.normals = normals;
+
+        vertexData.applyToMesh(roof);
+        roof.material = roofMaterial;
+        roof.parent = house;
+
+    } else {
+        // Create gable roof
+        const roofHeight = height + roof_height;
+        
+        const positions = [
+            // Left side
+            -short/2, height, -long/2,    // 0
+             0,        roofHeight, -long/2, // 1
+             0,        roofHeight,  long/2, // 2
+            -short/2, height,  long/2,    // 3
+            
+            // Right side
+             short/2,  height, -long/2,   // 4
+             0,        roofHeight, -long/2, // 5
+             0,        roofHeight,  long/2, // 6
+             short/2,  height,  long/2,   // 7
+            
+            // Front triangle
+            -short/2,  height, -long/2,   // 8
+             short/2,  height, -long/2,   // 9
+             0,        roofHeight, -long/2, // 10
+            
+            // Back triangle
+            -short/2,  height,  long/2,   // 11
+             short/2,  height,  long/2,   // 12
+             0,        roofHeight, long/2 // 13
+        ];
+
+        const indices = [
+            // Left side
+            0, 1, 2,
+            0, 2, 3,
+            // Right side
+            4, 6, 5,
+            4, 7, 6,
+            // Front triangle
+            8, 9, 10,
+            // Back triangle
+            11, 13, 12,
+            // Reverse faces
+            2, 1, 0,
+            3, 2, 0,
+            5, 6, 4,
+            6, 7, 4,
+            10, 9, 8,
+            12, 13, 11
+        ];
+
+        const roof = new BABYLON.Mesh("roof", scene);
+        const vertexData = new BABYLON.VertexData();
+        vertexData.positions = positions;
+        vertexData.indices = indices;
+
+        // Calculate normals
+        const normals = [];
+        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+        vertexData.normals = normals;
+
+        vertexData.applyToMesh(roof);
+        roof.material = roofMaterial;
+        roof.parent = house;
+    }
+
+    return house;
+}
+
+
+
+
+
+
+
+
+function createHouseFlexible(
+    scene,
+    shortDimension,
+    longDimension,
+    bodyHeight,
+    roofHeight,
+    boxColorHex,    // e.g. "#aaffcc"
+    roofColorHex,   // e.g. "#ff0000"
+    x, y, z,
+    rotationAngleDeg
+) {
+    // Create a parent TransformNode to hold everything
+    const house = new BABYLON.TransformNode("houseParent", scene);
+    house.position.set(x, y, z);
+    house.rotation.y = BABYLON.Tools.ToRadians(rotationAngleDeg);
+
+    //-----------------------------------------
+    // 1) Create the box (house body)
+    //-----------------------------------------
+    const houseBox = BABYLON.MeshBuilder.CreateBox("houseBox", {
+        width: shortDimension,
+        depth: longDimension,
+        height: bodyHeight
+    }, scene);
+    houseBox.parent = house;
+    houseBox.position.y = bodyHeight / 2;
+
+    // Material for the box
+    const boxMat = new BABYLON.StandardMaterial("boxMat", scene);
+    boxMat.diffuseColor = BABYLON.Color3.FromHexString(boxColorHex);
+    boxMat.backFaceCulling = true;   // usually okay to cull
+    houseBox.material = boxMat;
+
+    //-----------------------------------------
+    // 2) Prepare a roof Material
+    //-----------------------------------------
+    const roofMat = new BABYLON.StandardMaterial("roofMat", scene);
+    roofMat.diffuseColor = BABYLON.Color3.FromHexString(roofColorHex);
+    roofMat.backFaceCulling = false; // draw both sides
+    roofMat.twoSidedLighting = true; // light both sides
+
+    //-----------------------------------------
+    // 3) Decide: pyramid roof vs. gable roof
+    //-----------------------------------------
+    const ratio = longDimension / shortDimension;
+    if (ratio < 2) {
+        //---------------------------------------------------------
+        // A) Pyramid roof (custom mesh, 4 triangular faces)
+        //---------------------------------------------------------
+        // We define custom vertex positions for 4 triangular sides.
+        const positions = [
+            // Front face
+            -shortDimension / 2, bodyHeight, -longDimension / 2,  // 0
+             0,                bodyHeight + roofHeight, 0,         // 1
+             shortDimension / 2,  bodyHeight, -longDimension / 2, // 2
+
+            // Right face
+             shortDimension / 2,  bodyHeight, -longDimension / 2, // 3
+             0,                bodyHeight + roofHeight, 0,         // 4
+             shortDimension / 2,  bodyHeight,  longDimension / 2, // 5
+
+            // Back face
+             shortDimension / 2,  bodyHeight,  longDimension / 2, // 6
+             0,                bodyHeight + roofHeight, 0,         // 7
+            -shortDimension / 2, bodyHeight,  longDimension / 2,  // 8
+
+            // Left face
+            -shortDimension / 2, bodyHeight,  longDimension / 2,  // 9
+             0,                bodyHeight + roofHeight, 0,         // 10
+            -shortDimension / 2, bodyHeight, -longDimension / 2   // 11
+        ];
+
+        // Indices, including reversed for double-sided
+        const indices = [
+            // Front face
+            0, 1, 2,
+            // Right face
+            3, 4, 5,
+            // Back face
+            6, 7, 8,
+            // Left face
+            9, 10, 11,
+            // Reversed to ensure double-sided geometry
+            2, 1, 0,
+            5, 4, 3,
+            8, 7, 6,
+            11, 10, 9
+        ];
+
+        const roof = new BABYLON.Mesh("pyramidRoof", scene);
+        const vertexData = new BABYLON.VertexData();
+        vertexData.positions = positions;
+        vertexData.indices = indices;
+        const normals = [];
+        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+        vertexData.normals = normals;
+        vertexData.applyToMesh(roof);
+
+        roof.material = roofMat;
+        roof.parent = house;
+
+    } else {
+        //---------------------------------------------------------
+        // B) Gabled roof (extruded wedge + front/back triangles)
+        //---------------------------------------------------------
+        // We'll replicate the “ExtrudeShape” approach from your second code.
+        const overhang = 0.3;  // or tweak as desired
+
+        // 1) The wedge shape in local x-y plane (triangular cross-section):
+        const roofShape = [
+            new BABYLON.Vector3(-shortDimension/2 - overhang, 0, 0),
+            new BABYLON.Vector3(0, roofHeight, 0),
+            new BABYLON.Vector3(shortDimension/2 + overhang, 0, 0),
+        ];
+        // 2) Extrude that shape along Z from front to back
+        const roofPath = [
+            new BABYLON.Vector3(0, 0, -(longDimension/2 + overhang)),
+            new BABYLON.Vector3(0, 0,  (longDimension/2 + overhang))
+        ];
+        const wedge = BABYLON.MeshBuilder.ExtrudeShape("gableRoofWedge", {
+            shape: roofShape,
+            path: roofPath,
+            sideOrientation: BABYLON.Mesh.DOUBLESIDE
+        }, scene);
+        wedge.material = roofMat;
+        wedge.parent = house;
+        // Raise it so it sits on top of the box
+        wedge.position.y = bodyHeight;
+
+        // 3) Add front & back capping triangles
+        const frontPositions = [
+            // front-left corner of box top
+            -shortDimension / 2, bodyHeight, -longDimension / 2,
+            // front-right corner of box top
+             shortDimension / 2, bodyHeight, -longDimension / 2,
+            // roof apex at front
+             0, bodyHeight + roofHeight, -(longDimension / 2 + overhang)
+        ];
+        const backPositions = [
+            // back-left corner of box top
+            -shortDimension / 2, bodyHeight,  longDimension / 2,
+            // back-right corner of box top
+             shortDimension / 2, bodyHeight,  longDimension / 2,
+            // roof apex at back
+             0, bodyHeight + roofHeight,  (longDimension / 2 + overhang)
+        ];
+
+        function createSingleTriangle(name, posArray) {
+            const tri = new BABYLON.Mesh(name, scene);
+            const indices = [0, 1, 2];
+            const normals = [];
+            BABYLON.VertexData.ComputeNormals(posArray, indices, normals);
+
+            const vertexData = new BABYLON.VertexData();
+            vertexData.positions = posArray;
+            vertexData.indices = indices;
+            vertexData.normals = normals;
+            vertexData.applyToMesh(tri);
+            return tri;
+        }
+
+        const frontTri = createSingleTriangle("frontGableCap", frontPositions);
+        frontTri.material = roofMat;
+        frontTri.parent = house;
+
+        const backTri = createSingleTriangle("backGableCap", backPositions);
+        backTri.material = roofMat;
+        backTri.parent = house;
+    }
+
+    return house;
+}
+
+
+
+
+
+
+
+/**
+ * Creates a house mesh with either a pyramid roof (ratio < 2)
+ * or a gable roof (ratio >= 2).
+ *
+ * @param {BABYLON.Scene} scene
+ * @param {BABYLON.ShadowGenerator} [shadowGenerator] optional
+ * @param {object} options
+ *   - short: number  (width of house)
+ *   - long: number   (depth of house)
+ *   - height: number (height of the walls)
+ *   - roofHeight: number
+ *   - boxColor: BABYLON.Color3 or string ("#RRGGBB")
+ *   - roofColor: BABYLON.Color3 or string ("#RRGGBB")
+ *   - position: BABYLON.Vector3 (where to place the house)
+ *   - rotationY: number (radians) or degrees if you prefer
+ *   - roofOverhang: number (used for the gable style)
+ */
+function createFlexibleHouse(scene, shadowGenerator, options = {}) {
+    // Default values
+    const defaults = {
+      short: 4,         // house body "width"
+      long: 6,          // house body "depth"
+      height: 3,        // walls height
+      roofHeight: 2,
+      boxColor: new BABYLON.Color3(0.95, 0.95, 0.9),
+      roofColor: new BABYLON.Color3(0.2, 0.1, 0.1),
+      position: new BABYLON.Vector3(0, 0, 0),
+      rotationY: 0,     // radians
+      roofOverhang: 0.3
+    };
+    
+    const {
+      short,
+      long,
+      height,
+      roofHeight,
+      boxColor,
+      roofColor,
+      position,
+      rotationY,
+      roofOverhang
+    } = { ...defaults, ...options };
+  
+    //-------------------------------------
+    // 1) Create a parent TransformNode
+    //-------------------------------------
+    const houseParent = new BABYLON.TransformNode("houseParent", scene);
+    houseParent.position.copyFrom(position);
+    houseParent.rotation.y = rotationY;
+  
+    //-------------------------------------
+    // 2) Create the house body (box)
+    //-------------------------------------
+    const bodyMesh = BABYLON.MeshBuilder.CreateBox("houseBody", {
+      width: short,
+      depth: long,
+      height: height
+    }, scene);
+    bodyMesh.parent = houseParent;
+    bodyMesh.position.y = height / 2; // so bottom is at y=0 in local coords
+  
+    // Material for house walls
+    const bodyMat = new BABYLON.StandardMaterial("bodyMat", scene);
+    // Accept either a BABYLON.Color3 or a hex string
+    bodyMat.diffuseColor = (typeof boxColor === "string")
+      ? BABYLON.Color3.FromHexString(boxColor)
+      : boxColor;
+    bodyMesh.material = bodyMat;
+  
+    //-------------------------------------
+    // 3) Prepare the roof material
+    //-------------------------------------
+    const roofMat = new BABYLON.StandardMaterial("roofMat", scene);
+    roofMat.diffuseColor = (typeof roofColor === "string")
+      ? BABYLON.Color3.FromHexString(roofColor)
+      : roofColor;
+    // We typically disable back-face culling so both sides can show
+    roofMat.backFaceCulling = false;
+    // If the underside appears black, also do roofMat.twoSidedLighting = true;
+  
+    //-------------------------------------
+    // 4) Decide: pyramid roof vs gable roof
+    //-------------------------------------
+    const ratio = long / short;
+    if (ratio < 2) {
+      // A) Pyramid roof
+      const positions = [
+        // Front face
+        -short / 2, height, -long / 2,    // 0
+         0,         height + roofHeight, 0,    // 1 (apex)
+         short / 2, height, -long / 2,    // 2
+  
+        // Right face
+         short / 2, height, -long / 2,    // 3
+         0,         height + roofHeight, 0,    // 4 (apex)
+         short / 2, height,  long / 2,    // 5
+  
+        // Back face
+         short / 2, height,  long / 2,    // 6
+         0,         height + roofHeight, 0,    // 7 (apex)
+        -short / 2, height,  long / 2,    // 8
+  
+        // Left face
+        -short / 2, height,  long / 2,    // 9
+         0,         height + roofHeight, 0,    // 10 (apex)
+        -short / 2, height, -long / 2     // 11
+      ];
+  
+      // Indices (including reversed for double-sided geometry)
+      const indices = [
+        // Front face
+        0, 1, 2,
+        // Right face
+        3, 4, 5,
+        // Back face
+        6, 7, 8,
+        // Left face
+        9, 10, 11,
+        // Reverse
+        2, 1, 0,
+        5, 4, 3,
+        8, 7, 6,
+        11, 10, 9
+      ];
+  
+      const vertexData = new BABYLON.VertexData();
+      vertexData.positions = positions;
+      vertexData.indices = indices;
+  
+      // Compute normals so lighting works
+      const normals = [];
+      BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+      vertexData.normals = normals;
+  
+      const pyramidRoof = new BABYLON.Mesh("pyramidRoof", scene);
+      vertexData.applyToMesh(pyramidRoof);
+  
+      pyramidRoof.material = roofMat;
+      pyramidRoof.parent = houseParent;
+  
+      // Optionally add to shadow
+      if (shadowGenerator) {
+        shadowGenerator.addShadowCaster(pyramidRoof);
+      }
+  
+    } else {
+      // B) Gable roof: extruded wedge + front/back capping triangles
+      // 1) The wedge shape in X/Y plane
+      const roofShape = [
+        new BABYLON.Vector3(-short / 2 - roofOverhang, 0, 0),
+        new BABYLON.Vector3(0, roofHeight, 0),
+        new BABYLON.Vector3(short / 2 + roofOverhang, 0, 0),
+      ];
+      // 2) Extrude along Z from front to back
+      const roofPath = [
+        new BABYLON.Vector3(0, 0, -(long / 2 + roofOverhang)),
+        new BABYLON.Vector3(0, 0,  (long / 2 + roofOverhang))
+      ];
+      const wedge = BABYLON.MeshBuilder.ExtrudeShape("gableWedge", {
+        shape: roofShape,
+        path: roofPath,
+        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+      }, scene);
+      wedge.material = roofMat;
+      wedge.parent = houseParent;
+      wedge.position.y = height; // place on top of box
+  
+      // 3) Add front & back capping triangles
+      function createSingleTriangle(name, positionsArray) {
+        const tri = new BABYLON.Mesh(name, scene);
+        const indices = [0, 1, 2];
+        const normals = [];
+        BABYLON.VertexData.ComputeNormals(positionsArray, indices, normals);
+  
+        const vertexData = new BABYLON.VertexData();
+        vertexData.positions = positionsArray;
+        vertexData.indices = indices;
+        vertexData.normals = normals;
+        vertexData.applyToMesh(tri);
+        return tri;
+      }
+  
+      // front corners
+      const frontPositions = [
+        -short / 2, height, -long / 2,
+         short / 2, height, -long / 2,
+         0,         height + roofHeight, -(long / 2 + roofOverhang)
+      ];
+      const frontTriangleMesh = createSingleTriangle("frontGableTri", frontPositions);
+      frontTriangleMesh.material = roofMat;
+      frontTriangleMesh.parent = houseParent;
+  
+      // back corners
+      const backPositions = [
+        -short / 2, height,  long / 2,
+         short / 2, height,  long / 2,
+         0,         height + roofHeight, (long / 2 + roofOverhang)
+      ];
+      const backTriangleMesh = createSingleTriangle("backGableTri", backPositions);
+      backTriangleMesh.material = roofMat;
+      backTriangleMesh.parent = houseParent;
+  
+      // Optionally add them all to shadow
+      if (shadowGenerator) {
+        shadowGenerator.addShadowCaster(wedge);
+        shadowGenerator.addShadowCaster(frontTriangleMesh);
+        shadowGenerator.addShadowCaster(backTriangleMesh);
+      }
+    }
+  
+    // Add bodyMesh to shadow as well
+    if (shadowGenerator) {
+      shadowGenerator.addShadowCaster(bodyMesh);
+    }
+  
+    // Return references if needed
+    return {
+      houseParent,
+      bodyMesh
+    };
+  }

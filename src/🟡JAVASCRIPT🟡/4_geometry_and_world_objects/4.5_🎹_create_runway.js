@@ -4,7 +4,7 @@
  *
  * The texture is generated via a DynamicTexture to look like
  * asphalt, including runway numbers and markers at opposite
- * ends. 
+ * ends, plus a transition to an earth color at the edges.
  * 
  * Parameters:
  *  - scene: The current Babylon.js scene where the runway is created.
@@ -14,9 +14,6 @@
  * 
  * Usage:
  *   createRunway(scene, { freqX: 0.01, freqZ: 0.01, amplitude: 2 });
- * 
- * Note: This version includes slight color randomness to the black 
- *       texture for a more realistic asphalt look.
  ***************************************************************/
 function createRunway(scene, groundConfig) {
     // Extract frequency config from groundConfig
@@ -28,9 +25,9 @@ function createRunway(scene, groundConfig) {
     const runway = BABYLON.MeshBuilder.CreateGround(
         "runway",
         {
-            // width: Realistic width of the runway
+            // width: Realistic width of the runway (25 m)
             width: 25,
-            // height: Realistic length of the runway
+            // height: Realistic length of the runway (1000 m)
             height: 1000,
             // subdivisions: Number of segments for the ground mesh
             subdivisions: 50,
@@ -51,7 +48,7 @@ function createRunway(scene, groundConfig) {
         const zCoord = runwayPositions[v + 2];
 
         // Compute the height from your custom undulation map function
-        const terrainHeight = undulationMap(xCoord, zCoord, freqX, freqZ, amplitude);
+        const terrainHeight = compute_terrain_height_and_derivatives(xCoord, zCoord, freqX, freqZ, amplitude);
 
         // Slightly above terrain (offset of 0.2)
         runwayPositions[v + 1] = terrainHeight + 0.2;
@@ -77,11 +74,11 @@ function createRunway(scene, groundConfig) {
 
     /***************************************************************
      * 2) Create a DynamicTexture to simulate an asphalt runway
+     *    with earth-color edges.
      ***************************************************************/
-    // Dimensions of the texture. Use a tall ratio (to match runway length).
-    // Example: 256 wide × 4096 tall. 
-    const texWidth = 256;
-    const texHeight = 4096;
+    // Dimensions of the texture
+    const texWidth = 256;   // px
+    const texHeight = 4096; // px
 
     // Create the DynamicTexture
     const runwayTexture = new BABYLON.DynamicTexture(
@@ -92,31 +89,82 @@ function createRunway(scene, groundConfig) {
     );
     const ctx = runwayTexture.getContext();
 
-    // (a) Fill background with black
-    ctx.fillStyle =  "#363632"
+    // (a) Fill background with a mid-tone gray
+    ctx.fillStyle = "#363632";
     ctx.fillRect(0, 0, texWidth, texHeight);
 
     // (a2) Add subtle color randomness for an "asphalt" look
-    //      We slightly vary each pixel so it isn't uniformly black.
     const imageData = ctx.getImageData(0, 0, texWidth, texHeight);
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
-        // Original background is (0, 0, 0) for R,G,B
-        // We'll add a random offset to each color channel 
-        // to get a dark gray range (e.g. 0 to 10).
-        const offset = Math.random() * 20; 
+        // Each pixel: RGBA
+        // Slight random offset to create asphalt speckles
+        const offset = Math.random() * 20;
         data[i]     += offset; // Red
         data[i + 1] += offset; // Green
         data[i + 2] += offset; // Blue
-        // data[i + 3] is alpha (255), kept as-is
     }
     ctx.putImageData(imageData, 0, 0);
 
-    // Helper function: draw a dashed line on the canvas
+    // (a3) Blend earth color along the left/right edges
+    //      We'll overlay a gradient from brown at the edges
+    //      that transitions to transparent near center.
+    ctx.save();
+
+    const fadeWidth = 20; // px from each edge, adjust as you like
+
+    // Left side gradient (0 -> fadeWidth)
+    const leftGrad = ctx.createLinearGradient(0, 0, fadeWidth, 0);
+    leftGrad.addColorStop(0, "#1c6128");           // earth brown
+    leftGrad.addColorStop(1, "rgba(0,0,0,0)");     // fade to transparent
+    ctx.fillStyle = leftGrad;
+    ctx.fillRect(0, 0, fadeWidth, texHeight);
+
+    // Right side gradient (texWidth-fadeWidth -> texWidth)
+    const rightGrad = ctx.createLinearGradient(texWidth - fadeWidth, 0, texWidth, 0);
+    rightGrad.addColorStop(0, "rgba(0,0,0,0)");
+    rightGrad.addColorStop(1, "#1c6128");
+    ctx.fillStyle = rightGrad;
+    ctx.fillRect(texWidth - fadeWidth, 0, fadeWidth, texHeight);
+
+    ctx.restore();
+
+    // (a4) Add thin white continuous lines at x = fadeWidth and x = texWidth-fadeWidth
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(fadeWidth, 0);
+    ctx.lineTo(fadeWidth, texHeight);
+    ctx.moveTo(texWidth - fadeWidth, 0);
+    ctx.lineTo(texWidth - fadeWidth, texHeight);
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;  // thin line
+    ctx.stroke();
+    ctx.restore();
+
+
+    /***************************************************************
+     * 2b) Draw the runway centerline + markers
+     ***************************************************************/
+
+    // (b1) Center dashed line in white.
+    ctx.strokeStyle = "white";
+
+    // Convert 36.6 m & 24.4 m into *vertical* pixels:
+    // runway length = 1000 m -> texHeight = 4096 px => ratio ~ 4.096 px/m
+    const pxPerMeterY = texHeight / 1000; // ~4.096
+    const dashLengthPx = 36.6 * pxPerMeterY; // 36.6 m => ~150 px
+    const gapLengthPx  = 24.4 * pxPerMeterY; // 24.4 m => ~100 px
+
+    // Convert 0.91 m width to *horizontal* pixels:
+    // runway width = 25 m -> texWidth = 256 px => ratio ~ 10.24 px/m
+    const pxPerMeterX = texWidth / 25;         // ~10.24
+    const centerLineWidthPx = 0.91 * pxPerMeterX; // ~9-10 px
+
+    // We'll define a dashed line helper
     function drawDashedLine(x1, y1, x2, y2, dashLength, gapLength) {
         const dx = x2 - x1;
         const dy = y2 - y1;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.sqrt(dx*dx + dy*dy);
         const dashCount = Math.floor(dist / (dashLength + gapLength));
         const angle = Math.atan2(dy, dx);
 
@@ -130,22 +178,18 @@ function createRunway(scene, groundConfig) {
             ctx.moveTo(x, y);
             ctx.lineTo(xEnd, yEnd);
             ctx.stroke();
-            // shift for the next segment
+            // move forward by gap
             x = xEnd + Math.cos(angle) * gapLength;
             y = yEnd + Math.sin(angle) * gapLength;
         }
     }
 
-    // (b) Draw the center dashed line in white
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 5; // thickness of the dashed line
+    ctx.lineWidth = centerLineWidthPx;
+    const centerX = texWidth / 2;
+    const margin = 150; // top/bottom margin in pixels
+    drawDashedLine(centerX, margin, centerX, texHeight - margin, dashLengthPx, gapLengthPx);
 
-    // Coordinates for the center vertical dashed line
-    const centerX = texWidth / 2; 
-    const margin = 150; 
-    drawDashedLine(centerX, margin, centerX, texHeight - margin, 120, 80);
-
-    // (c) Draw threshold markers (the white rectangles near top and bottom)
+    // (b2) Draw threshold markers (unchanged from original, but you can scale them if desired)
     ctx.fillStyle = "white";
 
     // Bottom threshold markers
@@ -154,7 +198,6 @@ function createRunway(scene, groundConfig) {
     const markerWidth = 10;
     const gapBetweenMarkers = 20;
 
-    // Draw 3 markers on each side of the center line
     for (let i = 0; i < 3; i++) {
         // Left side
         const leftX = (texWidth / 2) - 40 - i * gapBetweenMarkers;
@@ -177,8 +220,8 @@ function createRunway(scene, groundConfig) {
         ctx.fillRect(rightX, yTop, markerWidth, markerHeight);
     }
 
-    // (d) Write runway numbers (e.g., 18 and 36)
-    ctx.font = "bold 120px Arial";
+    // (b3) Add runway numbers
+    ctx.font = "120px Bahnschrift";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "white";
@@ -186,14 +229,14 @@ function createRunway(scene, groundConfig) {
     // "18" at the bottom
     ctx.fillText("1 8", texWidth / 2, texHeight - 50);
 
-    // "36" at the top, rotated 180° to be seen from the other end
+    // "36" at the top, rotated 180°
     ctx.save();
     ctx.translate(texWidth / 2.2, 50);
     ctx.rotate(Math.PI);
     ctx.fillText("3 6", 0, 0);
     ctx.restore();
 
-    // (e) Commit everything to the dynamic texture
+    // Commit everything to the dynamic texture
     runwayTexture.update();
 
 
@@ -207,22 +250,20 @@ function createRunway(scene, groundConfig) {
     runwayMaterial.diffuseTexture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
     runwayMaterial.diffuseTexture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
 
-    // If the runway appears squished or stretched, adjust the texture scaling:
-    // runwayMaterial.diffuseTexture.uScale = 1; // across runway width
-    // runwayMaterial.diffuseTexture.vScale = 1; // along runway length
-
     // Assign the material to the runway mesh
     runway.material = runwayMaterial;
 
 
-      // create glide path lights
-  const blinkingSphere = createBlinkingSphere(scene, 0, 14.5, 636, {
-    sphereColor: new BABYLON.Color3(1, 1, 1),  // White color
-    diameter: 1,
-    lightRange: 25,
-    blinkInterval: 250,
-    lightIntensity: 2,
-    glowIntensity: 1.5
-  });
-  // blinkingSphere.dispose(); // if you need to remove it later
+    /***************************************************************
+     * (Optional) Example: Create a blinking light at the far end
+     ***************************************************************/
+    const blinkingSphere = createBlinkingSphere(scene, 0, 14.5, 636, {
+      sphereColor: new BABYLON.Color3(1, 1, 1),
+      diameter: 1,
+      lightRange: 25,
+      blinkInterval: 250,
+      lightIntensity: 2,
+      glowIntensity: 1.5
+    });
+    // blinkingSphere.dispose(); // if you need to remove it later
 }

@@ -8,7 +8,7 @@
  *   - y is the vertical axis (height).
  **************************************************************/
 function createWorldScenery(scene, shadowGenerator, camera) {
-    // Wavelengths along the x and z axes (for the undulationMap)
+    // Wavelengths along the x and z axes (for the compute_terrain_height_and_derivatives)
     const xWavelength = 833;   
     const zWavelength = 500;   
 
@@ -23,15 +23,13 @@ function createWorldScenery(scene, shadowGenerator, camera) {
     createSkySphere(scene, camera);
 
     // Create the segmented ground with custom vertex colors
-    createSegmentedGround(scene, scene.groundConfig);
+    createSegmentedGround(scene, scene.groundConfig, shadowGenerator);
 
     // (Optional) create reference objects, trees, runway, etc.
     create_control_tower(scene, shadowGenerator);
 
     // Create the Morse tower at position (10,0,5) with 8 segments,
-// each 3 units tall, radius 1.5, top sphere diameter 2.5, 
-// Morse code "SOS", etc.
-const morseTower = createMorseTower(scene, shadowGenerator, {
+    const morseTower = createMorseTower(scene, shadowGenerator, {
 
     // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
     basePosition: new BABYLON.Vector3(1971, 249, 955),
@@ -61,20 +59,38 @@ const lighthouse = createMorseTower(scene, shadowGenerator, {
     createRunway(scene, scene.groundConfig);
 
 
+
+
+    createFlexibleHouse(scene, shadowGenerator, {
+        short: 40,
+        long: 90,
+        height: 15,
+        roofHeight: 20,
+        boxColor: "#ffe5b4",
+        roofColor: "#aa0000", // nice red roof
+        position: new BABYLON.Vector3(0, 15, 0),
+        rotationY: 0,
+        roofOverhang: 0.3
+      });
+
     const myHouse = createHouse(scene, shadowGenerator, {
         basePosition: new BABYLON.Vector3(-435, 12, 572),
-        bodyWidth: 10,
+        bodyWidth: 15,
         bodyDepth: 7,
-        bodyHeight: 5,
-        bodyColor: new BABYLON.Color3(0.8, 0.7, 0.5),
-        roofColor: new BABYLON.Color3(0.4, 0.1, 0.1),
-        roofHeight: 2
+        bodyHeight: 3,
+        bodyColor: new BABYLON.Color3(0.95, 0.95, 0.9),
+        roofColor: new BABYLON.Color3(0.99, 0.1, 0.1),
+        roofHeight: 2,
+        roofOverhang: 0.3,
+        rotation: 0.3
+
     });
+
 
 
     const cottage = createHouse(scene, shadowGenerator, {
         basePosition: new BABYLON.Vector3(-2231, 8.5, 336),
-        bodyWidth: 15,
+        bodyWidth: 45,
         bodyDepth: 10,
         bodyHeight: 7,
         bodyColor: new BABYLON.Color3(0.8, 0.7, 0.5),
@@ -172,13 +188,17 @@ function createSkySphere(scene, camera) {
  * }
  *
  * This function requires:
- *   - undulationMap(x, z, freqX, freqZ, amplitude)   // calculates terrain height
+ *   - compute_terrain_height_and_derivatives(x, z, freqX, freqZ, amplitude)   // calculates terrain height
  *   - randomGreenColor() and randomBrownColor()      // generate random color3
  **************************************************************/
 
 
 
-function createSegmentedGround(scene, groundConfig) {
+function createSegmentedGround(scene, groundConfig, shadowGenerator) {
+
+    let treePositions = []
+    let spawn_tree_probability_threshold = .96
+
     // Basic parameters
     const segmentCount = 30;
     const segmentSize = 200;
@@ -277,8 +297,11 @@ function createSegmentedGround(scene, groundConfig) {
                 const worldZ = localZ + centerZ;
 
                 // (A) Compute height from your terrain function
-                let yVal = undulationMap(worldX, worldZ, freqX, freqZ, amplitude);
+                let yVal = compute_terrain_height_and_derivatives(worldX, worldZ, freqX, freqZ, amplitude);
                 
+
+                const insideRegion = (worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000);
+
                 // (B) Get color based on yVal (existing logic)
                 let vertColor;
                 if (yVal < -16) {
@@ -307,7 +330,7 @@ function createSegmentedGround(scene, groundConfig) {
                     const sand = randomizeColor(new BABYLON.Color3(0.76, 0.70, 0.50), 0.02);
                     vertColor = sand;
                 } else {
-                    const insideRegion = (worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000);
+
 
                     if (insideRegion) {
                         if (yVal < threshold) {
@@ -327,11 +350,15 @@ function createSegmentedGround(scene, groundConfig) {
                             }
                             finalColor = randomizeColor(finalColor, 0.05);
                             vertColor = finalColor;
+
+
+
                         }
                     } else {
                         if (yVal < 44) {
                             let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
                             vertColor = finalColor;
+
                         } else if (yVal < 194) {
                             const t = (yVal - 44) / (194 - 44);
                             const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0);
@@ -339,6 +366,13 @@ function createSegmentedGround(scene, groundConfig) {
                             let finalColor = lerpColor(grad1, grad2, t);
                             finalColor = randomizeColor(finalColor, 0.05);
                             vertColor = finalColor;
+
+                            if ( Math.random()  > .996     ) {
+                                treePositions.push([  worldX, yVal,  worldZ ])
+                            }
+
+
+
                         } else if (yVal < 234) {
                             const t = (yVal - 214) / (234 - 214);
                             const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
@@ -388,7 +422,24 @@ function createSegmentedGround(scene, groundConfig) {
                     //const brownish = new BABYLON.Color3(0.678, .412, 0.031);
                     vertColor = lerpColor(vertColor, brownish, -20 * laplacian) // blend the curvature effect with the vertex color
                 }
+
+
+                if ((laplacian > nearZeroThreshold) && (dot < 0) && (yVal > 10) & (!insideRegion) && (yVal < 200)) {  // don't place trees on top of hills
+
+
+                    if ( Math.random()  > spawn_tree_probability_threshold) {
+                        treePositions.push([  worldX, yVal,  worldZ ])
+                    }
+                }
+
+
                 } // if yVal
+
+
+
+
+
+
 
                 // (E) Finally push RGBA to the color array
                 colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
@@ -401,6 +452,19 @@ function createSegmentedGround(scene, groundConfig) {
             const normals = [];
             BABYLON.VertexData.ComputeNormals(positions, indices, normals);
             groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
+
+
+
+
+
+
+            
         }
     }
+
+
+
+    createRandomTrees(scene, shadowGenerator, treePositions)
+
+
 }
