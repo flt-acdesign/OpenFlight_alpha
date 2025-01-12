@@ -49,7 +49,7 @@ hangar: {
     roofHeight: 3,
     boxColor: "#ffe5b4",
     roofColor: "#8395a3",
-    position: new BABYLON.Vector3(70, 15, -60),
+    position: new BABYLON.Vector3(60, 15, -60),
     rotationY: 3.14,
     roofOverhang: 0.5,
 

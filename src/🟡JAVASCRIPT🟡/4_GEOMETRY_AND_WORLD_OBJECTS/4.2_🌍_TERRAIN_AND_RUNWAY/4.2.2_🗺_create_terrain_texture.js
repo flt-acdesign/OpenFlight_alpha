@@ -107,7 +107,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
 
                 const inside_crops = (worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000)
 
-                const inside_platform = (worldX > 0 && worldX < 80 && worldZ > -30 && worldZ < 30)
+                const inside_platform = (worldX > 0 && worldX < 80 && worldZ > -120 && worldZ < 30)
 
                 // Define green patch around runway
                 const inside_runway_margins = (worldX > -50 && worldX < 80 && worldZ > -600 && worldZ < 600);
@@ -250,7 +250,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
             // Draw green patch around runway
             if (inside_runway_margins) {   vertColor =   randomizeColor(new BABYLON.Color3(0.133, 0.412, 0.075), 0.02);     }
 
-            if (inside_platform) {   vertColor =   randomizeColor(new BABYLON.Color3(.5, 0.5, 0.5), 0.05)     }
+            if (inside_platform) {   vertColor =   randomizeColor(new BABYLON.Color3(.5, 0.5, 0.5), 0.025)     }
             
 
 

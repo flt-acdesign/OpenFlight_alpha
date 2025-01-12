@@ -19,7 +19,7 @@ function create_control_tower(scene, shadowGenerator) {
                 cube.position = new BABYLON.Vector3(
                     40 + (xIndex - (baseSize - 1) / 2) * 2,
                     yLayer * 2 + 14,
-                    (zIndex - (baseSize - 1) / 2) * 2
+                    (zIndex - (baseSize - 1) / 2) * 2 +20
                 );
 
                 const cubeMaterial = new BABYLON.StandardMaterial("cubeMaterial", scene);
@@ -41,7 +41,7 @@ function create_control_tower(scene, shadowGenerator) {
     const blinkingSphere = createBlinkingSphere(scene, 
         40,                     // x coordinate (tower center)
         height * 2 + 13,       // y coordinate (top of tower)
-        0,                     // z coordinate (tower center)
+        20,                     // z coordinate (tower center)
         {
             sphereColor: new BABYLON.Color3(1, 0, 0),  // Red color
             diameter: 4,                               // 2x original size
@@ -51,13 +51,8 @@ function create_control_tower(scene, shadowGenerator) {
             glowIntensity: 1                          // Normal glow intensity
         }
     );
-
-    // Add shadow casting for the sphere
-    shadowGenerator.addShadowCaster(blinkingSphere.sphere);
-    blinkingSphere.sphere.isAlwaysActive = true;
-
     // Return the blinking sphere controller in case we need to dispose it later
-    return blinkingSphere;
+    //return blinkingSphere;
 }
 
 
