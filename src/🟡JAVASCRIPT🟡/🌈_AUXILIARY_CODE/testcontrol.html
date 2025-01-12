@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Controller Input Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        .controller-info {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+        }
+        .controller-info pre {
+            text-align: left;
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game Controller Input Display</h1>
+    <div class="controller-info">
+        <h2>Controller Status</h2>
+        <pre id="controllerStatus">No game controller connected.</pre>
+        <h2>Axes</h2>
+        <pre id="axesInfo">Waiting for input...</pre>
+        <h2>Buttons</h2>
+        <pre id="buttonsInfo">Waiting for input...</pre>
+    </div>
+
+    <script>
+        let gamepadIndex = null;
+
+        function updateControllerStatus() {
+            const gamepads = navigator.getGamepads();
+            const gamepad = gamepads[gamepadIndex];
+
+            if (gamepad) {
+                document.getElementById("controllerStatus").textContent = `Connected: ${gamepad.id}`;
+
+                // Display axes values
+                let axesText = gamepad.axes.map((value, index) => `Axis ${index}: ${value.toFixed(2)}`).join('\n');
+                document.getElementById("axesInfo").textContent = axesText;
+
+                // Display button values
+                let buttonsText = gamepad.buttons.map((button, index) => `Button ${index}: ${button.pressed ? 'Pressed' : 'Released'}`).join('\n');
+                document.getElementById("buttonsInfo").textContent = buttonsText;
+
+                // Continuously update the values
+                requestAnimationFrame(updateControllerStatus);
+            }
+        }
+
+        window.addEventListener("gamepadconnected", (event) => {
+            gamepadIndex = event.gamepad.index;
+            document.getElementById("controllerStatus").textContent = `Controller connected at index ${gamepadIndex}: ${event.gamepad.id}`;
+            updateControllerStatus();
+        });
+
+        window.addEventListener("gamepaddisconnected", () => {
+            document.getElementById("controllerStatus").textContent = "No game controller connected.";
+            document.getElementById("axesInfo").textContent = "Waiting for input...";
+            document.getElementById("buttonsInfo").textContent = "Waiting for input...";
+            gamepadIndex = null;
+        });
+    </script>
+</body>
+</html>

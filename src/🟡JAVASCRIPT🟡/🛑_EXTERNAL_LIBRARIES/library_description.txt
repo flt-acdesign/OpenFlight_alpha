@@ -1,0 +1,57 @@
+Core Libraries
+
+@babylonjs/core
+The main engine and fundamental components
+Provides core 3D rendering capabilities, scene management, and basic functionality28
+Recommended for ES6 module imports with tree shaking support
+
+babylonjs-gui
+Creates interactive user interfaces in 2D and 3D19
+Provides controls like buttons, sliders, and text overlays
+Uses hardware acceleration for performance
+Essential for VR interfaces since HTML elements can't be used in VR
+
+Asset Handling
+
+@babylonjs/loaders
+Handles importing 3D models and assets8
+Supports formats like glTF, GLB, OBJ, and STL
+Must be imported separately from core for specific file format support
+
+@babylonjs/serializers
+Enables exporting scenes and models34
+Primarily focused on glTF 2.0 export functionality
+Supports exporting animations, materials, and scene data
+Visual Enhancement
+
+@babylonjs/materials
+Provides advanced material types6
+Includes specialized materials like PBR (Physically Based Rendering)
+Must be installed separately from core
+
+@babylonjs/post-processes
+Adds post-processing visual effects7
+Enables effects like bloom, depth of field, and color grading
+Applied after the main scene rendering
+
+@babylonjs/procedural-textures
+Creates programmatically generated textures13
+Includes effects like fire, wood, and grass textures
+Can be used to create dynamic material appearances
+
+Development Tools
+
+@babylonjs/inspector
+Provides debugging and scene inspection tools4
+Allows real-time manipulation of scene properties
+Includes visual debugging features for development
+spectorjs
+WebGL debugging and troubleshooting tool910
+Captures and analyzes WebGL commands
+Helps diagnose rendering issues and performance problems
+Viewer
+
+@babylonjs/viewer
+Simplified wrapper for displaying 3D models36
+Requires minimal code to implement
+Automatically handles scene setup and model loading

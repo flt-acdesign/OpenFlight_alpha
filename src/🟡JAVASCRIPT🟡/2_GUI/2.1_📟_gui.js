@@ -4,6 +4,7 @@ const rad2deg = rad => (rad * 180.0) / Math.PI;
 
 
 function createGUI() {
+
   advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI")
 
   // Create a stack panel to hold the text blocks

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Babylon.js Cube with Gamepad Control and Trajectory</title>
+    <!-- Include the Babylon.js library -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <!-- Optionally include the Babylon.js loader if you plan to load any assets -->
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <!-- The canvas element where the Babylon.js scene will be rendered -->
+    <canvas id="renderCanvas" touch-action="none" style="width:100%; height:100%;"></canvas>
+    <script>
+        // Get the canvas element
+        var canvas = document.getElementById('renderCanvas');
+
+        // Generate the BABYLON 3D engine
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // Function to create the scene
+        var createScene = function() {
+            // Create a basic BJS Scene object
+            var scene = new BABYLON.Scene(engine);
+
+            // Create a camera and position it at (x:0, y:5, z:-10)
+            var camera = new BABYLON.ArcRotateCamera('camera1', -Math.PI / 2, Math.PI / 2.5, 15, BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+
+            // Create a basic light
+            var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), scene);
+
+            // Create a cube and position it at (x:0, y:0.5, z:0)
+            var cube = BABYLON.MeshBuilder.CreateBox('cube', {size: 1}, scene);
+            cube.position.y = 0.5;
+
+            // Create ground
+            var ground = BABYLON.MeshBuilder.CreateGround('ground', {width: 20, height: 20}, scene);
+
+            // Array to store the cube's positions for the trajectory
+            var positions = [];
+            positions.push(cube.position.clone());
+
+            // Initialize the lines mesh to null
+            var lines = null;
+
+            // Function to update the trajectory
+            function updateTrajectory(newPosition) {
+                positions.push(newPosition.clone());
+                if (positions.length > 1000) { // Limit the number of points to prevent performance issues
+                    positions.shift();
+                }
+
+                // Dispose of the old lines mesh if it exists
+                if (lines) {
+                    lines.dispose();
+                }
+
+                // Create a new lines mesh with the updated positions
+                lines = BABYLON.MeshBuilder.CreateLines("trajectory", {points: positions}, scene);
+            }
+
+            // Gamepad handling
+            var gamepads = {};
+
+            window.addEventListener("gamepadconnected", function(e) {
+                console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
+                  e.gamepad.index, e.gamepad.id,
+                  e.gamepad.buttons.length, e.gamepad.axes.length);
+                gamepads[e.gamepad.index] = e.gamepad;
+            });
+
+            window.addEventListener("gamepaddisconnected", function(e) {
+                console.log("Gamepad disconnected from index %d: %s",
+                  e.gamepad.index, e.gamepad.id);
+                delete gamepads[e.gamepad.index];
+            });
+
+            // Update cube position based on gamepad input
+            scene.onBeforeRenderObservable.add(function() {
+                var gamepadList = navigator.getGamepads();
+                for (var i = 0; i < gamepadList.length; i++) {
+                    var gp = gamepadList[i];
+                    if (gp && gp.connected) {
+                        var axes = gp.axes;
+
+                        // Adjust these multipliers to control speed
+                        var moveX = axes[0] * 0.1;
+                        var moveZ = axes[1] * 0.1;
+
+                        cube.position.x += moveX;
+                        cube.position.z += moveZ;
+
+                        // Update the trajectory
+                        updateTrajectory(cube.position);
+                    }
+                }
+            });
+
+            return scene;
+        };
+
+        // Call the createScene function
+        var scene = createScene();
+
+        // Register a render loop to repeatedly render the scene
+        engine.runRenderLoop(function() {
+            scene.render();
+        });
+
+        // Watch for browser/canvas resize events
+        window.addEventListener('resize', function() {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
