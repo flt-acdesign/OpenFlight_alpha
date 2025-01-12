@@ -34,7 +34,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
     let probability_of_spawning_a_tree_barren = .05
 
     // Basic parameters
-    const segmentCount = 30;
+    const segmentCount = 28
     const segmentSize = 200;
     const threshold = 0.1 * groundConfig.amplitude;
 
@@ -180,6 +180,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
 
                             if ( Math.random()  < probability_of_spawning_a_tree_barren     ) {
                                 treePositions.push([  worldX, yVal,  worldZ ])
+                                vertColor = vertColor.scale(.5) // darkness 
                             }
 
 
@@ -282,6 +283,175 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
 
 
 }
+
+
+
+
+
+
+
+// Configuration for dynamic sea generation
+const SEA_PATCH_SIZE = 4000         // Size of each sea patch
+const SEA_CHECK_RADIUS = 3;         // Number of patches to generate around the camera
+const SEA_PATCH_RESOLUTION = 10;    // Low resolution for performance
+
+let activeSeaPatches = {};          // Track active sea patches
+
+/**
+ * Initializes dynamic sea generation by continuously checking the active camera's position.
+ */
+function enableDynamicSeaGeneration(scene) {
+    scene.onBeforeRenderObservable.add(() => {
+        updateSeaPatches(scene);
+    });
+}
+
+/**
+ * Updates sea patches based on the active camera's current position.
+ */
+
+function updateSeaPatches(scene) {
+  const camera = scene.activeCamera;
+
+  if (!camera) {
+      console.warn("No active camera found in the scene.");
+      return;
+  }
+
+  // Get the camera's current patch coordinates
+  const camX = Math.floor(camera.position.x / SEA_PATCH_SIZE);
+  const camZ = Math.floor(camera.position.z / SEA_PATCH_SIZE);
+
+  const newActivePatches = {};
+
+  // Generate patches around the camera
+  for (let dx = -SEA_CHECK_RADIUS; dx <= SEA_CHECK_RADIUS; dx++) {
+      for (let dz = -SEA_CHECK_RADIUS; dz <= SEA_CHECK_RADIUS; dz++) {
+          const patchX = camX + dx;
+          const patchZ = camZ + dz;
+          const patchKey = `${patchX}_${patchZ}`;
+
+          // Create patch if it doesn't exist
+          if (!activeSeaPatches[patchKey]) {
+              const seaPatch = createSeaPatch(scene, patchX, patchZ, 2800); // 2800 is the main patch side length
+
+              // Only store the patch if it was successfully created
+              if (seaPatch) {
+                  activeSeaPatches[patchKey] = seaPatch;
+              }
+          }
+
+          // Mark this patch to be retained
+          newActivePatches[patchKey] = activeSeaPatches[patchKey];
+      }
+  }
+
+  // Remove patches that are no longer near the camera
+  for (const patchKey in activeSeaPatches) {
+      // Check if the patch is valid and not in the new active list
+      const patch = activeSeaPatches[patchKey];
+      if (patch && !newActivePatches[patchKey]) {
+          patch.dispose();  // Safely dispose only existing patches
+          delete activeSeaPatches[patchKey];
+      }
+  }
+
+  // Update the active patches
+  activeSeaPatches = newActivePatches;
+}
+
+
+
+
+
+/**
+ * Creates a low-resolution sea patch at the specified grid coordinates.
+ */
+
+
+
+
+
+function createSeaPatch(scene, patchX, patchZ, main_patch_side_length) {
+  const posX = patchX * SEA_PATCH_SIZE;
+  const posZ = patchZ * SEA_PATCH_SIZE;
+
+  // Calculate the half-size of the main patch for easier boundary checks
+  const halfMainPatchSize = main_patch_side_length / 2
+
+  // Check if the new patch overlaps the main patch area
+  const isOverlappingMainPatch = (
+      posX + SEA_PATCH_SIZE / 2 > -halfMainPatchSize &&
+      posX - SEA_PATCH_SIZE / 2 < halfMainPatchSize &&
+      posZ + SEA_PATCH_SIZE / 2 > -halfMainPatchSize &&
+      posZ - SEA_PATCH_SIZE / 2 < halfMainPatchSize
+  );
+
+  // If it overlaps, prevent creation
+  if (isOverlappingMainPatch) {
+      return null;
+  }
+
+  // Create a simple ground mesh for the sea patch
+  const seaPatch = BABYLON.MeshBuilder.CreateGround(`seaPatch_${patchX}_${patchZ}`, {
+      width: SEA_PATCH_SIZE,
+      height: SEA_PATCH_SIZE,
+      subdivisions: SEA_PATCH_RESOLUTION,
+      updatable: false
+  }, scene);
+
+  // Position the patch at sea level (y = 0)
+  seaPatch.position.set(posX, -2, posZ);
+
+  // Apply the sea material
+  const seaMaterial = new BABYLON.StandardMaterial(`seaMaterial_${patchX}_${patchZ}`, scene);
+  seaMaterial.diffuseColor = new BABYLON.Color3(0.020, 0.0, 0.08); // Deep ocean blue
+  seaMaterial.backFaceCulling = false; // Ensure visibility from all angles
+
+  seaPatch.material = seaMaterial;
+
+  // Add the patch to the active patches tracker
+  activeSeaPatches[`${patchX}_${patchZ}`] = seaPatch;
+
+  return seaPatch;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

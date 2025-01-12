@@ -48,7 +48,7 @@ hangar: {
     height: 6,
     roofHeight: 3,
     boxColor: "#ffe5b4",
-    roofColor: "#8395a3",
+    roofColor: "#d14e2a",
     position: new BABYLON.Vector3(60, 15, -60),
     rotationY: 3.14,
     roofOverhang: 0.5,
@@ -77,24 +77,69 @@ WC_house: {
 
 
 
-cottage: {
-  short: 40,
-  long: 60,
-  height: 25,
-  roofHeight: 20,
+cottage1: {
+  short: 8,
+  long: 17,
+  height: 3,
+  roofHeight: 3,
   boxColor: "#ffe5b4",
   roofColor: "#c24e10",
   position: new BABYLON.Vector3(-2231, 8.5, 336),
-  rotationY: 3.14,
+  rotationY: 3.,
   roofOverhang: 0.0,
 
   // Apply the texture to the first wall (houseBody)
-  proceduralTexture: WC_text,
+  proceduralTexture: null,
   meshesToTexture: ["houseBody"]
 },
 
+cottage2: {
+  short: 9,
+  long: 17,
+  height: 3,
+  roofHeight: 3,
+  boxColor: "#ffe5b4",
+  roofColor: "#c24e10",
+  position: new BABYLON.Vector3(-617, 8.8, 326),
+  rotationY: 2.,
+  roofOverhang: 0.0,
 
+  // Apply the texture to the first wall (houseBody)
+  proceduralTexture: null,
+  meshesToTexture: ["houseBody"]
+},
 
+cottage3: {
+  short: 8,
+  long: 15,
+  height: 3,
+  roofHeight: 4,
+  boxColor: "#ffe5b4",
+  roofColor: "#c24e10",
+  position: new BABYLON.Vector3(-632, 7.4, 367),
+  rotationY: 2.3,
+  roofOverhang: 0.0,
+
+  // Apply the texture to the first wall (houseBody)
+  proceduralTexture: null,
+  meshesToTexture: ["houseBody"]
+},
+
+bridge: {
+  short: 6,
+  long: 150,
+  height: 3,
+  roofHeight: 1,
+  boxColor: "#853d10",
+  roofColor: "#a39e93",
+  position: new BABYLON.Vector3(-2491, 0, 199),
+  rotationY: 3.2,
+  roofOverhang: 0.0,
+
+  // Apply the texture to the first wall (houseBody)
+  proceduralTexture: null,
+  meshesToTexture: ["houseBody"]
+},
 
 
 

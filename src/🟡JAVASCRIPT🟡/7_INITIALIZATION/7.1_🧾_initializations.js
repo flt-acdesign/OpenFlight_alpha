@@ -7,6 +7,9 @@ let glbNode = null;   // TransformNode holding the loaded GLB
 
 let engine, scene;
 let velocity = { x: 30, y: 0, z: 0 }; // Initial velocity
+
+
+
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
 let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
 let isPaused = false;
@@ -19,7 +22,7 @@ let elapsedTime = 0; // Total elapsed time
 let timeSinceLastUpdate = 0; // Accumulated time since last update
 let fps_demanded = 50 // Frames per second demanded
 let global_time_step = 1.0 / fps_demanded  // seconds, play ping-pong at this rate
-
+let distanceFromCenter = 0
 
 let material; // Material for the aircraft
 

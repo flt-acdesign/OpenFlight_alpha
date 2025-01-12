@@ -21,6 +21,8 @@ function createScene(engine, canvas) {
   createForceLine();
   createGUI();
 
+
+
   // Set up event listeners (transformations, double-click, etc.)
   setupEventListeners(scene, shadowGenerator);
 
@@ -33,37 +35,19 @@ function createScene(engine, canvas) {
 
 function setupEventListeners(scene, shadowGenerator) {
   setup_GLB_model_transformations(scene, shadowGenerator);
-  setupDoubleClickHandler(scene);
+  //setupDoubleClickHandler(scene);
 }
+
+
+
 
 function setupAnimations(scene) {
   scene.onBeforeRenderObservable.add(() => {
-    // updateSkySpherePosition(scene);
+    updateSkySphereDiameter(scene)
   });
 }
 
-function setupDoubleClickHandler(scene) {
-  scene.onPointerObservable.add((pointerInfo) => {
-    if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOUBLETAP) {
-      handleDoubleClick(pointerInfo, scene);
-    }
-  });
-}
 
-function handleDoubleClick(pointerInfo, scene) {
-  const pickResult = scene.pick(
-    pointerInfo.event.clientX,
-    pointerInfo.event.clientY
-  );
-  if (
-    pickResult.hit &&
-    pickResult.pickedMesh &&
-    pickResult.pickedMesh.name.includes("groundSegment")
-  ) {
-    scene.activeCamera.setTarget(pickResult.pickedPoint);
-    scene.activeCamera.radius = 200;
-  }
-}
 
 /***************************************************************
  * NEW FUNCTION:

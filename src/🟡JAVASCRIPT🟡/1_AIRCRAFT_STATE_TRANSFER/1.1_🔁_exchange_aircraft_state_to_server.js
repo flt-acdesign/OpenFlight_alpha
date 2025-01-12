@@ -125,12 +125,18 @@ ws.onmessage = (event) => {
     thrust_attained = parseFloat(responseData.thrust_attained);
     
     
-    // Update visualization elements
-    updateVelocityLine();
-    updateForceLine();
+
 
     // Update trajectory if within time limit
     if (elapsedTime < 200.0) {
         updateTrajectory();
     }
-};
+
+
+
+    // Update visualization elements
+    updateVelocityLine();
+    updateForceLine();
+
+
+}

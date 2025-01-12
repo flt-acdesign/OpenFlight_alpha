@@ -7,6 +7,12 @@ window.addEventListener("DOMContentLoaded", function () {
   // Call the external scene generation function
   const scene = createScene(engine, canvas)
 
+
+// Enable dynamic sea generation (call this after creating your scene and camera)
+enableDynamicSeaGeneration(scene, scene.activeCamera )
+
+
+
   // Render loop
   engine.runRenderLoop(function () {
     if (!isPaused && !simulationEnded) {
