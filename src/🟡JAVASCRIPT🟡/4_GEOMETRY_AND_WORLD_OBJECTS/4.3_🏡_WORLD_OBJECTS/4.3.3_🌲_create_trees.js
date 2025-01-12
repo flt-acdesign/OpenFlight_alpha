@@ -24,7 +24,9 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
     const treeMaterial = new BABYLON.StandardMaterial("treeMaterial", scene);
     treeMaterial.diffuseColor = new BABYLON.Color3(0.13, 0.55, 0.13);
     treeMaterial.fogEnabled = true;
-    
+    treeMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+    treeMaterial.specularPower = 0;
+
     baseTree.material = treeMaterial
 
     // Enable shadows for the base tree

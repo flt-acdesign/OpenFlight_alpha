@@ -26,11 +26,11 @@
 
 
 
-function createSegmentedGround(scene, groundConfig, shadowGenerator) {
+function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) {
 
     let treePositions = []
-    let probability_of_spawning_a_tree_fertile = .3
 
+    let probability_of_spawning_a_tree_fertile = .3
     let probability_of_spawning_a_tree_barren = .05
 
     // Basic parameters

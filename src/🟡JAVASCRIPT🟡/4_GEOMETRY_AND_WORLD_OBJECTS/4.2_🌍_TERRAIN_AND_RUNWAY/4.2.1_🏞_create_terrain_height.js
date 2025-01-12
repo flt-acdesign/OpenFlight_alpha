@@ -1,11 +1,7 @@
 
-
-
 /***************************************************************
  * Example terrain function for generating terrain heights
  ***************************************************************/
-
-
 
 
 function compute_terrain_height_and_derivatives(x, z, freqX, freqZ, amplitude) {
@@ -174,4 +170,56 @@ function computeHeightDerivatives(x, z, freqX, freqZ, amplitude, step = 1) {
 
 
 
+
+
+
+
+/***************************************************************
+ * Creates a large sky sphere with a vertical gradient texture.
+ * Automatically positions it based on the camera target.
+ **************************************************************/
+function createSkySphere(scene, camera) {
+    // Create a sphere (facing inwards) as the sky dome
+    const skySphere = BABYLON.MeshBuilder.CreateSphere(
+        "skySphere",
+        { diameter: 7000, sideOrientation: BABYLON.Mesh.BACKSIDE },
+        scene
+    );
+
+    // We'll paint a gradient onto a dynamic texture
+    const textureSize = 1024;
+    const skyTexture = new BABYLON.DynamicTexture(
+        "skyTexture",
+        { width: textureSize, height: textureSize },
+        scene
+    );
+
+    // Get the 2D canvas context for drawing
+    const ctx = skyTexture.getContext();
+
+    // Create a vertical gradient that goes from a warm color (top)
+    // to a lighter color (bottom). Adjust to your liking.
+    const gradient = ctx.createLinearGradient(0, 0, 0, textureSize);
+    gradient.addColorStop(0, "rgb(246, 97, 42)");   // near top
+    gradient.addColorStop(1, "rgb(229, 229, 240)"); // near bottom
+
+    // Paint the gradient onto the texture
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, textureSize, textureSize);
+    skyTexture.update();
+
+    // Standard material to hold our gradient texture
+    const skyMaterial = new BABYLON.StandardMaterial("skyMaterial", scene);
+    skyMaterial.backFaceCulling = false;  // Render inside faces
+    skyMaterial.diffuseTexture = skyTexture;
+    skyMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+
+    // Attach the material to the sky sphere
+    skySphere.material = skyMaterial;
+    skySphere.isAlwaysActive = true; // Always rendered, even if out of frustum
+
+    // Align skySphere with the camera target
+    skySphere.rotation.z = Math.PI / 2; // Rotated 90 deg if desired
+    skySphere.position.copyFrom(camera.target);
+}
 
