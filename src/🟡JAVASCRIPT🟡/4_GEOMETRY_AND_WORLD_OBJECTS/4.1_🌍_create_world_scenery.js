@@ -8,7 +8,7 @@
  *   - y is the vertical axis (height).
  **************************************************************/
 function createWorldScenery(scene, shadowGenerator, camera) {
-    // Wavelengths along the x and z axes (for the compute_terrain_height_and_derivatives)
+    // Wavelengths along the x and z axes (for the compute_terrain_height)
     const xWavelength = 833;   
     const zWavelength = 500;   
 

@@ -20,7 +20,7 @@
  * }
  *
  * This function requires:
- *   - compute_terrain_height_and_derivatives(x, z, freqX, freqZ, amplitude)   // calculates terrain height
+ *   - compute_terrain_height(x, z, freqX, freqZ, amplitude)   // calculates terrain height
  *   - randomGreenColor() and randomBrownColor()      // generate random color3
  **************************************************************/
 
@@ -102,7 +102,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
                 const worldZ = localZ + centerZ;
 
                 // (A) Compute height from your terrain function
-                let yVal = compute_terrain_height_and_derivatives(worldX, worldZ, freqX, freqZ, amplitude);
+                let yVal = compute_terrain_height(worldX, worldZ, freqX, freqZ, amplitude);
                 
 
                 const inside_crops = (worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000)
@@ -203,7 +203,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) 
                 positions[v + 1] = (yVal < 0) ? 0 : yVal;
 
                 // (D) Compute derivatives => normal & laplacian at this vertex
-                const { normal, laplacian } = computeDerivatives(worldX, worldZ, freqX, freqZ, amplitude, 1.0);
+                const { normal, laplacian } = compute_terrain_derivatives(worldX, worldZ, freqX, freqZ, amplitude, 1.0);
                 // normal is [nx, ny, nz]
 
                 // 1) Darken if normal is close to dVec = (-1, -1, -1)

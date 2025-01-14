@@ -50,7 +50,6 @@ function setupAnimations(scene) {
 
 
 /***************************************************************
- * NEW FUNCTION:
  *  setupPickingCoordinates(scene):
  *    Allows the user to click anywhere on the screen and log
  *    the intersection point with any mesh to the browser console.

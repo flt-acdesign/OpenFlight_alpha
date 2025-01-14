@@ -1,10 +1,8 @@
 
 using HTTP, WebSockets, JSON, CSV, DataFrames, LinearAlgebra, StaticArrays, Dates, YAML
 
-# absolute path of the directory containing the current script file
+# absolute path of the directory containing the current script file. It needs to be here at the top
 script_dir = @__DIR__
-
-
 
 # Load general code and functions
 include(raw"./src/🟣JULIA🟣/6_Aero_data/6.1_📈_get_constants_and_interpolate_coefficients.jl")
@@ -23,6 +21,8 @@ include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.2_🤸‍♀️_compute_6D
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.3_💥_handle_collisions.jl")
 include(raw"./src/🟣JULIA🟣/2_Simulation_engine/2.4_📶_compute_initial_flight_conditions.jl")
 
+
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.0_🌐_launch_web_browser.jl")
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🤝_Establish_WebSockets_connection.jl") 
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.2_🔁_Update_and_transfer_aircraft_state.jl")
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.3_📈_record_and_save_flight_data.jl")
@@ -34,22 +34,7 @@ include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.3_🕑_a
 include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actuator_and_Engine_Dynamics.jl")
 
 
-
-
-function launch_client() 
-    html_file = joinpath(script_dir, "./src/🟡JAVASCRIPT🟡/✅_front_end_and_client.html")   # Launch the client in Microsoft Edge
-    try
-        run(`cmd /c start msedge "$html_file"`)
-        println("Microsoft Edge launched successfully.")
-    catch e
-        println("Failed to launch Microsoft Edge: ", e)
-    end
-end
-
-
-
-
-launch_client()
+launch_client(script_dir)
 
 # Global timestamp for simulation start
 const start_time = time()

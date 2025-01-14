@@ -119,3 +119,7 @@ function setActiveCamera(index, scene) {
         glbNode.setEnabled(index !== 2);  // Hide model in cockpit view (index 2)
     }
 }
+
+
+
+

@@ -48,7 +48,7 @@ function createRunway(scene, groundConfig) {
         const zCoord = runwayPositions[v + 2];
 
         // Compute the height from your custom undulation map function
-        const terrainHeight = compute_terrain_height_and_derivatives(xCoord, zCoord, freqX, freqZ, amplitude);
+        const terrainHeight = compute_terrain_height(xCoord, zCoord, freqX, freqZ, amplitude);
 
         // Slightly above terrain (offset of 0.2)
         runwayPositions[v + 1] = terrainHeight + 0.2;
