@@ -29,9 +29,6 @@ From: https://en.wikipedia.org/wiki/U.S._Standard_Atmosphere
 """
 function atmosphere_isa(height)
 
-
-
-
     if  height < 11000  # Troposphere
         temperature_lapse_rate = -0.0065  # K/m
         T0 = 288.15      # K

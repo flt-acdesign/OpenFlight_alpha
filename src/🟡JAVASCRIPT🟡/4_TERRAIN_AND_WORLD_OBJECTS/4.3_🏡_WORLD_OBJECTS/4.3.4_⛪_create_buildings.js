@@ -85,11 +85,12 @@ function create_buildings(scene, shadowGenerator) {
       short: 6,
       long: 150,
       height: 3,
-      roofHeight: 1,
+      roofHeight: -1,
       position: new BABYLON.Vector3(-2491, 0, 199),
       rotationY_DEG: 3.2,
       boxColor: "#853d10",
-      roofColor: "#a39e93"
+      roofColor: "#a39e93",
+      roofOverhang: 2.0
     },
     little_tower: {
       short: 4,

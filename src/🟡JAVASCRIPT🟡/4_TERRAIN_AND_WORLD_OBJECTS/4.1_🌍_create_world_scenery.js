@@ -32,14 +32,9 @@ function createWorldScenery(scene, shadowGenerator, camera) {
 
     createRunway(scene, scene.groundConfig)
 
-
-
-
-    // Call the function
     const buildings = create_buildings(scene, shadowGenerator )
 
 
-    initializeTrajectorySystem();
 
 }
 

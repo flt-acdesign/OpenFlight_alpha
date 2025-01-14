@@ -16,11 +16,10 @@ function createScene(engine, canvas) {
   createWorldScenery(scene, shadowGenerator, camera);
 
 
-
+  initializeTrajectorySystem();
   createVelocityLine();
   createForceLine();
   createGUI();
-
 
 
   // Set up event listeners (transformations, double-click, etc.)

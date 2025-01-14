@@ -1,7 +1,7 @@
 # Constants
 const DECIMAL_PLACES = 5
 const TIMESTAMP = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
-csv_file = joinpath(script_dir, "OUTPUT_OF_SIMULATION_DATA", "simulation_data_" * TIMESTAMP * ".csv")
+csv_file = joinpath(project_dir, "OUTPUT_OF_SIMULATION_DATA", "simulation_data_" * TIMESTAMP * ".csv")
 
 df = DataFrame(
     time=Float64[], x=Float64[], y=Float64[], z=Float64[],

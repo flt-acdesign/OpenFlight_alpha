@@ -1,7 +1,7 @@
 using JSON
 
 
-cd(@__DIR__)
+
 
 struct ParameterBounds
     min_val::Float64

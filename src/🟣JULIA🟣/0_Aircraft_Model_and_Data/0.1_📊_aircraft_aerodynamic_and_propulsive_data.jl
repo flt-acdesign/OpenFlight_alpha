@@ -1,12 +1,13 @@
 
-#json_data = JSON.parsefile("SF25B.json")
+cd(@__DIR__)
 
+filename = joinpath(@__DIR__, raw"./📜_Aero_data/SF25B.yaml")
+println("DEBUG: Attempting to load YAML from: $filename")
+println("DEBUG: isfile(filename)? ", isfile(filename))
 
-# Specify the filename
-filename = "SF25B.yaml"
-
-# Read and parse the YAML file
 json_data = YAML.load_file(filename)
+
+
 
 
 
