@@ -7,10 +7,6 @@ println("DEBUG: isfile(filename)? ", isfile(filename))
 
 json_data = YAML.load_file(filename)
 
-
-
-
-
 aircraft_aero_and_propulsive_database = parse_aero_data(json_data)
 
  # OJO!!! revisar completamente y validar
@@ -38,7 +34,6 @@ function compute_inertial_tensor_body_frame(aircraft_mass, radius_of_giration_pi
 end
 
 
-
 aircraft_flight_physics_and_propulsive_data = (
     # Aircraft mass and geometry
     aircraft_mass = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
@@ -50,7 +45,6 @@ aircraft_flight_physics_and_propulsive_data = (
         (fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_wing_aerodynamic_center")) - 
         fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_CoG")) 
         / fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"), 
-
 
     reference_area = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_area"),
     #Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
@@ -97,4 +91,3 @@ aircraft_flight_physics_and_propulsive_data = (
     )
 
 )
-
