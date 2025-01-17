@@ -2,146 +2,266 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Babylon.js Sin-Sin Terrain with Shadows & Checkerboard</title>
-    <!-- Include Babylon.js from the CDN -->
+    <title>Babylon.js Modified Terrain</title>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
 </head>
 <body style="margin: 0; padding: 0; overflow: hidden;">
-    <!-- The canvas element where Babylon.js will draw the scene -->
-    <canvas id="renderCanvas" touch-action="none" style="width: 100%; height: 100%;"></canvas>
+<canvas id="renderCanvas" touch-action="none" style="width: 100%; height: 100%;"></canvas>
 
-    <script>
-    window.addEventListener("DOMContentLoaded", function () {
-        // Get the canvas element 
-        var canvas = document.getElementById("renderCanvas");
-        
-        // Generate the Babylon engine
-        var engine = new BABYLON.Engine(canvas, true);
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+    // Get the canvas element 
+    var canvas = document.getElementById("renderCanvas");
+    
+    // Generate the Babylon engine
+    var engine = new BABYLON.Engine(canvas, true);
 
-        // Create the scene function
-        var createScene = function () {
-            var scene = new BABYLON.Scene(engine);
+    // Create the scene function
+    var createScene = function () {
+        var scene = new BABYLON.Scene(engine);
 
-            // Create a camera looking at the origin and attach it to the canvas
-            var camera = new BABYLON.ArcRotateCamera(
-                "camera", 
-                -Math.PI / 2, 
-                Math.PI / 4, 
-                25, 
-                BABYLON.Vector3.Zero(), 
-                scene
-            );
-            camera.attachControl(canvas, true);
+        // Create a camera looking at the origin and attach it to the canvas
+        var camera = new BABYLON.ArcRotateCamera(
+            "camera", 
+            -Math.PI / 2, 
+            Math.PI / 4, 
+            25, 
+            BABYLON.Vector3.Zero(), 
+            scene
+        );
+        camera.attachControl(canvas, true);
 
-            // Create a basic hemispheric light (ambient fill light)
-            var hemiLight = new BABYLON.HemisphericLight(
-                "hemiLight", 
-                new BABYLON.Vector3(0, 1, 0), 
-                scene
-            );
-            hemiLight.intensity = 0.5;
+        // Create a basic hemispheric light (ambient fill light)
+        var hemiLight = new BABYLON.HemisphericLight(
+            "hemiLight", 
+            new BABYLON.Vector3(0, 1, 0), 
+            scene
+        );
+        hemiLight.intensity = 0.5;
 
-            // Create a directional light for sharper shadows
-            var dirLight = new BABYLON.DirectionalLight(
-                "dirLight", 
-                new BABYLON.Vector3(-1, -2, -1),  // direction
-                scene
-            );
-            dirLight.position = new BABYLON.Vector3(20, 40, 20);
-            dirLight.intensity = 0.7;
+        // Create a directional light for sharper shadows
+        var dirLight = new BABYLON.DirectionalLight(
+            "dirLight", 
+            new BABYLON.Vector3(-1, -2, -1),  // direction
+            scene
+        );
+        dirLight.position = new BABYLON.Vector3(20, 40, 20);
+        dirLight.intensity = 0.7;
 
-            // Create a sphere above the ground so we can see its shadow
-            var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 2 }, scene);
-            sphere.position = new BABYLON.Vector3(0, 10, 0);
+        // Create a sphere above the ground so we can see its shadow
+        var sphere = BABYLON.MeshBuilder.CreateSphere(
+            "sphere",
+            { diameter: 2 },
+            scene
+        );
+        sphere.position = new BABYLON.Vector3(0, 10, 0);
 
-            // Create a ground mesh subdivided into a grid
-            var ground = BABYLON.MeshBuilder.CreateGround(
-                "ground", 
-                { width: 50, height: 50, subdivisions: 1010 },
-                scene
-            );
+        // Create a ground mesh subdivided into a grid
+        var width  = 50;
+        var height = 50;
+        var subdiv = 1010; // number of subdivisions
+        var ground = BABYLON.MeshBuilder.CreateGround(
+            "ground", 
+            { width: width, height: height, subdivisions: subdiv }, 
+            scene
+        );
 
-            // Let the ground receive shadows
-            ground.receiveShadows = true;
+        // Let the ground receive shadows
+        ground.receiveShadows = true;
 
-            // Create a shadow generator so the sphere can cast shadows onto the ground
-            var shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight);
-            shadowGenerator.useExponentialShadowMap = true; // optional setting for softer shadows
-            shadowGenerator.addShadowCaster(sphere);
+        // Create a shadow generator so the sphere can cast shadows onto the ground
+        var shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight);
+        shadowGenerator.useExponentialShadowMap = true; // optional setting for softer shadows
+        shadowGenerator.addShadowCaster(sphere);
 
-            // Retrieve the vertex data (positions)
-            var positions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+        // -- STEP 1: Retrieve the vertex data (positions) & set up arrays for heights/colors --
+        var positions = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+        // We'll store (row, col) => y-height in a 2D array for easier finite differences
+        // Also store final colors
+        var colors = new Array(positions.length); // same length as positions, but we fill RGBA => 4 times as many entries as # of vertices
 
-            // We'll store per-vertex colors here
-            var colors = [];
+        // The ground spans from -width/2 to +width/2 in X, and -height/2 to +height/2 in Z.
+        // Because of 'subdiv' subdivisions, we have (subdiv+1) vertices in each dimension.
+        var vertsPerDim = subdiv + 1;
 
-            // Adjust each vertex's y-coordinate, then pick a color based on its height
-            var scale = 7;
-            for (var i = 0; i < positions.length; i += 3) {
-                var x = positions[i];
-                var z = positions[i + 2];
+        // Helper function to convert (row, col) -> index in 'positions'
+        function idx(row, col) {
+            return 3 * (row * vertsPerDim + col);
+        }
 
-                // Terrain height is sin(x/5)*sin(z/5) * scale
-                var y = Math.sin(x / 5) * Math.sin(z / 5) * scale;
-                positions[i + 1] = y;
+        // We'll store the "initial" height y(row,col) in a 2D array to do a second pass
+        var heightMap = new Array(vertsPerDim);
+        for (var r = 0; r < vertsPerDim; r++) {
+            heightMap[r] = new Array(vertsPerDim);
+        }
 
-                // Decide vertex color based on the height
-                if (y < 0.1 * scale) {
-                    // Checkerboard pattern for terrain below the threshold
-                    // We'll base the checker pattern on integer "tiles"
-                    // Using floor(x/2) and floor(z/2) to define square cells
-                    var xTile = Math.floor(x / 2);
-                    var zTile = Math.floor(z / 2);
+        // Compute the base sin-sin height and store into heightMap
+        // Also do a checkerboard color or slope color in this pass
+        var scale = 7; // vertical scaling
+        for (var r = 0; r < vertsPerDim; r++) {
+            for (var c = 0; c < vertsPerDim; c++) {
+                let i = idx(r, c);
+                let x = positions[i];
+                let z = positions[i + 2];
+
+                // Original terrain formula
+                let y = Math.sin(x / 5) * Math.sin(z / 5) * scale;
+                heightMap[r][c] = y;
+            }
+        }
+
+        // -- STEP 2: Compute Laplacian and new heights --
+        //   Laplacian in 2D (x,z) with uniform spacing dx=dz:
+        //       Laplacian(y) ~ [ y(r,c+1) + y(r,c-1) + y(r+1,c) + y(r-1,c) - 4*y(r,c) ] / dx^2
+        //
+        //   We'll do a second pass so we don't override y-values before computing neighbors.
+        //   For boundary vertices, we'll just skip or assume no change.
+        var dx = width / subdiv;  // spacing in x
+        var dz = height / subdiv; // spacing in z (same as dx if width=height)
+        var newHeightMap = new Array(vertsPerDim);
+        for (var r = 0; r < vertsPerDim; r++) {
+            newHeightMap[r] = new Array(vertsPerDim);
+            for (var c = 0; c < vertsPerDim; c++) {
+                // Default to original height if on boundary
+                if (r === 0 || r === vertsPerDim - 1 || c === 0 || c === vertsPerDim - 1) {
+                    newHeightMap[r][c] = heightMap[r][c];
+                    continue;
+                }
+                let laplacian = (
+                    heightMap[r][c+1] +
+                    heightMap[r][c-1] +
+                    heightMap[r+1][c] +
+                    heightMap[r-1][c] -
+                    4.0 * heightMap[r][c]
+                ) / (dx * dx);  // assume dx=dz for simplicity
+
+                // Increase y by the Laplacian
+                newHeightMap[r][c] = heightMap[r][c] * laplacian**4 * -10 + heightMap[r][c]
+            }
+        }
+
+        // Overwrite original heightMap with newHeightMap
+        heightMap = newHeightMap;
+
+        // -- STEP 3: Compute normals and final vertex color --
+        //
+        // We'll approximate normals via finite differences:
+        //    Nx = [y(r, c+1) - y(r, c)] etc, but let's do:
+        //    Tx = (dx, y(r,c+1) - y(r,c), 0)
+        //    Tz = (0, y(r+1,c) - y(r,c), dz)
+        //    N  = normalize( Tx x Tz )
+        //
+        // Then we darken the color based on dot(N, (1,1,1)/|1,1,1|)
+        var normalVec = new BABYLON.Vector3();
+        var diagVec   = new BABYLON.Vector3(1, 1, 1);
+        diagVec.normalize();  // (1,1,1) normalized => direction for lighting/darkening
+
+        for (var r = 0; r < vertsPerDim; r++) {
+            for (var c = 0; c < vertsPerDim; c++) {
+                let i = idx(r, c);
+
+                // Update positions with new height
+                positions[i + 1] = heightMap[r][c];
+
+                // Build tangent vectors Tx and Tz for normal calculation
+                // We'll do a simple approach for the boundary: re-use the same (r,c) if out of bounds
+                let rNext = Math.min(r+1, vertsPerDim-1);
+                let cNext = Math.min(c+1, vertsPerDim-1);
+
+                let dy_dx = heightMap[r][cNext] - heightMap[r][c];
+                let dy_dz = heightMap[rNext][c] - heightMap[r][c];
+
+                // Tx = (dx, dy_dx, 0)
+                // Tz = (0, dy_dz, dz)
+                let Tx = new BABYLON.Vector3(dx, dy_dx, 0);
+                let Tz = new BABYLON.Vector3(0, dy_dz, dz);
+
+                // Normal = Tx x Tz
+                let Nx = Tx.y * Tz.z - Tx.z * Tz.y; 
+                let Ny = Tx.z * Tz.x - Tx.x * Tz.z; 
+                let Nz = Tx.x * Tz.y - Tx.y * Tz.x; 
+
+                normalVec.set(Nx, Ny, Nz);
+                normalVec.normalize();
+
+                // Dot with diagonal (1,1,1) => how much "light" from that direction
+                let dotVal = BABYLON.Vector3.Dot(normalVec, diagVec);
+                // We will clamp to [0..1] so we don't invert color
+                let lightFactor = Math.max(0, dotVal);
+
+                // -- Decide base color from the terrain "type" (checkerboard or slope color)
+                let yVal = heightMap[r][c];
+                let baseColor = [1, 1, 1, 1]; // default white
+                if (yVal < 0.1 * scale) {
+                    // Checkerboard
+                    let x = positions[i];    // updated X
+                    let z = positions[i + 2];
+                    let xTile = Math.floor(x / 2);
+                    let zTile = Math.floor(z / 2);
                     if ((xTile + zTile) % 2 === 0) {
-                        // White square
-                        colors.push(1.0, 1.0, 1.0, 1.0);
+                        baseColor = [1.0, 1.0, 1.0, 1.0];  // white
                     } else {
-                        // Black square
-                        colors.push(0.0, 0.0, 0.0, 1.0);
+                        baseColor = [0.0, 0.0, 0.0, 1.0];  // black
                     }
                 } else {
-                    // Step through different colors for higher ground
-                    if (y < 0.3 * scale) {
+                    // Step color based on height
+                    if (yVal < 0.3 * scale) {
                         // Dark Green
-                        colors.push(0.0, 0.3, 0.0, 1);
-                    } else if (y < 0.5 * scale) {
+                        baseColor = [0.0, 0.3, 0.0, 1.0];
+                    } else if (yVal < 0.5 * scale) {
                         // Light Brown
-                        colors.push(0.6, 0.4, 0.2, 1);
-                    } else if (y < 0.8 * scale) {
+                        baseColor = [0.6, 0.4, 0.2, 1.0];
+                    } else if (yVal < 0.8 * scale) {
                         // Dark Brown
-                        colors.push(0.4, 0.2, 0.1, 1);
+                        baseColor = [0.4, 0.2, 0.1, 1.0];
                     } else {
                         // White for the peaks
-                        colors.push(1, 1, 1, 1);
+                        baseColor = [1.0, 1.0, 1.0, 1.0];
                     }
                 }
+
+                // -- STEP 4: Darken color by dotVal => we multiply each RGB by "lightFactor"
+                // (You can tweak the formula to taste, e.g.  color * (0.5 + 0.5*lightFactor))
+                let rCol = baseColor[0] - 8 * lightFactor;
+                let gCol = baseColor[1] - 8 * lightFactor;
+                let bCol = baseColor[2] - 4 * lightFactor;
+                let aCol = baseColor[3];
+
+                // Store the color into the colors array.  Note that each vertex has RGBA => 4 floats.
+                // The colors array should have 4 * number_of_vertices entries.
+                let vIndex = (r * vertsPerDim + c) * 4;
+                colors[vIndex + 0] = rCol;
+                colors[vIndex + 1] = gCol;
+                colors[vIndex + 2] = bCol;
+                colors[vIndex + 3] = aCol;
             }
+        }
 
-            // Store the updated positions and colors back into the mesh
-            ground.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
-            ground.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+        // Store the updated positions & per-vertex colors back into the mesh
+        ground.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+        ground.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
 
-            // Create a material that uses vertex colors
-            var groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
-            groundMaterial.useVertexColors = true;
-            ground.material = groundMaterial;
+        // Create a material that uses vertex colors
+        var groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
+        groundMaterial.useVertexColors = true;
+        ground.material = groundMaterial;
 
-            return scene;
-        };
+        return scene;
+    };
 
-        // Call the createScene function
-        var scene = createScene();
+    // Call the createScene function
+    var scene = createScene();
 
-        // Render loop
-        engine.runRenderLoop(function () {
-            scene.render();
-        });
-
-        // Resize the engine on window resize
-        window.addEventListener("resize", function () {
-            engine.resize();
-        });
+    // Render loop
+    engine.runRenderLoop(function () {
+        scene.render();
     });
-    </script>
+
+    // Resize the engine on window resize
+    window.addEventListener("resize", function () {
+        engine.resize();
+    });
+});
+</script>
 </body>
 </html>
