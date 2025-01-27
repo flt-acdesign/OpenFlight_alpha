@@ -7,7 +7,7 @@ function create_buildings(scene, shadowGenerator) {
   // Pre-create dynamic text textures
   const UEM_AERO = createCustomTextTexture(scene, {
     width: 782,
-    height: 54,
+    height: 154,
     text: "I ❤ UEM AEROSPACE !",
     backgroundColor: "#f5f2eb",
     textColor: "#d3e3f0",
@@ -28,9 +28,9 @@ function create_buildings(scene, shadowGenerator) {
     hangar: {
       short: 20,
       long: 48,
-      height: 6,
+      height: 8,
       roofHeight: 3,
-      position: new BABYLON.Vector3(60, 15, -60),
+      position: new BABYLON.Vector3(60, 12, -60),
       rotationY_DEG: 3.14,
       boxColor: "#ffe5b4",
       roofColor: "#d14e2a",

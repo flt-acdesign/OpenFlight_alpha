@@ -30,7 +30,7 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
     baseTree.material = treeMaterial
 
     // Enable shadows for the base tree
-    shadowGenerator.addShadowCaster(baseTree);
+    //shadowGenerator.addShadowCaster(baseTree);
     baseTree.isVisible = true;  // Ensure the base mesh is visible for thin instances to render
 
     // Create thin instances for the trees

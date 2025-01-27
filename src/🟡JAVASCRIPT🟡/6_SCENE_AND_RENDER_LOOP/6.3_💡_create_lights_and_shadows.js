@@ -26,18 +26,22 @@ function setupLights_and_shadows(scene) {
   directionalLight.position = new BABYLON.Vector3(5, 10, 5);
   directionalLight.intensity = 0.9;
   directionalLight.autoCalcShadowZBounds = true;
+
+
+
+const shadowGenerator = new BABYLON.CascadedShadowGenerator(2048, directionalLight);
+
+// Set the number of cascades (typical values: 2, 3, or 4)
+shadowGenerator.numCascades = 4;
+
+// Adjust various properties
+shadowGenerator.lambda = 0.5; // How the split distances are distributed (0 = linear, 1 = logarithmic)
+shadowGenerator.shadowMaxZ = 2000; // Increase if your scene is extremely large/far
+shadowGenerator.stabilizeCascades = true; // Prevents "shimmering" when moving the camera
+shadowGenerator.autoCalcShadowZBounds = true; // Let Ba
+//shadowGenerator.debug = true;
+
   
-  /*
-  const shadowGenerator = new BABYLON.ShadowGenerator(2048, directionalLight);
-  shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = 32;
-  */
-  
-  
-  const shadowGenerator = new BABYLON.ShadowGenerator(2048, directionalLight);
-  
-  // Use Close Exponential Shadow Map for better self-shadowing
-  shadowGenerator.useCloseExponentialShadowMap = true;
   
   // Set the shadow boundaries to improve precision
   directionalLight.shadowMinZ = 1;
@@ -45,13 +49,7 @@ function setupLights_and_shadows(scene) {
   
   // Enable auto-calculation of shadow bounds
   directionalLight.autoCalcShadowZBounds = true;
-  
-  // Adjust bias to reduce shadow acne
-  shadowGenerator.bias = 0.01;
-  
-  // For large scenes, consider using Cascaded Shadow Maps
-  shadowGenerator.usePoissonSampling = true;
-  
+    
     return {
         lights: {lightDown, lightUp, directionalLight},
         shadowGenerator

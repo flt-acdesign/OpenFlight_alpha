@@ -190,7 +190,7 @@ function createFlexibleHouse(scene, shadowGenerator, options = {}) {
     pyramidRoof.parent = houseParent;
 
     // Shadow
-    shadowGenerator?.addShadowCaster(pyramidRoof);
+    shadowGenerator.addShadowCaster(pyramidRoof);
 
   } else {
     //------------------------------
@@ -248,13 +248,13 @@ function createFlexibleHouse(scene, shadowGenerator, options = {}) {
     ]);
 
     // Shadow
-    shadowGenerator?.addShadowCaster(wedge);
-    shadowGenerator?.addShadowCaster(frontTriangleMesh);
-    shadowGenerator?.addShadowCaster(backTriangleMesh);
+    shadowGenerator.addShadowCaster(wedge);
+    shadowGenerator.addShadowCaster(frontTriangleMesh);
+    shadowGenerator.addShadowCaster(backTriangleMesh);
   }
 
   // Shadows for the house body
-  shadowGenerator?.addShadowCaster(bodyMesh);
+  shadowGenerator.addShadowCaster(bodyMesh);
 
   // Return references if needed
   return {
