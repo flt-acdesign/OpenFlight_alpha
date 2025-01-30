@@ -26,12 +26,21 @@
 
 
 
-function create_procedural_ground_texture(scene, groundConfig, shadowGenerator) {
+function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, graphic_settings) {
 
     let treePositions = []
 
-    let probability_of_spawning_a_tree_fertile = .3
-    let probability_of_spawning_a_tree_barren = .05
+
+
+// Direct access version:
+probability_of_spawning_a_tree_fertile = {
+    'none': 0,
+    'few': 0.05,
+    'many': 0.3
+  }[graphic_settings.trees]; // Example: using high preset
+
+    //let probability_of_spawning_a_tree_fertile = .3
+    let probability_of_spawning_a_tree_barren = probability_of_spawning_a_tree_fertile / 10
 
     // Basic parameters
     const segmentCount = 28

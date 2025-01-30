@@ -107,16 +107,14 @@ function createRunway(scene, groundConfig) {
     ctx.putImageData(imageData, 0, 0);
 
     // (a3) Blend earth color along the left/right edges
-    //      We'll overlay a gradient from brown at the edges
-    //      that transitions to transparent near center.
     ctx.save();
 
-    const fadeWidth = 20; // px from each edge, adjust as you like
+    const fadeWidth = 30; // px from each edge, adjust as you like
 
     // Left side gradient (0 -> fadeWidth)
     const leftGrad = ctx.createLinearGradient(0, 0, fadeWidth, 0);
-    leftGrad.addColorStop(0, "#1c6128");           // earth brown
-    leftGrad.addColorStop(1, "rgba(0,0,0,0)");     // fade to transparent
+    leftGrad.addColorStop(0, "#1c6128");       // earth green/brown
+    leftGrad.addColorStop(1, "rgba(0,0,0,0)"); // fade to transparent
     ctx.fillStyle = leftGrad;
     ctx.fillRect(0, 0, fadeWidth, texHeight);
 
@@ -149,23 +147,20 @@ function createRunway(scene, groundConfig) {
     // (b1) Center dashed line in white.
     ctx.strokeStyle = "white";
 
-    // Convert 36.6 m & 24.4 m into *vertical* pixels:
     // runway length = 1000 m -> texHeight = 4096 px => ratio ~ 4.096 px/m
-    const pxPerMeterY = texHeight / 1000; // ~4.096
+    const pxPerMeterY = texHeight / 1000; 
     const dashLengthPx = 36.6 * pxPerMeterY; // 36.6 m => ~150 px
     const gapLengthPx  = 24.4 * pxPerMeterY; // 24.4 m => ~100 px
 
-    // Convert 0.91 m width to *horizontal* pixels:
     // runway width = 25 m -> texWidth = 256 px => ratio ~ 10.24 px/m
-    const pxPerMeterX = texWidth / 25;         // ~10.24
-    const centerLineWidthPx = 0.91 * pxPerMeterX; // ~9-10 px
+    const pxPerMeterX = texWidth / 25;       
+    const centerLineWidthPx = 0.91 * pxPerMeterX; // 0.91 m => ~9 px
 
-    // We'll define a dashed line helper
     function drawDashedLine(x1, y1, x2, y2, dashLength, gapLength) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        const dashCount = Math.floor(dist / (dashLength + gapLength));
+        const dashCount = Math.floor(dist / (dashLength + gapLength)) + 1
         const angle = Math.atan2(dy, dx);
 
         let x = x1;
@@ -185,60 +180,73 @@ function createRunway(scene, groundConfig) {
     }
 
     ctx.lineWidth = centerLineWidthPx;
-    const centerX = texWidth / 2;
-    const margin = 150; // top/bottom margin in pixels
+    const centerX = texWidth / 2 
+    const margin = 400; // top/bottom margin in pixels
     drawDashedLine(centerX, margin, centerX, texHeight - margin, dashLengthPx, gapLengthPx);
 
-    // (b2) Draw threshold markers (unchanged from original, but you can scale them if desired)
-    ctx.fillStyle = "white";
+    // --------------------------------------------------------
+    // (b2) MOVE THRESHOLD MARKERS to where numbers used to be:
+    // --------------------------------------------------------
+    //
+    // Old numbers were near y=50 (top) and y=texHeight - 50 (bottom).
+    // So let's place the 3 marker sets there instead.
 
-    // Bottom threshold markers
-    const yBottom = texHeight - 300; 
     const markerHeight = 70;
     const markerWidth = 10;
     const gapBetweenMarkers = 20;
 
+    // BOTTOM THRESHOLD MARKERS (near y=texHeight - 50)
+    const yBottomMarkers = texHeight - 50;
+    ctx.fillStyle = "white";
     for (let i = 0; i < 3; i++) {
         // Left side
-        const leftX = (texWidth / 2) - 40 - i * gapBetweenMarkers;
-        ctx.fillRect(leftX, yBottom, markerWidth, markerHeight);
+        const leftX = centerX - 40 - i * gapBetweenMarkers;
+        ctx.fillRect(leftX, yBottomMarkers, markerWidth, markerHeight);
 
         // Right side
-        const rightX = (texWidth / 2) + 40 + i * gapBetweenMarkers;
-        ctx.fillRect(rightX, yBottom, markerWidth, markerHeight);
+        const rightX = centerX + 40 + i * gapBetweenMarkers;
+        ctx.fillRect(rightX, yBottomMarkers, markerWidth, markerHeight);
     }
 
-    // Top threshold markers
-    const yTop = 250;
+    // TOP THRESHOLD MARKERS (near y=50)
+    const yTopMarkers = 50;
     for (let i = 0; i < 3; i++) {
         // Left side
-        const leftX = (texWidth / 2) - 40 - i * gapBetweenMarkers;
-        ctx.fillRect(leftX, yTop, markerWidth, markerHeight);
+        const leftX = centerX - 40 - i * gapBetweenMarkers;
+        ctx.fillRect(leftX, yTopMarkers, markerWidth, markerHeight);
 
         // Right side
-        const rightX = (texWidth / 2) + 40 + i * gapBetweenMarkers;
-        ctx.fillRect(rightX, yTop, markerWidth, markerHeight);
+        const rightX = centerX + 40 + i * gapBetweenMarkers;
+        ctx.fillRect(rightX, yTopMarkers, markerWidth, markerHeight);
     }
 
-    // (b3) Add runway numbers
-    ctx.font = "120px Bahnschrift";
+    // --------------------------------------------------------
+    // (b3) PLACE RUNWAY NUMBERS where the markers used to be:
+    // --------------------------------------------------------
+    //
+    // Previously, the marker positions were near y=250 (top) and y=texHeight - 300 (bottom).
+    // We'll draw "1 8" and "3 6" at these positions now.
+
+    //ctx.font = "120px ICAORWYID"; // ICAO runway font
+
+    ctx.font = "120px 'ICAORWYID', Arial, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "white";
 
-    // "18" at the bottom
-    ctx.fillText("1 8", texWidth / 2, texHeight - 50);
+    // "1 8" at the bottom (was y=texHeight - 300 for markers)
+    const yBottomNums = texHeight - 200;
+    ctx.fillText(" 1 8", centerX, yBottomNums);
 
-    // "36" at the top, rotated 180°
+    // "3 6" at the top (was y=250 for markers), rotated 180°
     ctx.save();
-    ctx.translate(texWidth / 2.2, 50);
+    ctx.translate(centerX, 250);
     ctx.rotate(Math.PI);
-    ctx.fillText("3 6", 0, 0);
+    ctx.fillText(" 3 6", 0, 0);
     ctx.restore();
 
     // Commit everything to the dynamic texture
     runwayTexture.update();
-
 
     /***************************************************************
      * 3) Apply the DynamicTexture to a material and use on runway
@@ -253,30 +261,24 @@ function createRunway(scene, groundConfig) {
     // Assign the material to the runway mesh
     runway.material = runwayMaterial;
 
-
     /***************************************************************
-     * (Optional) Example: Create a blinking light at the far end
+     * (Optional) Example: Create blinking lights at the ends
      ***************************************************************/
     const blinkingSphere_36 = createBlinkingSphere(scene, 0, 14.5, 585, {
-      sphereColor: new BABYLON.Color3(1, 1, 1),
-      diameter: 1,
-      lightRange: 25,
-      blinkInterval: 250,
-      lightIntensity: 2,
-      glowIntensity: 1.5
+        sphereColor: new BABYLON.Color3(1, 1, 1),
+        diameter: 1,
+        lightRange: 25,
+        blinkInterval: 250,
+        lightIntensity: 2,
+        glowIntensity: 1.5
     });
-    // blinkingSphere.dispose(); // if you need to remove it later
 
-
-
-const blinkingSphere_18 = createBlinkingSphere(scene, 0, 14.5, -585, {
-    sphereColor: new BABYLON.Color3(1, 1, 1),
-    diameter: 1,
-    lightRange: 25,
-    blinkInterval: 250,
-    lightIntensity: 2,
-    glowIntensity: 1.5
-  });
-  // blinkingSphere.dispose(); // if you need to remove it later
+    const blinkingSphere_18 = createBlinkingSphere(scene, 0, 14.5, -585, {
+        sphereColor: new BABYLON.Color3(1, 1, 1),
+        diameter: 1,
+        lightRange: 25,
+        blinkInterval: 250,
+        lightIntensity: 2,
+        glowIntensity: 1.5
+    });
 }
-

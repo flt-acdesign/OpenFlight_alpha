@@ -1,133 +1,195 @@
-const rad2deg = rad => (rad * 180.0) / Math.PI;
+/**
+ * Creates and configures a text block with improved readability
+ * @param {string} color - Color of the text
+ * @returns {BABYLON.GUI.TextBlock} Configured text block
+ */
+function createStyledTextBlock(color = "white") {
+  const textBlock = new BABYLON.GUI.TextBlock();
+  // Automatically wrap and resize to avoid overlap
+  textBlock.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
+  textBlock.resizeToFit = true;
 
-// rad2deg(Math.PI / 2); // 90
+  // Match the width of the parent panel (minus padding)
+  textBlock.width = "100%";
 
+  // Basic text styling
+  textBlock.color = color;
+  textBlock.fontSize = 18;
+  textBlock.fontFamily = "Arial";
+  textBlock.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+  textBlock.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
 
+  // Add a subtle shadow for better contrast
+  textBlock.shadowColor = "black";
+  textBlock.shadowBlur = 0;
+  textBlock.shadowOffsetX = 1;
+  textBlock.shadowOffsetY = 1;
+
+  return textBlock;
+}
+
+/**
+* Creates the main GUI interface
+*/
 function createGUI() {
+  // Create the fullscreen UI
+  advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-  advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI")
+  // Create main container panel
+  const mainPanel = new BABYLON.GUI.StackPanel();
+  mainPanel.width = "350px"; // Increased width for larger text
+  mainPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+  mainPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+  mainPanel.paddingTop = "20px";
+  mainPanel.paddingLeft = "20px";
+  mainPanel.paddingRight = "20px";
+  mainPanel.paddingBottom = "20px";
+  mainPanel.spacing = 8; // Increased spacing between elements
+  mainPanel.background = "rgba(44, 62, 80, 0.8)"; // 80% translucency
+  advancedTexture.addControl(mainPanel);
 
-  // Create a stack panel to hold the text blocks
-  const panel = new BABYLON.GUI.StackPanel()
-  panel.width = "800px"
-  panel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP
-  panel.paddingTop = "10px"
-  panel.paddingLeft = "10px"
-  advancedTexture.addControl(panel)
+  // Create a button to toggle the panel's visibility
+  createPanelToggleButton(advancedTexture, mainPanel);
 
-  positionText = new BABYLON.GUI.TextBlock()
-  positionText.height = "20px"
-  positionText.color = "white"
-  positionText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(positionText)
+  // Create header
+  const headerText = createStyledTextBlock("white");
+  headerText.text = "   Flight Information";
+  headerText.fontSize = 24; // Larger header font
+  headerText.fontWeight = "bold";
+  mainPanel.addControl(headerText);
 
-  velocityText = new BABYLON.GUI.TextBlock()
-  velocityText.height = "20px"
-  velocityText.color = "white"
-  velocityText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(velocityText)
+  // Create information text blocks
+  positionText = createStyledTextBlock();
+  velocityText = createStyledTextBlock();
+  forceText = createStyledTextBlock();
+  angularVelocityText = createStyledTextBlock();
+  timeText = createStyledTextBlock();
+  alphaText = createStyledTextBlock();
+  betaText = createStyledTextBlock();
 
-  forceText = new BABYLON.GUI.TextBlock()
-  forceText.height = "20px"
-  forceText.color = "white"
-  forceText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(forceText)
+  // For joystick info, we can optionally keep a larger area if desired:
+  joystickText = createStyledTextBlock();
+  joystickText.fontSize = 16; // Slightly smaller, if you prefer
 
-  angularVelocityText = new BABYLON.GUI.TextBlock()
-  angularVelocityText.height = "20px"
-  angularVelocityText.color = "white"
-  angularVelocityText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(angularVelocityText)
+  // Add text blocks to panel
+  [
+    positionText,
+    velocityText,
+    forceText,
+    angularVelocityText,
+    timeText,
+    alphaText,
+    betaText,
+    joystickText
+  ].forEach(text => {
+      mainPanel.addControl(text);
+  });
 
-  momentText = new BABYLON.GUI.TextBlock()
-  momentText.height = "20px"
-  momentText.color = "white"
-  momentText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(momentText)
-
-  timeText = new BABYLON.GUI.TextBlock()
-  timeText.height = "20px"
-  timeText.color = "white"
-  timeText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(timeText)
-
-  alphaText = new BABYLON.GUI.TextBlock()
-  alphaText.height = "20px"
-  alphaText.color = "white"
-  alphaText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(alphaText)
-
-  betaText = new BABYLON.GUI.TextBlock()
-  betaText.height = "20px"
-  betaText.color = "white"
-  betaText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  panel.addControl(betaText)
-
-  joystickText = new BABYLON.GUI.TextBlock()
-  joystickText.height = "60px"
-  joystickText.color = "white"
-  joystickText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT
-  joystickText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP
-  joystickText.textWrapping = true
-  panel.addControl(joystickText)
-
-  pauseButton = BABYLON.GUI.Button.CreateSimpleButton("pauseButton", "Pause Simulation")
-  pauseButton.width = "200px"
-  pauseButton.height = "40px"
-  pauseButton.color = "white"
-  pauseButton.background = "grey"
-  pauseButton.cornerRadius = 10
-  pauseButton.onPointerUpObservable.add(function () {
-    pauseSimulation()
-  })
-  panel.addControl(pauseButton)
+  // Create pause button
+  createPauseButton(mainPanel);
 }
 
+/**
+* Creates a small toggle button in the top-left corner
+* that hides/shows the main panel, with no text and a light blue color.
+* @param {BABYLON.GUI.AdvancedDynamicTexture} advancedTexture - The main UI texture
+* @param {BABYLON.GUI.StackPanel} mainPanel - The main panel to toggle
+*/
+function createPanelToggleButton(advancedTexture, mainPanel) {
+  const toggleButton = BABYLON.GUI.Button.CreateSimpleButton("toggleButton", "");
+  toggleButton.width = "30px";
+  toggleButton.height = "30px";
+  toggleButton.color = "white";
+  toggleButton.fontSize = 14;
+  toggleButton.cornerRadius = 15; // Make it rounder if you like
+  toggleButton.background = "lightblue";
+  toggleButton.thickness = 1;
+  toggleButton.hoverCursor = "pointer";
+
+  // Position the button at the top-left corner
+  toggleButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+  toggleButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+  toggleButton.left = "10px";
+  toggleButton.top = "10px";
+
+  // Track panel visibility state
+  let panelVisible = true;
+  toggleButton.onPointerUpObservable.add(() => {
+      panelVisible = !panelVisible;
+      mainPanel.isVisible = panelVisible;
+  });
+
+  advancedTexture.addControl(toggleButton);
+}
+
+/**
+* Creates and configures the pause button
+* @param {BABYLON.GUI.StackPanel} panel - Panel to add the button to
+*/
+function createPauseButton(panel) {
+  pauseButton = BABYLON.GUI.Button.CreateSimpleButton("pauseButton", "Pause Simulation");
+  pauseButton.width = "250px"; // Wider button
+  pauseButton.height = "50px"; // Taller button
+  pauseButton.color = "white";
+  pauseButton.fontSize = 20; // Larger button text
+  pauseButton.cornerRadius = 10;
+  pauseButton.thickness = 2;
+  pauseButton.background = "#4CAF50";
+  pauseButton.hoverCursor = "pointer";
+  
+  pauseButton.onPointerEnterObservable.add(() => {
+      pauseButton.background = "#45a049";
+  });
+  pauseButton.onPointerOutObservable.add(() => {
+      pauseButton.background = "#4CAF50";
+  });
+  
+  pauseButton.onPointerUpObservable.add(pauseSimulation);
+  panel.addControl(pauseButton);
+}
+
+/**
+* Updates all GUI information elements with formatted text
+*/
 function updateInfo() {
-  // Update GUI text blocks
-  positionText.text = `Position: x = ${aircraft.position.x.toFixed(2)}, y = ${aircraft.position.y.toFixed(2)}, z = ${aircraft.position.z.toFixed(2)}`
+  positionText.text = 
+`X: ${aircraft.position.x.toFixed(1)}
+Y: ${aircraft.position.y.toFixed(1)}
+Z: ${aircraft.position.z.toFixed(1)}`;
 
+  const speed = Math.sqrt(velocity.x**2 + velocity.y**2 + velocity.z**2);
+  velocityText.text = 
+`Speed: ${(speed * 3.6).toFixed(0)} km/h
+Vertical Speed: ${velocity.y.toFixed(1)} m/s`;
 
-  velocityText.text = `Speed:  = ${(((velocity.x**2 + velocity.y**2 + velocity.z**2)**0.5)*3.6).toFixed(0) } Km/h, VSI = ${velocity.y.toFixed(1)} m/s`
+  timeText.text = `Elapsed Time: ${elapsedTime.toFixed(1)} s`;
+  alphaText.text = `Angle of Attack: ${rad2deg(alpha_RAD).toFixed(1)}°`;
+  betaText.text = `Sideslip Angle: ${rad2deg(beta_RAD).toFixed(1)}°`;
 
-
-  forceText.text = `Force: fx = ${forceGlobalX.toFixed(2)} N, fy = ${forceGlobalX.toFixed(2)} N, fz = ${forceGlobalX.toFixed(2)} N`
-  angularVelocityText.text = `Angular Velocity: wx = ${angularVelocity.x.toFixed(2)} rad/s, wy = ${angularVelocity.y.toFixed(2)} rad/s, wz = ${angularVelocity.z.toFixed(2)} rad/s`
-  //momentText.text = `Moment: mx = ${momentX.toFixed(2)} Nm, my = ${momentY.toFixed(2)} Nm, mz = ${momentZ.toFixed(2)} Nm`
-  timeText.text = `Time: ${elapsedTime.toFixed(2)} s`
-
-  alphaText.text = `Alpha: ${rad2deg(alpha_RAD).toFixed(2)}`
-  betaText.text = `Beta: ${rad2deg(beta_RAD).toFixed(2)}`
-
-
-
-  // Update joystick input display with input channel numbers
-  const axesInfo = joystickAxes.map((value, index) => `[${index}]: ${value.toFixed(2)}`).join(", ")
-  const buttonsInfo = joystickButtons.map((value, index) => `[${index}]: ${value}`).join(", ")
-
-  joystickText.text = `Joystick Inputs:
-Axes: ${axesInfo}
-Buttons: ${buttonsInfo}`
+  // Update joystick information
+  updateJoystickInfo();
 }
 
+/**
+* Updates joystick information display
+*/
+function updateJoystickInfo() {
+  const joystickStatus = joystickAxes
+      .map((value, index) => `Axis ${index}: ${value.toFixed(2)}`)
+      .join('\n');
+  joystickText.text = `Joystick Status:\n${joystickStatus}`;
+}
+
+/**
+* Toggles simulation pause state
+*/
 function pauseSimulation() {
-  isPaused = !isPaused
-  pauseButton.textBlock.text = isPaused ? "Resume Simulation" : "Pause Simulation"
+  isPaused = !isPaused;
+  pauseButton.textBlock.text = isPaused ? "Resume Simulation" : "Pause Simulation";
+  pauseButton.background = isPaused ? "#f44336" : "#4CAF50";
+
   if (!isPaused) {
-    // Reset lastFrameTime to prevent large deltaTime
-    lastFrameTime = Date.now()
-    timeSinceLastUpdate = 0
+      lastFrameTime = Date.now();
+      timeSinceLastUpdate = 0;
   }
 }
-
-
-
-
-
-
-
-
-
-
-

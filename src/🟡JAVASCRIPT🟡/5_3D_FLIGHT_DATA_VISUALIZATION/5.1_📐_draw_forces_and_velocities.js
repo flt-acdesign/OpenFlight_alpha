@@ -1,7 +1,12 @@
 
 
 
-
+/**
+ * Converts radians to degrees
+ * @param {number} rad - Angle in radians
+ * @returns {number} Angle in degrees
+ */
+const rad2deg = rad => (rad * 180.0) / Math.PI;
 
 
 

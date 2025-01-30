@@ -129,57 +129,67 @@ function updateForcesFromJoystickOrKeyboard(scene) {
     const axes = gamepad.axes;
     const buttons = gamepad.buttons;
 
+    // <-- IMPORTANT: Capture the axes in our global array
+    joystickAxes = Array.from(axes);
+
     // XBOX Controller
     if (type === 'XBOX') {
       thrust_setting_demand = (-1 * axes[1] + 1) / 2; // Left stick vertical
-      roll_demand = -1.0 * axes[2]; // Right stick horizontal
-      pitch_demand = 1.0 * axes[3]; // Right stick vertical
-      yaw_demand = 1.0 * axes[0]; // Left stick horizontal
+      roll_demand = -1.0 * axes[2];                  // Right stick horizontal
+      pitch_demand = 1.0 * axes[3];                  // Right stick vertical
+      yaw_demand = 1.0 * axes[0];                    // Left stick horizontal
 
       // Buttons
       trim_nose_down = buttons[12]?.value;
-      trim_nose_up = buttons[13]?.value;
-      flaps_one_up = buttons[5]?.value;
+      trim_nose_up   = buttons[13]?.value;
+      flaps_one_up   = buttons[5]?.value;
       flaps_one_down = buttons[7]?.value;
       ground_brakes_on = buttons[4]?.value;
-      air_brakes_on = buttons[6]?.value;
+      air_brakes_on    = buttons[6]?.value;
 
-      if (buttons[9]?.value === 1) location.reload();
-      if (buttons[1]?.value === 1) setActiveCamera(1, scene); // chase
-      if (buttons[0]?.value === 1) setActiveCamera(0, scene); // external
-      if (buttons[3]?.value === 1) setActiveCamera(2, scene); // cockpit
-      if (buttons[2]?.value === 1) setActiveCamera(3, scene); // wing
+      if (buttons[9]?.value  === 1) location.reload();
+      if (buttons[1]?.value  === 1) setActiveCamera(1, scene); // chase
+      if (buttons[0]?.value  === 1) setActiveCamera(0, scene); // external
+      if (buttons[3]?.value  === 1) setActiveCamera(2, scene); // cockpit
+      if (buttons[2]?.value  === 1) setActiveCamera(3, scene); // wing
       if (buttons[14]?.value === 1) rotateCamera_left(scene);
       if (buttons[15]?.value === 1) rotateCamera_right(scene);
-      if (buttons[8]?.value === 1) pauseSimulation();
+      if (buttons[8]?.value  === 1) pauseSimulation();
     } 
-    // GENERIC Controller
+    // PLAYSTATION/GENERIC controller (based on your detectControllerType)
     else {
+      // Example: GENERIC usage
       thrust_setting_demand = -1 * axes[2];
-      roll_demand = -1.0 * axes[0];
-      pitch_demand = 1.0 * axes[1];
-      yaw_demand = 1.0 * axes[5];
+      roll_demand  = -1.0 * axes[0];
+      pitch_demand =  1.0 * axes[1];
+      yaw_demand   =  1.0 * axes[5];
+
+      // You can add or adjust demands for other axes here as needed
       thrust_balance = 0.1 * axes[6];
 
+      // Buttons
       trim_nose_down = buttons[6]?.value;
-      trim_nose_up = buttons[4]?.value;
-      flaps_one_up = buttons[8]?.value;
+      trim_nose_up   = buttons[4]?.value;
+      flaps_one_up   = buttons[8]?.value;
       flaps_one_down = buttons[9]?.value;
       ground_brakes_on = buttons[7]?.value;
-      air_brakes_on = buttons[5]?.value;
+      air_brakes_on    = buttons[5]?.value;
 
+      // Example camera and reload
       if (buttons[11]?.value === 1) location.reload();
-      if (buttons[3]?.value === 1) setActiveCamera(1, scene);
-      if (buttons[0]?.value === 1) setActiveCamera(0, scene);
-      if (buttons[1]?.value === 1) setActiveCamera(2, scene);
+      if (buttons[3]?.value  === 1) setActiveCamera(1, scene);
+      if (buttons[0]?.value  === 1) setActiveCamera(0, scene);
+      if (buttons[1]?.value  === 1) setActiveCamera(2, scene);
 
-      if (axes[9] === -1.0) setActiveCamera(3, scene);
-      if (axes[9] === 0.71) rotateCamera_left(scene);
+      if (axes[9] === -1.0)  setActiveCamera(3, scene);
+      if (axes[9] ===  0.71) rotateCamera_left(scene);
       if (axes[9] === -0.43) rotateCamera_right(scene);
 
       if (buttons[10]?.value === 1) pauseSimulation();
     }
-  } else {
-    handleKeyboardControls(scene); // Fallback to keyboard
+  } 
+  // Fallback to keyboard if no valid gamepad
+  else {
+    handleKeyboardControls(scene);
   }
 }

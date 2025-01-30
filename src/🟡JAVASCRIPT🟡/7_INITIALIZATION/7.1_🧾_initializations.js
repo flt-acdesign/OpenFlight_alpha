@@ -56,5 +56,6 @@ let advancedTexture;
 let positionText, velocityText, forceText, angularVelocityText, momentText, timeText, joystickText, pauseButton, alphaText, betaTextText
 
 let joystickAxes = [0, 0, 0, 0];
+
 let joystickButtons = [];
 

@@ -1,71 +1,129 @@
+/**
+ * Creates and initializes a complete 3D scene
+ * @param {BABYLON.Engine} engine - The Babylon.js engine instance
+ * @param {HTMLCanvasElement} canvas - The canvas element for rendering
+ * @returns {BABYLON.Scene} The initialized scene
+ */
 function createScene(engine, canvas) {
-  const scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
-
-      // Configure linear fog for atmospheric depth
-      scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR;
-      scene.fogStart  = 600.0;
-      scene.fogEnd    = 2800.0;
-      scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
-      scene.fogDensity = 0.0058;
-
-  const {lights, shadowGenerator} = setupLights_and_shadows(scene);
-  createAircraft(shadowGenerator, scene);
-
-  const {camera, pilotCamera, cockpitCamera} = setupCameras(scene, canvas);
-  createWorldScenery(scene, shadowGenerator, camera);
-
-
-  initializeTrajectorySystem();
-  createVelocityLine();
-  createForceLine();
-  createGUI();
-
-
-  // Set up event listeners (transformations, double-click, etc.)
-  setupEventListeners(scene, shadowGenerator);
-
-  // NEW: Set up picking event to log coordinates
-  setupPickingCoordinates(scene);
-
-  setupAnimations(scene);
-  return scene;
+    const scene = initializeBaseScene(engine);
+    const sceneElements = setupSceneElements(scene, canvas);
+    setupInteractions(scene, sceneElements.shadowGenerator);
+    setupRenderLoop(scene);
+    return scene;
 }
 
-function setupEventListeners(scene, shadowGenerator) {
-  setup_GLB_model_transformations(scene, shadowGenerator);
-  //setupDoubleClickHandler(scene);
+/**
+ * Initializes the base scene with basic properties
+ * @param {BABYLON.Engine} engine - The Babylon.js engine instance
+ * @returns {BABYLON.Scene} The basic initialized scene
+ */
+function initializeBaseScene(engine) {
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
+    return scene;
 }
 
+/**
+ * Sets up all core scene elements including lights, cameras, and models
+ * @param {BABYLON.Scene} scene - The scene to setup
+ * @param {HTMLCanvasElement} canvas - The canvas element for rendering
+ * @returns {Object} Object containing created scene elements
+ */
+function setupSceneElements(scene, canvas) {
+    // Setup lights and shadows
+    const { lights, shadowGenerator } = setupLights_and_shadows(scene);
 
+    // Setup cameras
+    const cameras = setupCameras(scene, canvas);
 
+    // Create main scene elements
+    createAircraft(shadowGenerator, scene);
+    createWorldScenery(scene, shadowGenerator, cameras.camera);
 
-function setupAnimations(scene) {
-  scene.onBeforeRenderObservable.add(() => {
-    updateSkySphereDiameter(scene)
-  });
+    // Setup visualization elements
+    setupVisualizationElements();
+
+    return { 
+        lights, 
+        shadowGenerator, 
+        cameras 
+    };
 }
 
+/**
+ * Sets up all visualization elements for the scene
+ */
+function setupVisualizationElements() {
+    initializeTrajectorySystem();
+    createVelocityLine();
+    createForceLine();
+    createGUI();
+}
 
+/**
+ * Sets up all interactive elements and event handlers
+ * @param {BABYLON.Scene} scene - The scene to setup interactions for
+ * @param {BABYLON.ShadowGenerator} shadowGenerator - Shadow generator for the scene
+ */
+function setupInteractions(scene, shadowGenerator) {
+    setupModelTransformations(scene, shadowGenerator);
+    setupPickingCoordinates(scene);
+}
 
-/***************************************************************
- *  setupPickingCoordinates(scene):
- *    Allows the user to click anywhere on the screen and log
- *    the intersection point with any mesh to the browser console.
- ***************************************************************/
+/**
+ * Sets up model transformation handlers
+ * @param {BABYLON.Scene} scene - The scene containing the models
+ * @param {BABYLON.ShadowGenerator} shadowGenerator - Shadow generator for the scene
+ */
+function setupModelTransformations(scene, shadowGenerator) {
+    setup_GLB_model_transformations(scene, shadowGenerator);
+}
+
+/**
+ * Sets up coordinate picking system for click interactions
+ * @param {BABYLON.Scene} scene - The scene to setup picking for
+ */
 function setupPickingCoordinates(scene) {
-  scene.onPointerObservable.add((pointerInfo) => {
-    // Listen for left clicks (POINTERDOWN), or you could use POINTERUP.
-    if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-      const pickResult = scene.pick(
+    scene.onPointerObservable.add((pointerInfo) => {
+        handlePickingEvent(scene, pointerInfo);
+    });
+}
+
+/**
+ * Handles individual picking events
+ * @param {BABYLON.Scene} scene - The scene context
+ * @param {BABYLON.PointerInfo} pointerInfo - Information about the pointer event
+ */
+function handlePickingEvent(scene, pointerInfo) {
+    // Only process left-click events
+    if (pointerInfo.type !== BABYLON.PointerEventTypes.POINTERDOWN) {
+        return;
+    }
+
+    const pickResult = scene.pick(
         pointerInfo.event.clientX,
         pointerInfo.event.clientY
-      );
-      if (pickResult.hit) {
-        // Log the picked point’s X, Y, Z to the console
-        const point = pickResult.pickedPoint;
-        console.log(`Picked coordinates => x: ${point.x}, y: ${point.y}, z: ${point.z}`);
-      }
+    );
+
+    if (pickResult.hit) {
+        logPickedCoordinates(pickResult.pickedPoint);
     }
-  });
+}
+
+/**
+ * Logs the picked coordinates to the console
+ * @param {BABYLON.Vector3} point - The picked point coordinates
+ */
+function logPickedCoordinates(point) {
+    console.log(`Picked coordinates => x: ${point.x}, y: ${point.y}, z: ${point.z}`);
+}
+
+/**
+ * Sets up the render loop for continuous updates
+ * @param {BABYLON.Scene} scene - The scene to setup the render loop for
+ */
+function setupRenderLoop(scene) {
+    scene.onBeforeRenderObservable.add(() => {
+        updateSkySphereDiameter(scene);
+    });
 }

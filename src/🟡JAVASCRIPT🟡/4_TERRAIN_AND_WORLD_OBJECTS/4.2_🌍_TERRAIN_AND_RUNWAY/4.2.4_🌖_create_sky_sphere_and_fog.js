@@ -88,3 +88,19 @@ function updateSkySphereDiameter(scene) {
     }
   }
   
+
+
+  function create_fog(scene) {
+
+
+        // Configure linear fog for atmospheric depth
+        scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR;
+        scene.fogStart  = 360.0;
+        scene.fogEnd    = 2800.0;
+        scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
+        scene.fogDensity = 0.0058;
+        //scene.fogNearPlane = 10.0;
+        //scene.fogFarPlane = 10000.0;
+
+//        scene.fogEnabled = false
+  }

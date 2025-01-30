@@ -1,74 +1,73 @@
 /***************************************************************
- * Creates trees across the terrain using thin instances based on given coordinates.
- * Thin instances allow for efficient rendering of many identical meshes.
+ * Creates trees across the terrain using thin instances with color variations
+ * Includes natural green variations and 10% autumn-colored trees
  **************************************************************/
 function createRandomTrees(scene, shadowGenerator, treePositions) {
-    // Number of trees to scatter based on the provided positions
     const treeCount = treePositions.length;
-
     console.log(`There are ${treeCount} trees on the island`);
 
-    // Create the base tree mesh (a simple tapered cylinder)
+    // Create base tree mesh
     const baseTree = BABYLON.MeshBuilder.CreateCylinder(
         "baseTree",
         {
             diameterTop: 0,
-            diameterBottom: 5,  // Placeholder, will scale individually
-            height: 15,         // Placeholder, will scale individually
+            diameterBottom: 5,  // Base diameter (will be scaled)
+            height: 15,         // Base height (will be scaled)
             tessellation: 5
         },
         scene
     );
 
-    // Simple green material for the trees
+    // Configure material with instanced color support
     const treeMaterial = new BABYLON.StandardMaterial("treeMaterial", scene);
-    treeMaterial.diffuseColor = new BABYLON.Color3(0.13, 0.55, 0.13);
+    treeMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);  // White base (overridden by instances)
+    treeMaterial.instancedColor = true;  // Enable per-instance coloring
     treeMaterial.fogEnabled = true;
     treeMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-    treeMaterial.specularPower = 0;
+    baseTree.material = treeMaterial;
 
-    baseTree.material = treeMaterial
-
-    // Enable shadows for the base tree
-    //shadowGenerator.addShadowCaster(baseTree);
-    baseTree.isVisible = true;  // Ensure the base mesh is visible for thin instances to render
-
-    // Create thin instances for the trees
+    // Initialize data buffers
     const matricesData = new Float32Array(treeCount * 16);
+    const colorData = new Float32Array(treeCount * 4);  // RGBA colors
 
     for (let i = 0; i < treeCount; i++) {
-        // Random dimension
-        const treeHeight = Math.random() * 9 + 7;  // between 7 and 16
-        const treeBaseRadius = Math.random() * 2 + 3; // between 3 and 5
+        // Random dimensions
+        const treeHeight = Math.random() * 9 + 7;
+        const treeBaseRadius = Math.random() * 2 + 3;
 
-        // Use provided coordinates for the tree position
+        // Position with random offset
         const [xCoord, yCoord, zCoord] = treePositions[i];
-
-        // Assume groundY is 0 for simplicity or adjust as needed
-        
-        const treeX = xCoord + Math.random() * 3 - 1
+        const treeX = xCoord + Math.random() * 3 - 1;
         const treeY = yCoord + (treeHeight / 2);
-        const treeZ = zCoord + Math.random() * 3 - 1
+        const treeZ = zCoord + Math.random() * 3 - 1;
 
         // Create transformation matrix
-        const matrix = BABYLON.Matrix.Compose(
-            new BABYLON.Vector3(treeBaseRadius / 4, treeHeight / 15, treeBaseRadius / 4), // Scaling
-            BABYLON.Quaternion.Identity(), // No rotation
-            new BABYLON.Vector3(treeX, treeY, treeZ) // Position
-        );
+        BABYLON.Matrix.Compose(
+            new BABYLON.Vector3(treeBaseRadius / 4, treeHeight / 15, treeBaseRadius / 4),
+            BABYLON.Quaternion.Identity(),
+            new BABYLON.Vector3(treeX, treeY, treeZ)
+        ).copyToArray(matricesData, i * 16);
 
-        // Store matrix in the Float32Array
-        matrix.copyToArray(matricesData, i * 16);
+        // Set instance color
+        let color;
+        if (Math.random() < 0.01) {  // 10% chance for autumn color
+            color = new BABYLON.Color3(97/255, 88/255, 11/255);  // Red-brown
+        } else {  // Natural green variation
+            color = new BABYLON.Color3(
+                78/255 + Math.random() * 0.05,  // R
+                124/255 + Math.random() * 0.1,  // G
+                57/255                          // B
+            );
+        }
+       
+
+        // Store color in buffer (RGBA format)
+        color.toArray(colorData, i * 4);
+        colorData[i * 4 + 3] = 1;  // Alpha channel
     }
 
-    // Apply thin instances
+    // Set thin instance buffers
     baseTree.thinInstanceSetBuffer("matrix", matricesData, 16);
+    baseTree.thinInstanceSetBuffer("color", colorData, 4);
+    baseTree.isVisible = true;
 }
-
-
-
-
-
-
-
-
