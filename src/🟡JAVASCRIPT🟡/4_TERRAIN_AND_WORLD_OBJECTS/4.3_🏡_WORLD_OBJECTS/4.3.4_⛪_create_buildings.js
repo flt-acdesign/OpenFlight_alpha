@@ -8,7 +8,7 @@ function create_buildings(scene, shadowGenerator) {
   const UEM_AERO = createCustomTextTexture(scene, {
     width: 782,
     height: 154,
-    text: "I ❤ UEM AEROSPACE !",
+    text: "I ❤ UEM AEROSPACE ",
     backgroundColor: "#f5f2eb",
     textColor: "#d3e3f0",
     font: "bold 60px Arial"
@@ -28,7 +28,7 @@ function create_buildings(scene, shadowGenerator) {
     hangar: {
       short: 20,
       long: 48,
-      height: 8,
+      height: 9,
       roofHeight: 3,
       position: new BABYLON.Vector3(60, 12, -60),
       rotationY_DEG: 3.14,
@@ -54,9 +54,9 @@ function create_buildings(scene, shadowGenerator) {
     cottage1: {
       short: 8,
       long: 17,
-      height: 3,
+      height: 4,
       roofHeight: 3,
-      position: new BABYLON.Vector3(-2231, 8.5, 336),
+      position: new BABYLON.Vector3(-2231, 7.5, 336),
       rotationY_DEG: 3.0,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
@@ -64,9 +64,9 @@ function create_buildings(scene, shadowGenerator) {
     cottage2: {
       short: 9,
       long: 17,
-      height: 3,
+      height: 4,
       roofHeight: 3,
-      position: new BABYLON.Vector3(-617, 8.8, 326),
+      position: new BABYLON.Vector3(-617, 7.8, 326),
       rotationY_DEG: 2.0,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
@@ -74,9 +74,9 @@ function create_buildings(scene, shadowGenerator) {
     cottage3: {
       short: 8,
       long: 15,
-      height: 3,
+      height: 4,
       roofHeight: 4,
-      position: new BABYLON.Vector3(-632, 7.4, 367),
+      position: new BABYLON.Vector3(-632, 6.4, 367),
       rotationY_DEG: 2.3,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"

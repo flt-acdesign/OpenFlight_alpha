@@ -9,8 +9,18 @@ function createScene(engine, canvas) {
     const sceneElements = setupSceneElements(scene, canvas);
     setupInteractions(scene, sceneElements.shadowGenerator);
     setupRenderLoop(scene);
+    
+  // Enable physics FIRST
+  scene.enablePhysics(
+    new BABYLON.Vector3(0, -9.81, 0),
+    new BABYLON.CannonJSPlugin() 
+  );
+
     return scene;
 }
+
+
+
 
 /**
  * Initializes the base scene with basic properties

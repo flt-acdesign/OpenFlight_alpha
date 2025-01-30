@@ -35,7 +35,17 @@ function createRunway(scene, groundConfig) {
             updatable: true
         },
         scene
+    )
+ 
+    runway.physicsImpostor = new BABYLON.PhysicsImpostor(
+      runway, 
+      BABYLON.PhysicsImpostor.MeshImpostor, 
+      { mass: 0, friction: 0.5 }, 
+      scene
     );
+
+
+
 
     // Retrieve vertex positions and indices for the runway mesh
     const runwayPositions = runway.getVerticesData(BABYLON.VertexBuffer.PositionKind);
@@ -113,7 +123,7 @@ function createRunway(scene, groundConfig) {
 
     // Left side gradient (0 -> fadeWidth)
     const leftGrad = ctx.createLinearGradient(0, 0, fadeWidth, 0);
-    leftGrad.addColorStop(0, "#1c6128");       // earth green/brown
+    leftGrad.addColorStop(0, "#226912");       // earth green/brown
     leftGrad.addColorStop(1, "rgba(0,0,0,0)"); // fade to transparent
     ctx.fillStyle = leftGrad;
     ctx.fillRect(0, 0, fadeWidth, texHeight);
@@ -121,7 +131,7 @@ function createRunway(scene, groundConfig) {
     // Right side gradient (texWidth-fadeWidth -> texWidth)
     const rightGrad = ctx.createLinearGradient(texWidth - fadeWidth, 0, texWidth, 0);
     rightGrad.addColorStop(0, "rgba(0,0,0,0)");
-    rightGrad.addColorStop(1, "#1c6128");
+    rightGrad.addColorStop(1, "#226912");
     ctx.fillStyle = rightGrad;
     ctx.fillRect(texWidth - fadeWidth, 0, fadeWidth, texHeight);
 

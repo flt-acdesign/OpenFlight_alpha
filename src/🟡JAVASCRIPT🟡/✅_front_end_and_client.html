@@ -10,6 +10,7 @@
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon_GUI.js"></script>
     <script src="./🛑_EXTERNAL_LIBRARIES/babylonjs.loaders.min.js"></script>
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.customMaterial.min.js"></script>
+    <script src="./🛑_EXTERNAL_LIBRARIES/cannon.js"></script>
     <!-- ************************************************************************** -->
 
     <!-- Websockets connection and code to transfer aircraft state to and from server -->
@@ -57,7 +58,12 @@
 </head>
 <body>
 
-    <input type="file" id="fileInput" accept=".glb"/>  
+    <input
+  type="file"
+  id="fileInput"
+  accept=".glb"
+  style="display: none;"
+/>
 
     <canvas id="renderCanvas"></canvas>
 
