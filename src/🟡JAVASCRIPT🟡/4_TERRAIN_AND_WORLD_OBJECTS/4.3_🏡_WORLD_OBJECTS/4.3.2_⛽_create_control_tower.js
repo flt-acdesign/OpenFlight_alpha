@@ -63,7 +63,9 @@ function createBlinkingSphere(scene, x, y, z, options = {}) {
         lightRange: 10,
         blinkInterval: 1000,
         lightIntensity: 1,
-        glowIntensity: 1
+        glowIntensity: 1,
+        waitingInterval: null,
+        number_of_blinks: null
     };
 
     const settings = { ...defaults, ...options };
@@ -73,55 +75,127 @@ function createBlinkingSphere(scene, x, y, z, options = {}) {
         segments: 4
     }, scene);
 
-
     sphere.position = new BABYLON.Vector3(x, y, z);
 
     const sphereMaterial = new BABYLON.StandardMaterial("sphereMaterial", scene);
-    sphereMaterial.emissiveColor = settings.sphereColor;
+    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0); // Start off
     sphereMaterial.fogEnabled = true;
     sphere.material = sphereMaterial;
 
     const light = new BABYLON.PointLight("sphereLight", sphere.position, scene);
-    light.intensity = 0;
+    light.intensity = 0; // Start off
     light.diffuse = settings.sphereColor;
     light.range = settings.lightRange;
 
     const glowLayer = new BABYLON.GlowLayer("glow", scene);
-    glowLayer.intensity = settings.glowIntensity;
+    glowLayer.intensity = 0; // Start off
     glowLayer.addIncludedOnlyMesh(sphere);
 
     let isOn = false;
-    const observer = scene.onBeforeRenderObservable.add(() => {
-        const currentTime = Date.now();
-        if (currentTime % (settings.blinkInterval * 2) < settings.blinkInterval) {
-            if (!isOn) {
-                sphereMaterial.emissiveColor = settings.sphereColor;
-                sphereMaterial.diffuseColor = settings.sphereColor;
-                light.intensity = settings.lightIntensity;
-                glowLayer.intensity = settings.glowIntensity;
-                isOn = true;
+    let startTime = Date.now();
+    let observer;
+
+    if (settings.blinkInterval >= 0) {
+        observer = scene.onBeforeRenderObservable.add(() => {
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - startTime;
+
+            if (settings.number_of_blinks !== null) {
+                const blinkCycleTime = settings.blinkInterval * 2; // Time for one complete on-off cycle
+                const totalBlinkTime = blinkCycleTime * settings.number_of_blinks; // Time for all blinks
+                const totalCycleTime = totalBlinkTime + (settings.waitingInterval || 0); // Total time including waiting
+                const timeInMainCycle = elapsedTime % totalCycleTime;
+
+                if (timeInMainCycle < totalBlinkTime) {
+                    // We're in the blinking phase
+                    const timeInBlinkCycle = timeInMainCycle % blinkCycleTime;
+                    const shouldBeOn = timeInBlinkCycle < settings.blinkInterval;
+
+                    if (shouldBeOn && !isOn) {
+                        sphereMaterial.emissiveColor = settings.sphereColor;
+                        sphereMaterial.diffuseColor = settings.sphereColor;
+                        light.intensity = settings.lightIntensity;
+                        glowLayer.intensity = settings.glowIntensity;
+                        isOn = true;
+                    } else if (!shouldBeOn && isOn) {
+                        sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+                        light.intensity = 0;
+                        glowLayer.intensity = 0;
+                        isOn = false;
+                    }
+                } else if (isOn) {
+                    // We're in the waiting phase
+                    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                    sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+                    light.intensity = 0;
+                    glowLayer.intensity = 0;
+                    isOn = false;
+                }
+            } else if (settings.waitingInterval !== null) {
+                // Original behavior with waiting interval
+                const totalCycleTime = settings.waitingInterval + settings.blinkInterval;
+                const timeInCycle = elapsedTime % totalCycleTime;
+
+                if (timeInCycle < settings.waitingInterval) {
+                    if (isOn) {
+                        sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+                        light.intensity = 0;
+                        glowLayer.intensity = 0;
+                        isOn = false;
+                    }
+                } else {
+                    if (!isOn) {
+                        sphereMaterial.emissiveColor = settings.sphereColor;
+                        sphereMaterial.diffuseColor = settings.sphereColor;
+                        light.intensity = settings.lightIntensity;
+                        glowLayer.intensity = settings.glowIntensity;
+                        isOn = true;
+                    }
+                }
+            } else {
+                // Original behavior without waiting interval
+                if (currentTime % (settings.blinkInterval * 2) < settings.blinkInterval) {
+                    if (!isOn) {
+                        sphereMaterial.emissiveColor = settings.sphereColor;
+                        sphereMaterial.diffuseColor = settings.sphereColor;
+                        light.intensity = settings.lightIntensity;
+                        glowLayer.intensity = settings.glowIntensity;
+                        isOn = true;
+                    }
+                } else {
+                    if (isOn) {
+                        sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+                        sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+                        light.intensity = 0;
+                        glowLayer.intensity = 0;
+                        isOn = false;
+                    }
+                }
             }
-        } else {
-            if (isOn) {
-                sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                light.intensity = 0;
-                glowLayer.intensity = 0;
-                isOn = false;
-            }
-        }
-    });
+        });
+    } else {
+        // Always on if blinkInterval is negative
+        sphereMaterial.emissiveColor = settings.sphereColor;
+        sphereMaterial.diffuseColor = settings.sphereColor;
+        light.intensity = settings.lightIntensity;
+        glowLayer.intensity = settings.glowIntensity;
+    }
 
     return {
         sphere,
         light,
         glowLayer,
         dispose: () => {
-            scene.onBeforeRenderObservable.remove(observer);
+            if (observer) {
+                scene.onBeforeRenderObservable.remove(observer);
+            }
             sphere.dispose();
             light.dispose();
             glowLayer.dispose();
         }
     };
 }
+
 

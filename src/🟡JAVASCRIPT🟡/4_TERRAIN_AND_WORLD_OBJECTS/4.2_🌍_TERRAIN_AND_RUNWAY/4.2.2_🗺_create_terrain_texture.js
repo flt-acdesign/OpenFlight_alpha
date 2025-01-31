@@ -122,91 +122,108 @@ probability_of_spawning_a_tree_fertile = {
                 const inside_runway_margins = (worldX > -50 && worldX < 80 && worldZ > -600 && worldZ < 600);
 
 
-                // (B) Get color based on yVal (existing logic)
-                let vertColor;
-                if (yVal < -16) {
-                    const deepestBlue = randomizeColor(new BABYLON.Color3(0.020, 0.0, 0.08), 0.02);
-                    if (Math.random() < 0.1) {
-                        const whiteAmount = Math.random() * 0.15;
-                        deepestBlue.r += whiteAmount;
-                        deepestBlue.g += whiteAmount;
-                        deepestBlue.b += whiteAmount;
-                    }
-                    vertColor = deepestBlue;
-                } else if (yVal < 0) {
-                    const t = (yVal + 16) / 16;
-                    const deepBlue = new BABYLON.Color3(0.020, 0.0, 0.08);
-                    const tropicalBlue = new BABYLON.Color3(0.0, 0.4, 0.6);
-                    let finalColor = lerpColor(deepBlue, tropicalBlue, t);
-                    finalColor = randomizeColor(finalColor, 0.03);
-                    if (Math.random() < 0.1 + (t * 0.15)) {
-                        const whiteAmount = Math.random() * 0.15;
-                        finalColor.r += whiteAmount;
-                        finalColor.g += whiteAmount;
-                        finalColor.b += whiteAmount;
-                    }
-                    vertColor = finalColor;
-                } else if (yVal < 4) {
-                    const sand = randomizeColor(new BABYLON.Color3(0.76, 0.70, 0.50), 0.02);
-                    vertColor = sand;
-                } else {
-
-
-                    if (inside_crops) {
-                        if (yVal < threshold) {
-                            const patchColor = getPatchColor(worldX, worldZ);
-                            const patchColorRandom = randomizeColor(patchColor, 0.05);
-                            vertColor = patchColorRandom;
-                        } else {
-                            let finalColor;
-                            if (yVal < 0.3 * amplitude) {
-                                finalColor = new BABYLON.Color3(0.90, 0.3, 0.0);
-                            } else if (yVal < 0.5 * amplitude) {
-                                finalColor = new BABYLON.Color3(0.4, 0.4, 0.2);
-                            } else if (yVal < 0.8 * amplitude) {
-                                finalColor = new BABYLON.Color3(0.3, 0.12, 0.01);
-                            } else {
-                                finalColor = new BABYLON.Color3(1.0, 1.0, 1.0);
-                            }
-                            finalColor = randomizeColor(finalColor, 0.05);
-                            vertColor = finalColor;
 
 
 
-                        }
-                    } else {
-                        if (yVal < 44) {
-                            let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
-                            vertColor = finalColor;
-
-                        } else if (yVal < 194) {
-                            const t = (yVal - 44) / (194 - 44);
-                            const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0);
-                            const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
-                            let finalColor = lerpColor(grad1, grad2, t);
-                            finalColor = randomizeColor(finalColor, 0.05);
-                            vertColor = finalColor;
-
-                            if ( Math.random()  < probability_of_spawning_a_tree_barren     ) {
-                                treePositions.push([  worldX, yVal,  worldZ ])
-                                vertColor = vertColor.scale(.5) // darkness 
-                            }
-
-
-
-                        } else if (yVal < 234) {
-                            const t = (yVal - 214) / (234 - 214);
-                            const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
-                            const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
-                            let finalColor = lerpColor(grad1, grad2, t);
-                            finalColor = randomizeColor(finalColor, 0.05);
-                            vertColor = finalColor;
-                        } else {
-                            let finalColor = randomizeColor(new BABYLON.Color3(.95, .95, .95), 0.05);
-                            vertColor = finalColor;
-                        }
-                    }
+// (B) Get color based on yVal (existing logic)
+let vertColor;
+if (yVal < -16) {
+    const deepestBlue = randomizeColor(new BABYLON.Color3(0.020, 0.0, 0.08), 0.02);
+    if (Math.random() < 0.1) {
+        const whiteAmount = Math.random() * 0.15;
+        deepestBlue.r += whiteAmount;
+        deepestBlue.g += whiteAmount;
+        deepestBlue.b += whiteAmount;
+    }
+    vertColor = deepestBlue;
+} else if (yVal < 0) {
+    const t = (yVal + 16) / 16;
+    const deepBlue = new BABYLON.Color3(0.020, 0.0, 0.08);
+    const tropicalBlue = new BABYLON.Color3(0.0, 0.4, 0.6);
+    let finalColor = lerpColor(deepBlue, tropicalBlue, t);
+    finalColor = randomizeColor(finalColor, 0.03);
+    if (Math.random() < 0.1 + (t * 0.15)) {
+        const whiteAmount = Math.random() * 0.15;
+        finalColor.r += whiteAmount;
+        finalColor.g += whiteAmount;
+        finalColor.b += whiteAmount;
+    }
+    vertColor = finalColor;
+} else if (yVal < 4) {
+    const sand = randomizeColor(new BABYLON.Color3(0.76, 0.70, 0.50), 0.02);
+    vertColor = sand;
+} else {
+    if (inside_crops) {
+        if (yVal < threshold) {
+            const patchColor = getPatchColor(worldX, worldZ);
+            const patchColorRandom = randomizeColor(patchColor, 0.05);
+            vertColor = patchColorRandom;
+        } else {
+            let finalColor;
+            if (yVal < 0.3 * amplitude) {
+                finalColor = new BABYLON.Color3(0.90, 0.3, 0.0);
+            } else if (yVal < 0.5 * amplitude) {
+                finalColor = new BABYLON.Color3(0.4, 0.4, 0.2);
+            } else if (yVal < 0.8 * amplitude) {
+                finalColor = new BABYLON.Color3(0.3, 0.12, 0.01);
+            } else {
+                finalColor = new BABYLON.Color3(1.0, 1.0, 1.0);
+            }
+            finalColor = randomizeColor(finalColor, 0.05);
+            vertColor = finalColor;
+        }
+    } else {
+        if (yVal < 44) {
+            let finalColor = randomizeColor(new BABYLON.Color3(0.0, 0.5, 0.0), 0.05);
+            vertColor = finalColor;
+        } else if (yVal < 194) {
+            const t = (yVal - 44) / (194 - 44);
+            const grad1 = new BABYLON.Color3(0.0, 0.5, 0.0);
+            const grad2 = new BABYLON.Color3(0.3, 0.2, 0.1);
+            let finalColor = lerpColor(grad1, grad2, t);
+            finalColor = randomizeColor(finalColor, 0.05);
+            
+            // Add snow patches with increasing probability between 170 and 194
+            if (yVal > 170) {
+                const snowProbability = (yVal - 180) / (250 - 180) * 0.3; // Max 30% chance at height 194
+                if (Math.random() < snowProbability) {
+                    const snowAmount = Math.random() * 0.7 + 0.3; // 30-100% white
+                    finalColor = lerpColor(finalColor, new BABYLON.Color3(1, 1, 1), snowAmount);
                 }
+            }
+            
+            vertColor = finalColor;
+
+            if (Math.random() < probability_of_spawning_a_tree_barren) {
+                treePositions.push([worldX, yVal, worldZ])
+                vertColor = vertColor.scale(.5) // darkness 
+            }
+        } else if (yVal < 234) {
+            const t = (yVal - 214) / (234 - 214);
+            const grad1 = new BABYLON.Color3(0.3, 0.2, 0.1);
+            const grad2 = new BABYLON.Color3(1.0, 1.0, 1.0);
+            let finalColor = lerpColor(grad1, grad2, t);
+            finalColor = randomizeColor(finalColor, 0.05);
+
+
+            // Add snow patches with increasing probability between 170 and 194
+            if (yVal > 170) {
+                const snowProbability = (yVal - 180) / (230 - 180) * 0.7; // Max 30% chance at height 194
+                if (Math.random() < snowProbability) {
+                    const snowAmount = Math.random() * 0.7 + 0.3; // 30-100% white
+                    finalColor = lerpColor(finalColor, new BABYLON.Color3(1, 1, 1), snowAmount);
+                }
+            }
+
+
+            vertColor = finalColor;
+        } else {
+            let finalColor = randomizeColor(new BABYLON.Color3(.95, .95, .95), 0.05);
+            vertColor = finalColor;
+        }
+    }
+}
+
 
                 // (C) Optionally "flatten" the sea surface to 0
                 positions[v + 1] = (yVal < 0) ? 0 : yVal;
