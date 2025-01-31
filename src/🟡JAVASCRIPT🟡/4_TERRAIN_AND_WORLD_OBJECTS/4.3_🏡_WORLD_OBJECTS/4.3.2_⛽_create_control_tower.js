@@ -65,30 +65,31 @@ function createBlinkingSphere(scene, x, y, z, options = {}) {
         lightIntensity: 1,
         glowIntensity: 1,
         waitingInterval: null,
-        number_of_blinks: null
+        number_of_blinks: null,
+        name: "blinkingSphere"
     };
 
     const settings = { ...defaults, ...options };
 
-    const sphere = BABYLON.MeshBuilder.CreateSphere("blinkingSphere", { 
+    const sphere = BABYLON.MeshBuilder.CreateSphere(settings.name, { 
         diameter: settings.diameter,
-        segments: 4
+        segments: 8
     }, scene);
 
     sphere.position = new BABYLON.Vector3(x, y, z);
 
-    const sphereMaterial = new BABYLON.StandardMaterial("sphereMaterial", scene);
-    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0); // Start off
+    const sphereMaterial = new BABYLON.StandardMaterial(settings.name + "Material", scene);
+    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
     sphereMaterial.fogEnabled = true;
     sphere.material = sphereMaterial;
 
-    const light = new BABYLON.PointLight("sphereLight", sphere.position, scene);
-    light.intensity = 0; // Start off
+    const light = new BABYLON.PointLight(settings.name + "Light", sphere.position, scene);
+    light.intensity = 0;
     light.diffuse = settings.sphereColor;
     light.range = settings.lightRange;
 
-    const glowLayer = new BABYLON.GlowLayer("glow", scene);
-    glowLayer.intensity = 0; // Start off
+    const glowLayer = new BABYLON.GlowLayer(settings.name + "Glow", scene);
+    glowLayer.intensity = 0;
     glowLayer.addIncludedOnlyMesh(sphere);
 
     let isOn = false;

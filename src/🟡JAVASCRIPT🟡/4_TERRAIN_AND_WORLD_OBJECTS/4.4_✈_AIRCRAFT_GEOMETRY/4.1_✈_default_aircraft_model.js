@@ -83,68 +83,67 @@ async function createAircraft(shadowGenerator, scene) {
     // Right-wing (green) blinking light
     const rightWingLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(0, 1, 0),  // green
-        diameter: 0.15,
+        diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
         lightIntensity: 3,
-        glowIntensity: 2
+        glowIntensity: 2,
+        name: "starboard_light"
     });
     // Parent to the wing so that it moves/rotates with it
     rightWingLightSphere.sphere.parent = planeNode;
 
     // Position near the front (leading edge) on the right side 
     // -- adjust these coordinates as needed to match your orientation
-    rightWingLightSphere.sphere.position = new BABYLON.Vector3(0.5, -4, 0);
+    rightWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, -4);
 
     // Left-wing (red) blinking light
     const leftWingLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 0, 0),  // red
-        diameter: 0.15,
+        diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
         lightIntensity: 3,
-        glowIntensity: 2
+        glowIntensity: 2,
+        name: "port_light"
     });
     leftWingLightSphere.sphere.parent = planeNode;
 
     // Position near the front (leading edge) on the left side
-    leftWingLightSphere.sphere.position = new BABYLON.Vector3(0.5, 4, 0);
-
-
-
+    leftWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, 4);
 
 
     // Tail navigation light
     const tailconeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 1, 1),  // red
-        diameter: 0.2,
+        diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
         lightIntensity: 2,
-        glowIntensity: 2
+        glowIntensity: 2,
+        name: "tailcone_light"
     });
     tailconeLightSphere.sphere.parent = planeNode;
 
     // Position near the front (leading edge) on the left side
     tailconeLightSphere.sphere.position = new BABYLON.Vector3(-3.0, 0, 0);
 
-
-
     // Strobe light
     const strobeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 1, 1),  // red
-        diameter: 0.2,
+        diameter: 0.1,
         lightRange: 2,
         blinkInterval: 50,
         lightIntensity: 5,
         glowIntensity: 2,
-        waitingInterval: 1500 ,
-        number_of_blinks: 2
+        waitingInterval: 1500,
+        number_of_blinks: 2,
+        name: "strobe_light"
     });
     strobeLightSphere.sphere.parent = planeNode;
 
     // Position near the front (leading edge) on the left side
-    strobeLightSphere.sphere.position = new BABYLON.Vector3(-12.4, 0, -1.2);
+    strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.2, 0);
 
 
 
@@ -168,7 +167,10 @@ function loadGlbFile(
     translationY,
     translationZ,
     scene,
-    shadowGenerator
+    shadowGenerator,
+    wing_lights_pos,
+    tailcone_light_pos,
+    strobe_light_pos
 ) {
     const reader = new FileReader();
     reader.onload = function (event) {
@@ -182,10 +184,8 @@ function loadGlbFile(
             "",
             scene,
             function (meshes, particleSystems, skeletons, animationGroups) {
-                // Create a transform node for all imported meshes
                 const transformNode = new BABYLON.TransformNode("rootNode", scene);
 
-                // Scale/rotate/translate the meshes, then parent them under transformNode
                 meshes.forEach(function (mesh) {
                     mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
                     mesh.rotation = new BABYLON.Vector3(
@@ -199,32 +199,67 @@ function loadGlbFile(
                     shadowGenerator.addShadowCaster(mesh);
                 });
 
-// We have a new GLB, so hide the simple plane geometry but keep lights
-if (planeNode) {
-    // Get all child meshes except lights
-    const childMeshes = planeNode.getChildMeshes();
-    childMeshes.forEach(mesh => {
-        // Check if the mesh is not a light sphere
-        if (!mesh.name.toLowerCase().includes('blinking')) {
-            mesh.setEnabled(false);
-        }
-    });
-}
+                // We have a new GLB, so hide the simple plane geometry but keep lights
+                if (planeNode) {
+                    const childMeshes = planeNode.getChildMeshes();
+                    childMeshes.forEach(mesh => {
+                        if (!mesh.name.toLowerCase().includes('blinking')) {
+                            mesh.setEnabled(false);
+                        }
+                    });
+                
+                    // Update light positions if vectors are provided
+                    if (wing_lights_pos) {
+                        const rightWingLight = scene.getMeshByName("starboard_light");
+                        const leftWingLight = scene.getMeshByName("port_light");
+                        if (rightWingLight && leftWingLight) {
+                            rightWingLight.position = new BABYLON.Vector3(
+                                wing_lights_pos[0],
+                                wing_lights_pos[1],
+                                wing_lights_pos[2]
+                            );
+                            leftWingLight.position = new BABYLON.Vector3(
+                                wing_lights_pos[0],
+                                -wing_lights_pos[1],
+                                wing_lights_pos[2]
+                            );
+                        }
+                    }
+                
+                    if (tailcone_light_pos) {
+                        const tailconeLight = scene.getMeshByName("tailcone_light");
+                        if (tailconeLight) {
+                            tailconeLight.position = new BABYLON.Vector3(
+                                tailcone_light_pos[0],
+                                tailcone_light_pos[1],
+                                tailcone_light_pos[2]
+                            );
+                        }
+                    }
+                
+                    if (strobe_light_pos) {
+                        const strobeLight = scene.getMeshByName("strobe_light");
+                        if (strobeLight) {
+                            strobeLight.position = new BABYLON.Vector3(
+                                strobe_light_pos[0],
+                                strobe_light_pos[1],
+                                strobe_light_pos[2]
+                            );
+                        }
+                    }
+                }
+                
 
-                // Store the GLB node so we can hide/show it later
                 glbNode = transformNode;
 
-                // Parent under the main aircraft sphere
                 if (aircraft) {
                     transformNode.parent = aircraft;
                 }
 
-                // Play the first animation group, if any
                 if (animationGroups.length > 0) {
                     animationGroups[0].play(true);
                 }
 
-                // Optionally update cameras to track the main sphere
                 if (scene.updateCamerasForAircraft) {
                     scene.updateCamerasForAircraft(aircraft);
                 }
