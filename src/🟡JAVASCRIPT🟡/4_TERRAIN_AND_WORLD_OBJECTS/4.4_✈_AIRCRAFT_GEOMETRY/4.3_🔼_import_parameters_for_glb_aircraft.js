@@ -11,6 +11,13 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
       if (file && file.name.toLowerCase().endsWith(".glb")) {
         let scaleFactor, rotationX, rotationY, rotationZ, translationX, translationY, translationZ;
   
+
+
+        // x positive towards the tail from the CoG
+        // y positive upwards from the CoG 
+        // z towards the right wing from the CoG
+
+
         switch(fileName.toLowerCase()) {
           case "mig21.glb":
               scaleFactor = 1;
@@ -25,16 +32,16 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               strobe_light_pos = null;
               break;
           case "piper_pa18.glb":
-              scaleFactor = 1.5;
+              scaleFactor = 1;
               rotationX = 90;
               rotationY = 90;
               rotationZ = 0;
               translationX = -1.5;
-              translationY = -2;
+              translationY = -1.2;
               translationZ = 0;
-              wing_lights_pos = [1, 2, 6]
-              tailcone_light_pos = [-20, 0, 0]
-              strobe_light_pos = [-30, 4, 0]
+              wing_lights_pos = [.06, .79, 5.11]
+              tailcone_light_pos = [-5.2, .4, 0]
+              strobe_light_pos = [-1, .75, 0]
               break;
           case "su57.glb":
               scaleFactor = 1.;

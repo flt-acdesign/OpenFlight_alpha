@@ -64,6 +64,7 @@ function setupSceneElements(scene, canvas) {
  * Sets up all visualization elements for the scene
  */
 function setupVisualizationElements() {
+
     initializeTrajectorySystem();
     createVelocityLine();
     createForceLine();

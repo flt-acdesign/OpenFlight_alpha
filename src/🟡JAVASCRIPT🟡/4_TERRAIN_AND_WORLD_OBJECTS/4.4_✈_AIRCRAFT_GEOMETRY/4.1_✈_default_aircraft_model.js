@@ -119,8 +119,8 @@ async function createAircraft(shadowGenerator, scene) {
         diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
-        lightIntensity: 2,
-        glowIntensity: 2,
+        lightIntensity: 1,
+        glowIntensity: 1,
         name: "tailcone_light"
     });
     tailconeLightSphere.sphere.parent = planeNode;
@@ -133,11 +133,11 @@ async function createAircraft(shadowGenerator, scene) {
         sphereColor: new BABYLON.Color3(1, 1, 1),  // red
         diameter: 0.1,
         lightRange: 2,
-        blinkInterval: 50,
+        blinkInterval: 40,
         lightIntensity: 5,
         glowIntensity: 2,
-        waitingInterval: 1500,
-        number_of_blinks: 2,
+        waitingInterval: 800,
+        number_of_blinks: 3,
         name: "strobe_light"
     });
     strobeLightSphere.sphere.parent = planeNode;
@@ -154,7 +154,6 @@ async function createAircraft(shadowGenerator, scene) {
         scene.updateCamerasForAircraft(aircraft);
     }
 }
-
 
 // Load a GLB file, and make it copy the same “aircraft” sphere position/orientation
 function loadGlbFile(
@@ -203,7 +202,7 @@ function loadGlbFile(
                 if (planeNode) {
                     const childMeshes = planeNode.getChildMeshes();
                     childMeshes.forEach(mesh => {
-                        if (!mesh.name.toLowerCase().includes('blinking')) {
+                        if (!mesh.name.toLowerCase().includes('light')) {
                             mesh.setEnabled(false);
                         }
                     });
@@ -213,6 +212,7 @@ function loadGlbFile(
                         const rightWingLight = scene.getMeshByName("starboard_light");
                         const leftWingLight = scene.getMeshByName("port_light");
                         if (rightWingLight && leftWingLight) {
+                            // Assign new positions using Vector3 constructor
                             rightWingLight.position = new BABYLON.Vector3(
                                 wing_lights_pos[0],
                                 wing_lights_pos[1],
@@ -220,8 +220,8 @@ function loadGlbFile(
                             );
                             leftWingLight.position = new BABYLON.Vector3(
                                 wing_lights_pos[0],
-                                -wing_lights_pos[1],
-                                wing_lights_pos[2]
+                                wing_lights_pos[1],
+                                -wing_lights_pos[2]
                             );
                         }
                     }
@@ -248,8 +248,8 @@ function loadGlbFile(
                         }
                     }
                 }
-                
 
+                
                 glbNode = transformNode;
 
                 if (aircraft) {

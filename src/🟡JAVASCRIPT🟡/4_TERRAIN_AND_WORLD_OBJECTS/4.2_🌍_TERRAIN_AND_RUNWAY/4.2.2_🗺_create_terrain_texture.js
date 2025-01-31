@@ -36,7 +36,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, 
 probability_of_spawning_a_tree_fertile = {
     'none': 0,
     'few': 0.05,
-    'many': 0.3
+    'many': 0.2
   }[graphic_settings.trees]; // Example: using high preset
 
     //let probability_of_spawning_a_tree_fertile = .3
@@ -89,7 +89,7 @@ probability_of_spawning_a_tree_fertile = {
                 {
                     width: segmentSize,
                     height: segmentSize,
-                    subdivisions: 40,
+                    subdivisions: 40,   // texture size
                     updatable: true
                 },
                 scene
