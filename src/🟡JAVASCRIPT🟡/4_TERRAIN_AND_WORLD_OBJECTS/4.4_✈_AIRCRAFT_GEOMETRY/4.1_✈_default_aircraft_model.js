@@ -216,12 +216,12 @@ function loadGlbFile(
                             rightWingLight.position = new BABYLON.Vector3(
                                 wing_lights_pos[0],
                                 wing_lights_pos[1],
-                                wing_lights_pos[2]
+                                -wing_lights_pos[2]
                             );
                             leftWingLight.position = new BABYLON.Vector3(
                                 wing_lights_pos[0],
                                 wing_lights_pos[1],
-                                -wing_lights_pos[2]
+                                wing_lights_pos[2]
                             );
                         }
                     }
