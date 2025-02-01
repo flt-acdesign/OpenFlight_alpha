@@ -26,7 +26,7 @@ function updateVelocityLine() {
     const velocityVector = new BABYLON.Vector3(velocity.x, velocity.y, velocity.z);
     
     // Scale the velocity vector for visualization
-    const scaleFactor = 0.5;
+    const scaleFactor = 0.3;
     const endPoint = origin.add(velocityVector.scale(scaleFactor));
     
     // Update existing line points
@@ -41,7 +41,7 @@ function updateForceLine() {
     const forceVector = new BABYLON.Vector3(forceGlobalX, forceGlobalY, forceGlobalZ);
     
     // Scale the force vector for visualization
-    const scaleFactor = 1.5;
+    const scaleFactor = .002;
     const endPoint = origin.add(forceVector.scale(scaleFactor));
     
     // Update existing line points

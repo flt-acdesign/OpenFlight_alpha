@@ -17,6 +17,10 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
         // y positive upwards from the CoG 
         // z towards the right wing from the CoG
 
+        let propeller_pos = null
+        tailcone_light_pos = null;
+        strobe_light_pos = null;
+        propeller_diameter = null
 
         switch(fileName.toLowerCase()) {
           case "mig21.glb":
@@ -27,9 +31,6 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = -4;
               translationY = -5;
               translationZ = 2;
-              wing_lights_pos = null;
-              tailcone_light_pos = null;
-              strobe_light_pos = null;
               break;
           case "piper_pa18.glb":
               scaleFactor = 1;
@@ -42,6 +43,8 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               wing_lights_pos = [.06, .79, 5.11]
               tailcone_light_pos = [-5.2, .4, 0]
               strobe_light_pos = [-1, .75, 0]
+              propeller_pos = [1.67, 0.05, 0]
+              propeller_diameter = 1.7
               break;
           case "su57.glb":
               scaleFactor = 1.;
@@ -51,9 +54,9 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = 2;
               translationY = 0;
               translationZ = 0;
-              wing_lights_pos = null;
-              tailcone_light_pos = null;
-              strobe_light_pos = null;
+              wing_lights_pos = [-2.2, 0.05, 6.11]
+              tailcone_light_pos = [-7.2, 0, 0]
+              strobe_light_pos = [-1, .4, 0]
               break;
           case "bucker.glb":
               scaleFactor = 1;
@@ -63,9 +66,6 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = 1;
               translationY = -2.5;
               translationZ = 0;
-              wing_lights_pos = null;
-              tailcone_light_pos = null;
-              strobe_light_pos = null;
               break;
           case "airliner.glb":
               scaleFactor = .01;
@@ -75,9 +75,6 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = 0;
               translationY = 0;
               translationZ = 0;
-              wing_lights_pos = null;
-              tailcone_light_pos = null;
-              strobe_light_pos = null;
               break;
           case "bizjet.glb":
               scaleFactor = .01;
@@ -87,9 +84,6 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = 0;
               translationY = 0;
               translationZ = 0;
-              wing_lights_pos = null;
-              tailcone_light_pos = null;
-              strobe_light_pos = null;
               break;
           default:
               scaleFactor = 1;
@@ -99,9 +93,7 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = 0;
               translationY = 0;
               translationZ = 0;
-              wing_lights_pos = null;
-              tailcone_light_pos = null;
-              strobe_light_pos = null;
+
       }
         
       loadGlbFile(
@@ -117,7 +109,9 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
         shadowGenerator,
         wing_lights_pos,
         tailcone_light_pos,
-        strobe_light_pos
+        strobe_light_pos, 
+        propeller_pos, 
+        propeller_diameter
     );
 } else {
     alert("Please select a valid .glb file");

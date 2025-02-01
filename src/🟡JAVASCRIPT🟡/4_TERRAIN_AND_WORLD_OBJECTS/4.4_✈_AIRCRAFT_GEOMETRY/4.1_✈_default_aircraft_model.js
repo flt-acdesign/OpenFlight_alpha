@@ -1,88 +1,161 @@
-// Global variable to hold the sphere (the “main” aircraft).
-// The simple plane or the GLB model will be children of this sphere.
-//let aircraft = null;
-
-// Create a simple plane-like aircraft but make it a child of the aircraft sphere.
-async function createAircraft(shadowGenerator, scene) {
-    // If a sphere 'aircraft' exists, dispose or check first
+// ========================================================
+// Aircraft Creation Function
+// ========================================================
+/**
+ * Creates a simple aircraft with a two-blade propeller.
+ *
+ * @param {BABYLON.ShadowGenerator} shadowGenerator - The shadow generator.
+ * @param {BABYLON.Scene} scene - The Babylon.js scene.
+ * @param {number} [propeller_diameter] - Optional propeller tip-to-tip diameter (in meters). Default is 1.5 m.
+ */
+async function createAircraft(shadowGenerator, scene, propeller_diameter) {
+    // Dispose of an existing aircraft if it exists.
     if (aircraft) {
         aircraft.dispose();
     }
-    // Create the main sphere named "aircraft"
+
+    // Create the main aircraft sphere.
     aircraft = BABYLON.MeshBuilder.CreateSphere("aircraft", { diameter: 0.1 }, scene);
     aircraft.position.y = 430;
     aircraft.rotationQuaternion = new BABYLON.Quaternion(0, 0, 0, 1);
 
-    // Create the transform node for the simple aircraft geometry
+    // Create a transform node to hold the simple aircraft geometry.
     planeNode = new BABYLON.TransformNode("simpleAircraft", scene);
 
+    // --- Create Aircraft Components ---
     // Wing
-    const wing = BABYLON.MeshBuilder.CreatePlane(
-        "wing",
-        { width: 1.2, height: 8, sideOrientation: BABYLON.Mesh.DOUBLESIDE },
-        scene
-    );
+    const wing = BABYLON.MeshBuilder.CreatePlane("wing", {
+        width: 1.2,
+        height: 8,
+        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+    }, scene);
     wing.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, Math.PI / 2);
     wing.position = new BABYLON.Vector3(0, 0, -1.5);
 
     // Horizontal stabilizer
-    const horizontalStabilizer = BABYLON.MeshBuilder.CreatePlane(
-        "horizontalStabilizer",
-        { width: 0.75, height: 3, sideOrientation: BABYLON.Mesh.DOUBLESIDE },
-        scene
-    );
+    const horizontalStabilizer = BABYLON.MeshBuilder.CreatePlane("horizontalStabilizer", {
+        width: 0.75,
+        height: 3,
+        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+    }, scene);
     horizontalStabilizer.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, Math.PI / 2);
     horizontalStabilizer.position = new BABYLON.Vector3(-2.5, 0, -1.5);
 
     // Vertical stabilizer
-    const verticalStabilizer = BABYLON.MeshBuilder.CreatePlane(
-        "verticalStabilizer",
-        { width: 1.2, height: 0.7, sideOrientation: BABYLON.Mesh.DOUBLESIDE },
-        scene
-    );
+    const verticalStabilizer = BABYLON.MeshBuilder.CreatePlane("verticalStabilizer", {
+        width: 1.2,
+        height: 0.7,
+        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+    }, scene);
     verticalStabilizer.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
     verticalStabilizer.position = new BABYLON.Vector3(-2.5, 0.65, -1.5);
 
-    // Fuselage
-    const fuselage = BABYLON.MeshBuilder.CreateCylinder(
-        "fuselage",
-        { diameter: 0.5, height: 5, tessellation: 16 },
-        scene
-    );
+    // Fuselage (a cylinder rotated so its long axis lies along the X‑axis)
+    const fuselage = BABYLON.MeshBuilder.CreateCylinder("fuselage", {
+        diameter: 0.5,
+        height: 5,
+        tessellation: 16
+    }, scene);
     fuselage.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
     fuselage.position = new BABYLON.Vector3(0, 0, -1.5);
 
-    // Parent them all under planeNode
+    // Parent components to the transform node.
     wing.parent = planeNode;
     horizontalStabilizer.parent = planeNode;
     verticalStabilizer.parent = planeNode;
     fuselage.parent = planeNode;
 
-    // Aircraft material
+    // --- Material Assignment ---
     const aircraftMaterial = new BABYLON.StandardMaterial("aircraftMaterial", scene);
     aircraftMaterial.diffuseColor = new BABYLON.Color3(0.9, 0.9, 0.2);
-
     wing.material = aircraftMaterial;
     horizontalStabilizer.material = aircraftMaterial;
     verticalStabilizer.material = aircraftMaterial;
     fuselage.material = aircraftMaterial;
 
-    // Make planeNode a child of the sphere (the "aircraft")
+    // --- Propeller ---
+    // Create a pivot node for the propeller and parent it directly to the aircraft.
+    // This ensures the propeller remains visible when an external model is loaded.
+    const propellerPivot = new BABYLON.TransformNode("propellerPivot", scene);
+    propellerPivot.parent = aircraft;
+    // Position the hub at the nose of the fuselage (adjust as needed).
+    propellerPivot.position = new BABYLON.Vector3(2.5, 0, 0);
+
+    // Set the default tip-to-tip diameter to 1.5 m.
+    const defaultDiameter = 1.5;
+    // The blade length is half the tip-to-tip diameter.
+    const bladeLength = defaultDiameter / 2; // 0.75 m by default.
+    // If a new diameter is provided, compute the scale factor accordingly; otherwise, use 1.
+    const scaleFactor = (propeller_diameter) ? (propeller_diameter / defaultDiameter) : 1;
+    propellerPivot.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+
+    // Define the trapezoidal shape for a blade using two simple paths.
+    // The blade is designed to be 'bladeLength' m long:
+    // - Bottom edge: 0.1 m wide (from -0.05 to 0.05)
+    // - Top edge: 0.05 m wide (from -0.025 to 0.025)
+    const bottomEdge = [
+        new BABYLON.Vector3(-0.05, 0, 0),
+        new BABYLON.Vector3(0.05, 0, 0)
+    ];
+    const topEdge = [
+        new BABYLON.Vector3(-0.025, bladeLength, 0),
+        new BABYLON.Vector3(0.025, bladeLength, 0)
+    ];
+    const bladePaths = [bottomEdge, topEdge];
+
+    // Create the first blade using CreateRibbon.
+    // Using a ribbon with two parallel paths avoids the need for polygon triangulation.
+    const blade1 = BABYLON.MeshBuilder.CreateRibbon("blade1", {
+        pathArray: bladePaths,
+        sideOrientation: BABYLON.Mesh.DOUBLESIDE,
+    }, scene);
+    // Rotate the blade by 90° about Y so that it lies in the YZ plane,
+    // ensuring the rotation axis (X) is perpendicular to the blade surface.
+    blade1.rotation.y = BABYLON.Tools.ToRadians(90);
+    blade1.parent = propellerPivot;
+
+    // Create the second blade by cloning the first,
+    // then rotate it 180° about X relative to the pivot.
+    const blade2 = blade1.clone("blade2");
+    blade2.rotation.x += Math.PI; // 180° in radians
+
+    // Create a metallic PBR material so that the blades reflect sunlight.
+    const propellerMaterial = new BABYLON.PBRMetallicRoughnessMaterial("propellerMetal", scene);
+    propellerMaterial.metallic = 1.0;
+    propellerMaterial.roughness = 0.2;
+    propellerMaterial.baseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+    // Make the propeller translucent.
+    propellerMaterial.alpha = 0.5;
+    // Optionally, assign an environment texture for enhanced reflections:
+    // propellerMaterial.reflectionTexture = scene.environmentTexture;
+    // propellerMaterial.reflectivityColor = new BABYLON.Color3(1, 1, 1);
+
+    blade1.material = propellerMaterial;
+    blade2.material = propellerMaterial;
+
+    // Animate the propeller pivot to rotate about the X axis.
+    // 400 rpm is approximately 6.6667 rps or ~41.89 radians per second.
+    const rpm = 400;
+    const rps = rpm / 60;
+    const angularSpeed = rps * 2 * Math.PI; // radians per second
+    scene.onBeforeRenderObservable.add(() => {
+        const deltaTimeInSeconds = scene.getEngine().getDeltaTime() / 1000;
+        propellerPivot.rotation.x += angularSpeed * deltaTimeInSeconds;
+    });
+
+    // --- Parent the Aircraft Geometry ---
+    // Make the planeNode a child of the aircraft sphere.
     planeNode.parent = aircraft;
 
-    // Adjust child-mesh positions for shadows
-    planeNode.getChildMeshes().forEach((mesh) => {
+    // Adjust positions of child meshes for shadows and add them as shadow casters.
+    planeNode.getChildMeshes().forEach(mesh => {
         mesh.position.z += 1.5;
         shadowGenerator.addShadowCaster(mesh);
     });
 
-    // -----------------------------------------------------
-    // Add lights on the leading edges of the wings
-    // -----------------------------------------------------
-
-    // Right-wing (green) blinking light
+    // --- Lights (as before) ---
     const rightWingLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
-        sphereColor: new BABYLON.Color3(0, 1, 0),  // green
+        sphereColor: new BABYLON.Color3(0, 1, 0), // Green
         diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
@@ -90,16 +163,11 @@ async function createAircraft(shadowGenerator, scene) {
         glowIntensity: 2,
         name: "starboard_light"
     });
-    // Parent to the wing so that it moves/rotates with it
     rightWingLightSphere.sphere.parent = planeNode;
-
-    // Position near the front (leading edge) on the right side 
-    // -- adjust these coordinates as needed to match your orientation
     rightWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, -4);
 
-    // Left-wing (red) blinking light
     const leftWingLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
-        sphereColor: new BABYLON.Color3(1, 0, 0),  // red
+        sphereColor: new BABYLON.Color3(1, 0, 0), // Red
         diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
@@ -108,14 +176,10 @@ async function createAircraft(shadowGenerator, scene) {
         name: "port_light"
     });
     leftWingLightSphere.sphere.parent = planeNode;
-
-    // Position near the front (leading edge) on the left side
     leftWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, 4);
 
-
-    // Tail navigation light
     const tailconeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
-        sphereColor: new BABYLON.Color3(1, 1, 1),  // red
+        sphereColor: new BABYLON.Color3(1, 1, 1),
         diameter: 0.1,
         lightRange: 2,
         blinkInterval: -1000,
@@ -124,13 +188,10 @@ async function createAircraft(shadowGenerator, scene) {
         name: "tailcone_light"
     });
     tailconeLightSphere.sphere.parent = planeNode;
-
-    // Position near the front (leading edge) on the left side
     tailconeLightSphere.sphere.position = new BABYLON.Vector3(-3.0, 0, 0);
 
-    // Strobe light
     const strobeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
-        sphereColor: new BABYLON.Color3(1, 1, 1),  // red
+        sphereColor: new BABYLON.Color3(1, 1, 1),
         diameter: 0.1,
         lightRange: 2,
         blinkInterval: 40,
@@ -141,21 +202,45 @@ async function createAircraft(shadowGenerator, scene) {
         name: "strobe_light"
     });
     strobeLightSphere.sphere.parent = planeNode;
-
-    // Position near the front (leading edge) on the left side
     strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.2, 0);
 
-
-
-
-
-    // If the scene has an update function for cameras:
     if (scene.updateCamerasForAircraft) {
         scene.updateCamerasForAircraft(aircraft);
     }
 }
 
-// Load a GLB file, and make it copy the same “aircraft” sphere position/orientation
+
+
+
+
+
+
+// ========================================================
+// GLB File Loader Function
+// ========================================================
+/**
+ * Loads a GLB file, applies scaling, rotation, and translation,
+ * and parents the resulting transform node to the aircraft node.
+ * Optionally updates positions for wing lights, tail light, strobe light,
+ * and the propeller pivot. If no propeller pivot position is provided,
+ * the propeller is hidden.
+ *
+ * @param {File} file - The GLB file.
+ * @param {number} scaleFactor - Uniform scale factor.
+ * @param {number} rotationX - Rotation about the X axis (in degrees).
+ * @param {number} rotationY - Rotation about the Y axis (in degrees).
+ * @param {number} rotationZ - Rotation about the Z axis (in degrees).
+ * @param {number} translationX - X translation.
+ * @param {number} translationY - Y translation.
+ * @param {number} translationZ - Z translation.
+ * @param {BABYLON.Scene} scene - The Babylon.js scene.
+ * @param {BABYLON.ShadowGenerator} shadowGenerator - The shadow generator.
+ * @param {Array<number>} wing_lights_pos - [x, y, z] position for wing lights.
+ * @param {Array<number>} tailcone_light_pos - [x, y, z] position for tail light.
+ * @param {Array<number>} strobe_light_pos - [x, y, z] position for strobe light.
+ * @param {Array<number>} [propeller_pos] - Optional [x, y, z] position for the propeller pivot.
+ * @param {number} [propeller_diameter] - Optional propeller tip-to-tip diameter (in meters).
+ */
 function loadGlbFile(
     file,
     scaleFactor,
@@ -169,10 +254,12 @@ function loadGlbFile(
     shadowGenerator,
     wing_lights_pos,
     tailcone_light_pos,
-    strobe_light_pos
+    strobe_light_pos,
+    propeller_pos,   // Optional parameter to modify the propeller pivot’s position.
+    propeller_diameter // Optional parameter to modify the propeller diameter.
 ) {
     const reader = new FileReader();
-    reader.onload = function (event) {
+    reader.onload = (event) => {
         const arrayBuffer = event.target.result;
         const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
@@ -182,10 +269,11 @@ function loadGlbFile(
             url,
             "",
             scene,
-            function (meshes, particleSystems, skeletons, animationGroups) {
-                const transformNode = new BABYLON.TransformNode("rootNode", scene);
+            (meshes, particleSystems, skeletons, animationGroups) => {
+                const rootNode = new BABYLON.TransformNode("rootNode", scene);
 
-                meshes.forEach(function (mesh) {
+                // Apply transformations to each mesh and parent it to the root node.
+                meshes.forEach(mesh => {
                     mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
                     mesh.rotation = new BABYLON.Vector3(
                         BABYLON.Tools.ToRadians(rotationX),
@@ -193,26 +281,24 @@ function loadGlbFile(
                         BABYLON.Tools.ToRadians(rotationZ)
                     );
                     mesh.position = new BABYLON.Vector3(translationX, translationY, translationZ);
-                    mesh.parent = transformNode;
-
+                    mesh.parent = rootNode;
                     shadowGenerator.addShadowCaster(mesh);
                 });
 
-                // We have a new GLB, so hide the simple plane geometry but keep lights
+                // Hide the simple aircraft geometry (except lights and the propeller pivot) if present.
                 if (planeNode) {
-                    const childMeshes = planeNode.getChildMeshes();
-                    childMeshes.forEach(mesh => {
-                        if (!mesh.name.toLowerCase().includes('light')) {
+                    planeNode.getChildMeshes().forEach(mesh => {
+                        const nameLC = mesh.name.toLowerCase();
+                        if (!nameLC.includes("light") && nameLC !== "propellerpivot") {
                             mesh.setEnabled(false);
                         }
                     });
-                
-                    // Update light positions if vectors are provided
+
+                    // Update positions for the wing lights.
                     if (wing_lights_pos) {
                         const rightWingLight = scene.getMeshByName("starboard_light");
                         const leftWingLight = scene.getMeshByName("port_light");
                         if (rightWingLight && leftWingLight) {
-                            // Assign new positions using Vector3 constructor
                             rightWingLight.position = new BABYLON.Vector3(
                                 wing_lights_pos[0],
                                 wing_lights_pos[1],
@@ -225,7 +311,8 @@ function loadGlbFile(
                             );
                         }
                     }
-                
+
+                    // Update position for the tail light.
                     if (tailcone_light_pos) {
                         const tailconeLight = scene.getMeshByName("tailcone_light");
                         if (tailconeLight) {
@@ -236,7 +323,8 @@ function loadGlbFile(
                             );
                         }
                     }
-                
+
+                    // Update position for the strobe light.
                     if (strobe_light_pos) {
                         const strobeLight = scene.getMeshByName("strobe_light");
                         if (strobeLight) {
@@ -247,16 +335,39 @@ function loadGlbFile(
                             );
                         }
                     }
+
+                    // Update or hide the propeller pivot.
+                    const propellerPivot = scene.getTransformNodeByName("propellerPivot");
+                    if (propellerPivot) {
+                        if (propeller_pos) {
+                            propellerPivot.position = new BABYLON.Vector3(
+                                propeller_pos[0],
+                                propeller_pos[1],
+                                propeller_pos[2]
+                            );
+                            propellerPivot.setEnabled(true);
+                            // Update the scaling of the propeller pivot if a new diameter is provided.
+                            if (propeller_diameter) {
+                                // The default tip-to-tip diameter in the design is 1.5 meters.
+                                const defaultDiameter = 1.5;
+                                const diameterScale = propeller_diameter / defaultDiameter;
+                                propellerPivot.scaling = new BABYLON.Vector3(diameterScale, diameterScale, diameterScale);
+                            }
+                        } else {
+                            // Hide the propeller if no position data is given.
+                            propellerPivot.setEnabled(false);
+                        }
+                    }
                 }
 
-                
-                glbNode = transformNode;
-
+                // Parent the imported GLB to the aircraft.
+                glbNode = rootNode;
                 if (aircraft) {
-                    transformNode.parent = aircraft;
+                    rootNode.parent = aircraft;
                 }
 
-                if (animationGroups.length > 0) {
+                // Play the first animation group, if available.
+                if (animationGroups && animationGroups.length > 0) {
                     animationGroups[0].play(true);
                 }
 
@@ -274,3 +385,6 @@ function loadGlbFile(
 
     reader.readAsArrayBuffer(file);
 }
+
+
+
