@@ -188,7 +188,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
         name: "tailcone_light"
     });
     tailconeLightSphere.sphere.parent = planeNode;
-    tailconeLightSphere.sphere.position = new BABYLON.Vector3(-3.0, 0, 0);
+    tailconeLightSphere.sphere.position = new BABYLON.Vector3(-2.9, 0, 0);
 
     const strobeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 1, 1),
@@ -202,7 +202,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
         name: "strobe_light"
     });
     strobeLightSphere.sphere.parent = planeNode;
-    strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.2, 0);
+    strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.25, 0);
 
     if (scene.updateCamerasForAircraft) {
         scene.updateCamerasForAircraft(aircraft);

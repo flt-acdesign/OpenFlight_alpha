@@ -10,16 +10,16 @@ constants:
   AR: 13.8  # Aspect ratio of the wing
   Oswald_factor: 0.7  # Oswald efficiency factor (indicates aerodynamic efficiency)
   wing_mean_aerodynamic_chord: 1.35  # Mean aerodynamic chord of the wing in meters
-  derivative_roll_vs_aileron: 0.17  # Roll rate response derivative with respect to aileron deflection
-  derivative_pitch_vs_elevator: 0.25  # Pitch rate response derivative with respect to elevator deflection
+  derivative_roll_vs_aileron: 0.37  # Roll rate response derivative with respect to aileron deflection
+  derivative_pitch_vs_elevator: 0.15  # Pitch rate response derivative with respect to elevator deflection
   derivative_yaw_vs_rudder: 0.1  # Yaw rate response derivative with respect to rudder deflection
   CM0: 0.1  # Zero-lift pitching moment coefficient
   CN_beta: 0.3  # Yawing moment coefficient derivative with respect to sideslip angle
   CM_alpha: -0.6  # Pitching moment coefficient derivative with respect to angle of attack
-  Cl_p: -0.3  # Roll damping coefficient (derivative of roll moment with respect to roll rate)
-  Cm_q: -0.3  # Pitch damping coefficient (derivative of pitch moment with respect to pitch rate)
-  Cn_r: -0.2  # Yaw damping coefficient (derivative of yaw moment with respect to yaw rate)
-  maximum_thrust_at_sea_level: 1500  # Maximum engine thrust at sea level in Newtons
+  Cl_p: -0.1  # Roll damping coefficient (derivative of roll moment with respect to roll rate)
+  Cm_q: -0.1  # Pitch damping coefficient (derivative of pitch moment with respect to pitch rate)
+  Cn_r: -0.1  # Yaw damping coefficient (derivative of yaw moment with respect to yaw rate)
+  maximum_thrust_at_sea_level: 5500  # Maximum engine thrust at sea level in Newtons
   thrust_installation_angle_DEG: 0  # Engine installation angle relative to the longitudinal axis in degrees
   control_actuator_speed: 5  # Speed of control surface actuators in 100% per second
   engine_spool_up_speed: 1.3  # Engine spool-up speed factor (rate of thrust increase)

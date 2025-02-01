@@ -2,12 +2,10 @@
 // 1) Detect Controller Type
 // ------------------------------------------------------------
 function detectControllerType(gamepad) {
-  // First check if it's a valid gaming device by ID
-  if (!gamepad.id.toLowerCase().match(/(xbox|xinput|playstation|ps4|ps5|dualshock|gamepad)/)) {
-    return 'INVALID';
-  }
-
+  // Lowercase the id for easier matching
   const id = gamepad.id.toLowerCase();
+
+  // Check for known keywords.
   if (id.includes('xbox') || id.includes('xinput')) {
     return 'XBOX';
   } else if (
@@ -17,26 +15,27 @@ function detectControllerType(gamepad) {
     id.includes('dualshock')
   ) {
     return 'PLAYSTATION';
-  } else {
+  } else if (id.includes('gamepad')) {
     return 'GENERIC';
+  } else if (id.includes('joystick')) {
+    return 'JOYSTICK';
+  } else {
+    // If none of the expected keywords appear,
+    // assume it’s a joystick (or at least a valid controller)
+    return 'JOYSTICK';
   }
 }
 
 function getValidGamepad() {
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   
-  // Find first valid gaming controller
-  const gamepad = Array.from(gamepads).find(gp => {
-    if (!gp) return false;
-    
-    // Filter out non-gaming devices
-    const type = detectControllerType(gp);
-    return type !== 'INVALID';
-  });
-
+  // Find the first connected gamepad (or joystick)
+  const gamepad = Array.from(gamepads).find(gp => gp);
+  
   if (gamepad) {
     const type = detectControllerType(gamepad);
-    if (type === 'XBOX' || type === 'PLAYSTATION' || type === 'GENERIC') {
+    // Accept all recognized types including JOYSTICK
+    if (type === 'XBOX' || type === 'PLAYSTATION' || type === 'GENERIC' || type === 'JOYSTICK') {
       return { gamepad, type };
     }
   }
@@ -49,21 +48,15 @@ function getValidGamepad() {
 // ------------------------------------------------------------
 const keysPressed = {};
 
-/**
- * Listen for keyboard events and store which keys are currently pressed.
- */
+// Listen for keyboard events.
 window.addEventListener('keydown', (event) => {
   keysPressed[event.code] = true;
 });
-
 window.addEventListener('keyup', (event) => {
   keysPressed[event.code] = false;
 });
 
-/**
- * Handle keyboard controls.
- * You can adjust values for pitch, roll, yaw, thrust, etc. as needed.
- */
+// Example keyboard controls.
 function handleKeyboardControls(scene) {
   // Reset demands each frame
   thrust_setting_demand = 0;
@@ -71,25 +64,23 @@ function handleKeyboardControls(scene) {
   pitch_demand = 0;
   yaw_demand = 0;
 
-  // Example keyboard mappings:
-
-  // Pitch: up arrow => nose down, down arrow => nose up
+  // Pitch: Up arrow (nose down), Down arrow (nose up)
   if (keysPressed['ArrowUp']) {
     pitch_demand = -0.2;
-  } 
+  }
   if (keysPressed['ArrowDown']) {
     pitch_demand = 0.2;
   }
 
-  // Roll: left arrow => roll left, right arrow => roll right
+  // Roll: Left arrow (roll left), Right arrow (roll right)
   if (keysPressed['ArrowLeft']) {
     roll_demand = -0.1;
-  } 
+  }
   if (keysPressed['ArrowRight']) {
     roll_demand = 0.1;
   }
 
-  // Yaw: A => yaw left, D => yaw right
+  // Yaw: A (yaw left), D (yaw right)
   if (keysPressed['KeyA']) {
     yaw_demand = -0.1;
   }
@@ -97,7 +88,7 @@ function handleKeyboardControls(scene) {
     yaw_demand = 0.1;
   }
 
-  // Thrust: W => increase thrust, S => decrease
+  // Thrust: W (increase thrust), S (decrease thrust)
   if (keysPressed['KeyW']) {
     thrust_setting_demand = -0.5;
   }
@@ -119,7 +110,7 @@ function handleKeyboardControls(scene) {
 }
 
 // ------------------------------------------------------------
-// 3) Main update function
+// 3) Main update function for Joystick/Keyboard
 // ------------------------------------------------------------
 function updateForcesFromJoystickOrKeyboard(scene) {
   const validGamepad = getValidGamepad();
@@ -129,67 +120,85 @@ function updateForcesFromJoystickOrKeyboard(scene) {
     const axes = gamepad.axes;
     const buttons = gamepad.buttons;
 
-    // <-- IMPORTANT: Capture the axes in our global array
+    // Capture the axes in a global array (if needed)
     joystickAxes = Array.from(axes);
 
-    // XBOX Controller
     if (type === 'XBOX') {
-      thrust_setting_demand = (-1 * axes[1] + 1) / 2; // Left stick vertical
-      roll_demand = -1.0 * axes[2];                  // Right stick horizontal
-      pitch_demand = 1.0 * axes[3];                  // Right stick vertical
-      yaw_demand = 1.0 * axes[0];                    // Left stick horizontal
+      // XBOX Mapping
+      thrust_setting_demand = (-axes[1] + 1) / 2; // Left stick vertical
+      roll_demand = -axes[2];                   // Right stick horizontal
+      pitch_demand = axes[3];                   // Right stick vertical
+      yaw_demand = axes[0];                     // Left stick horizontal
 
-      // Buttons
-      trim_nose_down = buttons[12]?.value;
-      trim_nose_up   = buttons[13]?.value;
-      flaps_one_up   = buttons[5]?.value;
-      flaps_one_down = buttons[7]?.value;
+      // Button mappings
+      trim_nose_down   = buttons[12]?.value;
+      trim_nose_up     = buttons[13]?.value;
+      flaps_one_up     = buttons[5]?.value;
+      flaps_one_down   = buttons[7]?.value;
       ground_brakes_on = buttons[4]?.value;
       air_brakes_on    = buttons[6]?.value;
 
-      if (buttons[9]?.value  === 1) location.reload();
-      if (buttons[1]?.value  === 1) setActiveCamera(1, scene); // chase
-      if (buttons[0]?.value  === 1) setActiveCamera(0, scene); // external
-      if (buttons[3]?.value  === 1) setActiveCamera(2, scene); // cockpit
-      if (buttons[2]?.value  === 1) setActiveCamera(3, scene); // wing
+      if (buttons[9]?.value === 1) location.reload();
+      if (buttons[1]?.value === 1) setActiveCamera(1, scene); // chase
+      if (buttons[0]?.value === 1) setActiveCamera(0, scene); // external
+      if (buttons[3]?.value === 1) setActiveCamera(2, scene); // cockpit
+      if (buttons[2]?.value === 1) setActiveCamera(3, scene); // wing
       if (buttons[14]?.value === 1) rotateCamera_left(scene);
       if (buttons[15]?.value === 1) rotateCamera_right(scene);
-      if (buttons[8]?.value  === 1) pauseSimulation();
-    } 
-    // PLAYSTATION/GENERIC controller (based on your detectControllerType)
-    else {
-      // Example: GENERIC usage
-      thrust_setting_demand = -1 * axes[2];
-      roll_demand  = -1.0 * axes[0];
-      pitch_demand =  1.0 * axes[1];
-      yaw_demand   =  1.0 * axes[5];
+      if (buttons[8]?.value === 1) pauseSimulation();
 
-      // You can add or adjust demands for other axes here as needed
+    } else if (type === 'PLAYSTATION' || type === 'GENERIC') {
+      // PLAYSTATION/GENERIC Mapping
+      thrust_setting_demand = -axes[2];
+      roll_demand  = -axes[0];
+      pitch_demand = axes[1];
+      yaw_demand   = axes[5];
+
+      // Example additional axis
       thrust_balance = 0.1 * axes[6];
 
-      // Buttons
-      trim_nose_down = buttons[6]?.value;
-      trim_nose_up   = buttons[4]?.value;
-      flaps_one_up   = buttons[8]?.value;
-      flaps_one_down = buttons[9]?.value;
+      // Button mappings
+      trim_nose_down   = buttons[6]?.value;
+      trim_nose_up     = buttons[4]?.value;
+      flaps_one_up     = buttons[8]?.value;
+      flaps_one_down   = buttons[9]?.value;
       ground_brakes_on = buttons[7]?.value;
       air_brakes_on    = buttons[5]?.value;
 
-      // Example camera and reload
       if (buttons[11]?.value === 1) location.reload();
-      if (buttons[3]?.value  === 1) setActiveCamera(1, scene);
-      if (buttons[0]?.value  === 1) setActiveCamera(0, scene);
-      if (buttons[1]?.value  === 1) setActiveCamera(2, scene);
+      if (buttons[3]?.value === 1) setActiveCamera(1, scene);
+      if (buttons[0]?.value === 1) setActiveCamera(0, scene);
+      if (buttons[1]?.value === 1) setActiveCamera(2, scene);
 
       if (axes[9] === -1.0)  setActiveCamera(3, scene);
       if (axes[9] ===  0.71) rotateCamera_left(scene);
       if (axes[9] === -0.43) rotateCamera_right(scene);
 
       if (buttons[10]?.value === 1) pauseSimulation();
+
+    } else if (type === 'JOYSTICK') {
+      // JOYSTICK Mapping
+      // (Adjust the following axis indices and scaling as needed for your device.)
+      roll_demand = - axes[0] || 0;
+      pitch_demand = axes[1] || 0;
+      // Convert throttle axis (assumed to be in the range -1 to 1) to 0 to 1:
+      thrust_setting_demand = axes[2] !== undefined ? (-axes[2] + 1) / 2 : 0;
+      // Use a twist axis for yaw if available; otherwise default to 0.
+      yaw_demand = axes.length > 3 ? axes[5] : 0;
+
+      // Example button mappings for a joystick:
+      if (buttons[10]?.value === 1) location.reload();
+      if (buttons[11]?.value === 1) pauseSimulation();
+      if (axes[9] === -1) setActiveCamera(0, scene);
+
+
+      if (buttons[0]?.value === 1) setActiveCamera(2, scene);
+      if (buttons[1]?.value === 1) setActiveCamera(1, scene);
+      if (buttons[3]?.value === 1) setActiveCamera(3, scene);
+      // Add additional button mappings as needed.
     }
-  } 
-  // Fallback to keyboard if no valid gamepad
-  else {
+  } else {
+    // No valid gamepad/joystick detected; fall back to keyboard controls.
     handleKeyboardControls(scene);
   }
 }

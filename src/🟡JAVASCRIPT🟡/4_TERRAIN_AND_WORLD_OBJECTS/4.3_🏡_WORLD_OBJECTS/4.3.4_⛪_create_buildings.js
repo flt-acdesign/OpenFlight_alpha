@@ -116,7 +116,7 @@ function create_buildings(scene, shadowGenerator) {
       height: 4,
       roofHeight: 1.5,
       position: new BABYLON.Vector3(1234, 11.0, 1484),
-      rotationY_DEG: 90,
+      rotationY_DEG: 0,
       boxColor: "#ffffff",
       roofColor: "#c24e10"
     },
@@ -126,7 +126,7 @@ function create_buildings(scene, shadowGenerator) {
       height: 6,
       roofHeight: 1.5,
       position: new BABYLON.Vector3(1234, 11.0, 1474),
-      rotationY_DEG: 90,
+      rotationY_DEG: 0,
       boxColor: "#ffffff",
       roofColor: "#c24e10",
       force_gable: true
@@ -148,7 +148,7 @@ function create_buildings(scene, shadowGenerator) {
       height: 6,
       roofHeight: 2,
       position: new BABYLON.Vector3(1231, 11, 1489.7),
-      rotationY_DEG: 90,
+      rotationY_DEG: 0,
       boxColor: "#ffffff",
       roofColor: "#ffffff",
       force_gable: false
