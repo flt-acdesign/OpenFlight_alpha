@@ -32,6 +32,10 @@ function createWorldScenery(scene, shadowGenerator, camera) {
 
     create_lighthouses(scene, shadowGenerator)
 
+    create_wind_turbines(scene, shadowGenerator)
+
+
+
     //createRunway(scene, scene.groundConfig)
 
 // Wait until the font is loaded

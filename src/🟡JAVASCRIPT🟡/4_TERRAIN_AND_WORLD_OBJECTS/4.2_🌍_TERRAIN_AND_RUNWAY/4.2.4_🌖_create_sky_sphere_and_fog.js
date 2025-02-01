@@ -122,3 +122,5 @@ function create_fog(scene) {
     // scene.fogFarPlane = 10000.0;
     // scene.fogEnabled = true;
 }
+
+
