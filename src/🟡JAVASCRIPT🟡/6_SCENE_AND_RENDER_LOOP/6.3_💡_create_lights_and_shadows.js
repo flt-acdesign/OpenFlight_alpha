@@ -41,8 +41,12 @@ function setupLights_and_shadows(scene) {
   
   // Configure shadow properties
   shadowGenerator.lambda = 0.5; // Balance between linear and logarithmic distribution
-  shadowGenerator.shadowMaxZ = 2000; // Maximum distance for shadows (increase if needed)
+  shadowGenerator.shadowMaxZ = 1000; // Maximum distance for shadows (increase if needed)
   shadowGenerator.stabilizeCascades = true; // Prevent shadow "shimmering" artifacts
+
+  shadowGenerator.bias = 0.001; // adjust this value as needed
+
+
   
   // Configure directional light's shadow settings
   sunDirectionalLight.shadowMinZ = 1; // Minimum distance for shadows

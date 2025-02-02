@@ -18,6 +18,7 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
         // z towards the right wing from the CoG
 
         let propeller_pos = null
+        wing_lights_pos = null
         tailcone_light_pos = null;
         strobe_light_pos = null;
         propeller_diameter = null
@@ -66,7 +67,19 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationX = 1;
               translationY = -2.5;
               translationZ = 0;
+
               break;
+              case "bucker_no_reg.glb":
+                scaleFactor = 1;
+                rotationX = 90;
+                rotationY = 90;
+                rotationZ = 0;
+                translationX = 1;
+                translationY = -2.5;
+                translationZ = 0;
+                propeller_pos = [3.3, 1, 0]
+                propeller_diameter = 1.9
+                break;
           case "airliner.glb":
               scaleFactor = .01;
               rotationX = 0;
@@ -79,10 +92,10 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
           case "bizjet.glb":
               scaleFactor = .01;
               rotationX = 0;
-              rotationY = 0;
+              rotationY = -90;
               rotationZ = 0;
               translationX = 0;
-              translationY = 0;
+              translationY = -1.5;
               translationZ = 0;
               break;
           default:

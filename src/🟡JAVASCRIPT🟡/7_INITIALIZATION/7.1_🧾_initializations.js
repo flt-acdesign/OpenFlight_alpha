@@ -20,7 +20,7 @@ let simulationStartTime = Date.now();
 let lastFrameTime = Date.now();
 let elapsedTime = 0; // Total elapsed time
 let timeSinceLastUpdate = 0; // Accumulated time since last update
-let fps_demanded = 70 // Frames per second demanded
+let fps_demanded = 60 // Frames per second demanded
 let global_time_step = 1.0 / fps_demanded  // seconds, play ping-pong at this rate
 let distanceFromCenter = 0
 

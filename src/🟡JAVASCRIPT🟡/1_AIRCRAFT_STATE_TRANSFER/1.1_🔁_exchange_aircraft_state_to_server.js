@@ -128,7 +128,7 @@ ws.onmessage = (event) => {
 
 
     // Update trajectory if within time limit
-    if (elapsedTime < 20.0) {
+    if (elapsedTime < 200.0) {
         updateTrajectory();
     }
 

@@ -24,7 +24,7 @@
       left: 20px;
       color: #00ff00; 
       font-family: "Courier New", Courier, monospace; /* 1970s computer style */
-      font-size: 3em; 
+      font-size: 100px; 
       white-space: pre-wrap; /* preserve new lines and spacing */
       line-height: 1.2;
     }
@@ -44,7 +44,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       padding: 15px 30px;
-      font-size: 26px;
+      font-size: 156px;
       background: #00ff00;
       border: none;
       color: black;
@@ -65,13 +65,12 @@
 <div id="retro-text" class="cursor-blink"></div>
 
 <script>
-  const message = `Somewhere in : \n 
-(Math.sin(freqX * x * 1.1)) ** 1 *  \n
-(Math.sin(freqZ * z * x / 1000)) ** 1 *
-2    // octave1, octave2, octave3 are additional wave layers
-let octave1 =        (Math.sin(freqX * 2 * x)) ** 2 *   
-(Math.cos(freqZ * 2 * z)) ** 2 *        1
-  \n            \n          \n PRESENT TIME.`
+  const message = 
+  `  MERIDIAN ISLAND \n
+  FLIGHT TEST 1ST FEBRUARY 2025 \n
+  3 WEEKS BEFORE RELEASE DATE \n
+  
+  `
 
   const textElement = document.getElementById("retro-text");
   const startButton = document.getElementById("start-button");
@@ -112,7 +111,7 @@ let octave1 =        (Math.sin(freqX * 2 * x)) ** 2 *
       }
       
       index++;
-      setTimeout(typeLetter, 45);
+      setTimeout(typeLetter, 55);
     } else {
       textElement.classList.remove("cursor-blink");
     }

@@ -2,8 +2,10 @@ window.addEventListener("DOMContentLoaded", function () {
 
   // Initialize Babylon.js engine
   const canvas = document.getElementById("renderCanvas")
-  const engine = new BABYLON.Engine(canvas, true)
-
+  const engine = new BABYLON.Engine(canvas, true, { 
+    useReverseDepthBuffer: true  // or logarithmicDepthBuffer: true in some versions/configurations 
+  });
+  
   // Call the external scene generation function
   const scene = createScene(engine, canvas)
 

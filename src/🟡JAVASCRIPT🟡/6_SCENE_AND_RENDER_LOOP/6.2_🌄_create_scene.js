@@ -30,8 +30,11 @@ function createScene(engine, canvas) {
 function initializeBaseScene(engine) {
     const scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
+    
     return scene;
 }
+
+
 
 /**
  * Sets up all core scene elements including lights, cameras, and models
@@ -65,9 +68,9 @@ function setupSceneElements(scene, canvas) {
  */
 function setupVisualizationElements() {
 
-    initializeTrajectorySystem();
-    createVelocityLine();
-    createForceLine();
+    //initializeTrajectorySystem();
+    //createVelocityLine();
+    //createForceLine();
     createGUI();
 }
 
