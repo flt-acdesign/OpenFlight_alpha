@@ -18,7 +18,7 @@ function setupLights_and_shadows(scene) {
   // Secondary ambient light for fill-in illumination from below
   const ambientHemisphericLight = new BABYLON.HemisphericLight(
       "ambientHemisphericLight", 
-      new BABYLON.Vector3(0, -1, 1), // Direction vector (negative Y-axis)
+      new BABYLON.Vector3(0, -1, 0), // Direction vector (negative Y-axis)
       scene
   );
   ambientHemisphericLight.intensity = 0.4;

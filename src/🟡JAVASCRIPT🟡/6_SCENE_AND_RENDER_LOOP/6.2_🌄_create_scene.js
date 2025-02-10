@@ -68,9 +68,9 @@ function setupSceneElements(scene, canvas) {
  */
 function setupVisualizationElements() {
 
-    //initializeTrajectorySystem();
-    //createVelocityLine();
-    //createForceLine();
+    initializeTrajectorySystem();
+    createVelocityLine();
+    createForceLine();
     createGUI();
 }
 
