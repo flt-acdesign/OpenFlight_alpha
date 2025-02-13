@@ -47,6 +47,7 @@ aircraft_flight_physics_and_propulsive_data = (
         / fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"), 
 
     reference_area = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_area"),
+    reference_span = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_span"),
     #Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
     AR = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "AR"),
     Oswald_factor = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Oswald_factor"),

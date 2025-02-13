@@ -1,7 +1,7 @@
 
 
 
-function 🟢_compute_net_thrust_force_vector_body(alt, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
+function 🔺_compute_net_thrust_force_vector_body(alt, Mach, aircraft_flight_physics_and_propulsive_data, aircraft_state, control_demand_vector_attained)
     # Calculate thrust force based on thrust lever input
     if control_demand_vector_attained.thrust_attained >= 0.0
         thrust_ratio = control_demand_vector_attained.thrust_attained

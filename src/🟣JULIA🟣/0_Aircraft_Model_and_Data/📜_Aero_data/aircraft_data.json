@@ -1,0 +1,140 @@
+{
+  "general": {
+    "aircraft_reference_surface_m2": 10,
+    "aircraft_reference_mean_aerodynamic_chord_m": 3,
+    "aircraft_CoG_coords_xyz_m": [
+      2,
+      1,
+      0
+    ]
+  },
+  "lifting_surfaces": [
+    {
+      "name": "wing",
+      "mass_kg": 600,
+      "root_LE": [
+        4.164186000823975,
+        0,
+        0
+      ],
+      "AR": 8.33,
+      "TR": 0.6,
+      "mirror": false,
+      "symmetric": true,
+      "dihedral_DEG": 3,
+      "vertical": false,
+      "sweep_quarter_chord_DEG": 15,
+      "surface_area_m2": 48,
+      "Oswald_factor": 0.7,
+      "mean_aerodynamic_chord_m": 1.35,
+      "stations_eta": [
+        0,
+        0.5,
+        1
+      ],
+      "radius_of_giration_pitch_m": 3.5,
+      "radius_of_giration_yaw_m": 4,
+      "radius_of_giration_roll_m": 4,
+      "principal_axis_pitch_up_DEG": -2,
+      "CoG_pos_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "aerodynamic_center_pos_xyz_m": [
+        2.9,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "wing",
+      "mass_kg": 600,
+      "root_LE": [
+        7.94689416885376,
+        0,
+        0
+      ],
+      "AR": 4,
+      "TR": 0.6,
+      "mirror": false,
+      "symmetric": false,
+      "dihedral_DEG": 3,
+      "vertical": true,
+      "sweep_quarter_chord_DEG": 15,
+      "surface_area_m2": 12,
+      "Oswald_factor": 0.7,
+      "mean_aerodynamic_chord_m": 1.35,
+      "stations_eta": [
+        0,
+        0.5,
+        1
+      ],
+      "radius_of_giration_pitch_m": 3.5,
+      "radius_of_giration_yaw_m": 4,
+      "radius_of_giration_roll_m": 4,
+      "principal_axis_pitch_up_DEG": -2,
+      "CoG_pos_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "aerodynamic_center_pos_xyz_m": [
+        2.9,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "wing",
+      "mass_kg": 600,
+      "root_LE": [
+        0,
+        0,
+        0
+      ],
+      "AR": 8.33,
+      "TR": 0.6,
+      "mirror": false,
+      "symmetric": true,
+      "dihedral_DEG": 3,
+      "vertical": false,
+      "sweep_quarter_chord_DEG": 15,
+      "surface_area_m2": 6,
+      "Oswald_factor": 0.7,
+      "mean_aerodynamic_chord_m": 1.35,
+      "stations_eta": [
+        0,
+        0.5,
+        1
+      ],
+      "radius_of_giration_pitch_m": 3.5,
+      "radius_of_giration_yaw_m": 4,
+      "radius_of_giration_roll_m": 4,
+      "principal_axis_pitch_up_DEG": -2,
+      "CoG_pos_xyz_m": [
+        0,
+        0,
+        0
+      ],
+      "aerodynamic_center_pos_xyz_m": [
+        2.9,
+        0,
+        0
+      ]
+    }
+  ],
+  "fuselages": [
+    {
+      "name": "fus1",
+      "diameter": 2.5,
+      "length": 15,
+      "nose_position": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "engines": []
+}
