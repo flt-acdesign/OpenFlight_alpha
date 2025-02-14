@@ -1,5 +1,7 @@
 
 
+let freeport = 8000
+
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
 let glbNode = null;   // TransformNode holding the loaded GLB

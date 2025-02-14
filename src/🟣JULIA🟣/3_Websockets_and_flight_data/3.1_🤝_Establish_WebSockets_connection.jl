@@ -33,7 +33,7 @@ end
 
 # Server initialization and startup function
 function establish_websockets_connection()
-    port = 8080
+    port = WebSockets_port  # Port number defined in the client-side JavaScript file, this is found in function "🎁_load_required_packages_and_find_free_port.jl"
     println("Starting WebSocket server on port $port...")
     
     # Create handler functions for HTTP and WebSocket protocols

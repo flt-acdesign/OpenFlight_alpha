@@ -1,5 +1,6 @@
 // Initialize WebSocket connection
-let ws = new WebSocket('ws://localhost:8080');
+let ws = new WebSocket(`ws://localhost:${freeport}`);
+
 
 // Connection opened handler
 ws.onopen = () => {

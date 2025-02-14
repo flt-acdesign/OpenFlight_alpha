@@ -29,6 +29,7 @@ end
 # Standard libraries (LinearAlgebra, Dates) are already in the environment.
 required_packages = [
     "HTTP",
+    "Sockets",
     "WebSockets",
     "JSON",
     "CSV",
@@ -46,3 +47,48 @@ println("All required packages are installed and loaded successfully!")
 
 
 
+# Find free port for the server to listen on
+# Navigate to the target JavaScript file
+current_path = @__DIR__
+filepath = joinpath(current_path, "..", "..", "🟡JAVASCRIPT🟡", "7_INITIALIZATION", "7.1_🧾_initializations.js")
+
+# Print paths to verify
+println("Starting from: ", current_path)
+println("Target file: ", filepath)
+
+function find_free_port(start_port=8000, max_attempts=1000)
+    for port in start_port:(start_port + max_attempts)
+        server = try
+            listen(port)
+        catch e
+            continue
+        end
+        close(server)
+        return port
+    end
+    error("No free port found after $max_attempts attempts")
+end
+
+# Function to update the file (using previous implementation)
+function update_port_in_file(filepath)
+    freeport = find_free_port()
+    content = try
+        read(filepath, String)
+    catch e
+        error("Could not read file: $filepath")
+    end
+    
+    new_content = replace(content, "let freeport = 8080" => "let freeport = $freeport")
+    
+    try
+        write(filepath, new_content)
+        println("Successfully updated port to $freeport")
+    catch e
+        error("Could not write to file: $filepath")
+    end
+    
+    return freeport
+end
+
+# Execute the update
+WebSockets_port = update_port_in_file(filepath)
