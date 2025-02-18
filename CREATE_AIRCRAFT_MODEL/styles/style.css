@@ -1,0 +1,129 @@
+html, body {
+    width: 100%; 
+    height: 100%;
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  
+  #renderCanvas {
+    width: 100%; 
+    height: 100%;
+    touch-action: none;
+    display: block;
+    margin-top: 60px; /* leave room for top controls */
+  }
+  
+  /* Top-fixed controls */
+  #controls {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    padding: 5px;
+    text-align: center;
+    background-color: #a9a9e9;
+    border-bottom: 1px solid #ccc;
+  }
+  #controls input, #controls button {
+    margin: 5px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  #selectedComponentName {
+    font-weight: bold;
+    margin-left: 20px;
+  }
+  
+  /* Toggle ground button at bottom center */
+  #toggleGround {
+    position: fixed;
+    bottom: 20px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px; 
+    height: 40px;
+    border-radius: 50%;
+    background-color: #3366FF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    font-size: 20px;
+    z-index: 100;
+  }
+  #toggleGround:hover { 
+    background-color: #254EDB; 
+  }
+  
+  /* Clear Aircraft Button */
+  #clearAircraft {
+    padding: 6px 10px;
+    border-radius: 3px;
+    background-color: #FF3333;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  #clearAircraft:hover { 
+    background-color: #f87c56; 
+  }
+  
+  /* Modal styles – fixed at the top center */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0; 
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #fff;
+    position: fixed;
+    top: 20px; 
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 20px;
+    border: 2px solid #444;
+    border-radius: 5px;
+    width: 350px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+  .modal-content h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #444;
+  }
+  .modal-content label {
+    display: inline-block;
+    width: 120px;
+    margin: 5px 0;
+  }
+  .modal-content input {
+    display: inline-block;
+    width: 200px;
+    margin: 5px 0;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+  }
+  .modal-content button {
+    margin: 10px 10px 0 0;
+    padding: 6px 12px;
+    background-color: #3366FF;
+    border: none;
+    color: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .modal-content button:hover { 
+    background-color: #254EDB; 
+  }
+  

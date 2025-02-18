@@ -1,6 +1,6 @@
 
 
-let freeport = 8000
+let freeport = 8000  // default value for the server port, it will be updated by the server
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane

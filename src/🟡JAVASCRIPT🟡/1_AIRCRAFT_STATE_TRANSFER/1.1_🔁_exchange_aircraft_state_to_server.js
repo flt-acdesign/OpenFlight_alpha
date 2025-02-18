@@ -1,4 +1,5 @@
 // Initialize WebSocket connection
+// Freeport is a variable that holds the port number of the server, defined in "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js"  by the Julia code "src/🟣JULIA🟣/_PACKAGE_HANDLER_and_FREE_PORT_WEBSOCKETS/🎁_load_required_packages_and_find_free_port.jl"
 let ws = new WebSocket(`ws://localhost:${freeport}`);
 
 
@@ -125,19 +126,14 @@ ws.onmessage = (event) => {
     // Update thrust feedback
     thrust_attained = parseFloat(responseData.thrust_attained);
     
-    
-
 
     // Update trajectory if within time limit
     if (elapsedTime < 200.0) {
         updateTrajectory();
     }
 
-
-
     // Update visualization elements
     updateVelocityLine();
     updateForceLine();
-
 
 }

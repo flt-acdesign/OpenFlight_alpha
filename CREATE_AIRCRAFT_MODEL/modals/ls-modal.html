@@ -1,0 +1,29 @@
+<!-- modals/ls-modal.html -->
+<div id="liftingSurfaceModal" class="modal">
+    <div class="modal-content">
+      <h3>Add / Edit Lifting Surface</h3>
+      <label>Name:</label> <input type="text" id="ls_name" value="wing"><br>
+      <label>Mass (kg):</label> <input type="number" id="ls_mass_kg" value="600"><br>
+      <label>Root LE (x,y,z):</label> <input type="text" id="ls_root_LE" value="0,0,0"><br>
+      <label>AR:</label> <input type="number" step="0.01" id="ls_AR" value="8.33"><br>
+      <label>TR:</label> <input type="number" step="0.01" id="ls_TR" value="0.6"><br>
+      <label>Mirror:</label> <input type="checkbox" id="ls_mirror"><br>
+      <label>Symmetric:</label> <input type="checkbox" id="ls_symmetric" checked><br>
+      <label>Dihedral (°):</label> <input type="number" step="0.1" id="ls_dihedral_DEG" value="3"><br>
+      <label>Vertical:</label> <input type="checkbox" id="ls_vertical"><br>
+      <label>Sweep (°):</label> <input type="number" step="0.1" id="ls_sweep_quarter_chord_DEG" value="15"><br>
+      <label>Area (m²):</label> <input type="number" step="0.1" id="ls_surface_area_m2" value="48"><br>
+      <label>Oswald:</label> <input type="number" step="0.01" id="ls_Oswald_factor" value="0.7"><br>
+      <label>MAC (m):</label> <input type="number" step="0.01" id="ls_mean_aerodynamic_chord_m" value="1.35"><br>
+      <label>Stations (η):</label> <input type="text" id="ls_stations_eta" value="0,0.5,1"><br>
+      <label>Gyration Pitch:</label> <input type="number" step="0.1" id="ls_radius_of_giration_pitch_m" value="3.5"><br>
+      <label>Gyration Yaw:</label> <input type="number" step="0.1" id="ls_radius_of_giration_yaw_m" value="4.0"><br>
+      <label>Gyration Roll:</label> <input type="number" step="0.1" id="ls_radius_of_giration_roll_m" value="4.0"><br>
+      <label>Pitch Up (°):</label> <input type="number" step="0.1" id="ls_principal_axis_pitch_up_DEG" value="-2"><br>
+      <label>CoG (x,y,z):</label> <input type="text" id="ls_CoG_pos_xyz_m" value="0,0,0"><br>
+      <label>AC (x,y,z):</label> <input type="text" id="ls_aerodynamic_center_pos_xyz_m" value="2.9,0,0"><br>
+      <button id="ls_submit">Submit</button>
+      <button id="ls_cancel">Cancel</button>
+    </div>
+  </div>
+  

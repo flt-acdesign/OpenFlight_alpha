@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aircraft Geometry Viewer and Editor</title>
+  <link rel="stylesheet" href="styles/style.css">
+  <!-- BabylonJS from CDN -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+</head>
+<body>
+
+  <div id="controls">
+    <input type="file" id="fileInput" accept=".json">
+    <button id="addLiftingSurfaceBtn">Add Lifting Surface</button>
+    <button id="addFuselageBtn">Add Fuselage</button>
+    <button id="downloadJsonBtn">Download JSON</button>
+    <button id="clearAircraft">Clear Aircraft</button>
+    <span id="selectedComponentName">Selected: None</span>
+    <button id="editComponentBtn" disabled>Edit Selected</button>
+  </div>
+
+  <canvas id="renderCanvas"></canvas>
+  <button id="toggleGround" title="Show/Hide Ground">☀</button>
+  
+  <!-- Placeholder for modals (loaded dynamically) -->
+  <div id="modals"></div>
+
+  <!-- JavaScript files (order matters) -->
+  <script src="js/babylon-setup.js"></script>
+  <script src="js/component-creation.js"></script>
+  <script src="js/scene-utils.js"></script>
+  <script src="js/interaction.js"></script>
+  <script src="js/ui-logic.js"></script>
+  <script src="js/modal-loader.js"></script>
+</body>
+</html>

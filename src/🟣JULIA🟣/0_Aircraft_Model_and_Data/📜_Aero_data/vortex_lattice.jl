@@ -7,7 +7,130 @@ using JSON
 # ------------------------------------------------------------------
 # 0) Read the JSON file (aircraft_data.json)
 # ------------------------------------------------------------------
-aircraft = JSON.parsefile("aircraft_data.json")
+aircraft = JSON.parsefile(joinpath(@__DIR__, "aircraft_data.json"))
+
+
+
+# Uncomment and adjust if SurfacePanel is not already defined:
+# using StaticArrays
+# struct SurfacePanel{T}
+#     p1::SVector{3,T}  # lower-left corner
+#     p2::SVector{3,T}  # lower-right corner
+#     p3::SVector{3,T}  # upper-right corner
+#     p4::SVector{3,T}  # upper-left corner
+#     cp::SVector{3,T}  # collocation point (here, the average of the corners)
+# end
+
+using StaticArrays
+
+"""
+    wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc; mirror=false, fc, spacing_s, spacing_c)
+
+Recreates a grid of points and constructs quadrilateral surface panels along a wing (or similar surface).
+
+# Arguments
+- `xle, yle, zle`: Two-element vectors containing the leading-edge coordinates at the root and tip.
+- `chord`: Two-element vector with chord lengths at the root and tip.
+- `theta, phi`: Two-element vectors with the incidence and twist angles (in radians) at the root and tip.
+- `ns`: Number of chordwise divisions.
+- `nc`: Number of spanwise divisions.
+
+# Keyword Arguments
+- `mirror` (Bool): If true, create a mirrored copy (about the y=0 plane).
+- `fc`: An array of two functions (one for root, one for tip) that provide the camber offset as a function of the chordwise coordinate (normalized 0–1).
+- `spacing_s`: A function of the form `(a, b, n) -> vector` that returns the spanwise distribution (from 0 to 1).
+- `spacing_c`: Similar to `spacing_s` but for chordwise distribution.
+
+# Returns
+A tuple `(grid, panels)` where:
+- `grid` is a vector of `SVector{3,Float64}` points (size: (nc+1)*(ns+1)).
+- `panels` is a matrix of `SurfacePanel{Float64}` objects constructed from the grid.
+"""
+function wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc;
+                                mirror=false, fc, spacing_s, spacing_c)
+
+    # Generate normalized spanwise (s) and chordwise (c) coordinates.
+    s_coords = spacing_s(0.0, 1.0, nc + 1)  # spanwise points
+    c_coords = spacing_c(0.0, 1.0, ns + 1)   # chordwise points
+
+    # Build grid points.
+    grid = Vector{SVector{3,Float64}}()
+    for s in s_coords
+        # Interpolate the leading-edge (LE) position.
+        LE = SVector(
+            (1 - s) * xle[1] + s * xle[2],
+            (1 - s) * yle[1] + s * yle[2],
+            (1 - s) * zle[1] + s * zle[2]
+        )
+        # Linearly interpolate chord, incidence (theta), and twist (phi).
+        chord_val = (1 - s) * chord[1] + s * chord[2]
+        theta_val = (1 - s) * theta[1] + s * theta[2]
+        phi_val   = (1 - s) * phi[1]   + s * phi[2]
+
+        for c in c_coords
+            # Determine camber offset using the provided functions.
+            camber = (1 - s) * fc[1](c) + s * fc[2](c)
+            # Local airfoil coordinates (x along chord, z as camber); y = 0.
+            local_pt = SVector(c * chord_val, 0.0, camber)
+            # Rotate to account for incidence and twist.
+            # Incidence: rotation about y-axis.
+            Ry = @SMatrix [ cos(theta_val)  0  sin(theta_val);
+                            0               1  0;
+                           -sin(theta_val)  0  cos(theta_val) ]
+            # Twist: rotation about x-axis.
+            Rx = @SMatrix [ 1  0           0;
+                            0  cos(phi_val) -sin(phi_val);
+                            0  sin(phi_val)  cos(phi_val) ]
+            # Combined rotation.
+            rotated_pt = Ry * (Rx * local_pt)
+            # Global coordinate.
+            global_pt = LE + rotated_pt
+            push!(grid, global_pt)
+        end
+    end
+
+    # Determine grid dimensions.
+    n_span = length(s_coords)   # should equal nc + 1
+    n_chord = length(c_coords)  # should equal ns + 1
+
+    # Build panels from the grid.
+    panels = Matrix{SurfacePanel{Float64}}(undef, n_span - 1, n_chord - 1)
+    # The grid is ordered with the inner loop over chordwise positions.
+    for i in 1:(n_span - 1)
+        for j in 1:(n_chord - 1)
+            idx = (i - 1) * n_chord + j
+            p1 = grid[idx]             # lower-left
+            p2 = grid[idx + 1]         # lower-right
+            p3 = grid[idx + n_chord + 1] # upper-right
+            p4 = grid[idx + n_chord]     # upper-left
+            cp = (p1 + p2 + p3 + p4) / 4  # collocation point as average
+            panels[i, j] = SurfacePanel(p1, p2, p3, p4, cp)
+        end
+    end
+
+    # If mirroring is requested, create a mirrored grid and panels (about y=0).
+    if mirror
+        grid_m = [SVector(p[1], -p[2], p[3]) for p in grid]
+        panels_m = Matrix{SurfacePanel{Float64}}(undef, n_span - 1, n_chord - 1)
+        for i in 1:(n_span - 1)
+            for j in 1:(n_chord - 1)
+                idx = (i - 1) * n_chord + j
+                p1 = grid_m[idx]
+                p2 = grid_m[idx + 1]
+                p3 = grid_m[idx + n_chord + 1]
+                p4 = grid_m[idx + n_chord]
+                cp = (p1 + p2 + p3 + p4) / 4
+                panels_m[i, j] = SurfacePanel(p1, p2, p3, p4, cp)
+            end
+        end
+        # Combine original and mirrored panels (here, stacking them vertically).
+        panels = vcat(panels, panels_m)
+    end
+
+    return grid, panels
+end
+
+
 
 # ------------------------------------------------------------------
 # 1) Utility function to print stability derivatives (unchanged)
