@@ -2,6 +2,10 @@
 # FILE: create_aircraft_model.html
 ###########################################
 
+###########################################
+# FILE: create_aircraft_model.html
+###########################################
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -615,13 +619,14 @@ function clearHighlight(componentNode) {
 # FILE: ui-logic.js
 ###########################################
 
+
+
 // js/ui-logic.js
 
 //////////////////////
 // 1) Global Setup  //
 //////////////////////
 
-// Colors for subsequent lifting surfaces
 var liftingSurfaceColors = [
   new BABYLON.Color3(0.8, 1.0, 0.8),
   new BABYLON.Color3(0.9, 0.8, 1.0),
@@ -650,30 +655,23 @@ window.currentGLBModel = null; // will store the root mesh of any imported GLB
 // 2) GLB Loading Functions  //
 ///////////////////////////////
 
-/**
- * Loads a .glb file into the scene using BABYLON.SceneLoader.ImportMeshAsync.
- * Parents all imported meshes under glbRoot so they persist during JSON re‑render.
- */
 async function loadGLBFile(file) {
   const loadingText = document.getElementById("loadingText");
   loadingText.style.display = "block";
   loadingText.textContent = "Loading 3D Model...";
 
-  // Dispose any previously loaded GLB model
   if (window.currentGLBModel) {
     window.currentGLBModel.dispose();
     window.currentGLBModel = null;
   }
 
   try {
-    // Import the file directly
     const result = await BABYLON.SceneLoader.ImportMeshAsync(
-      "",    // Import all meshes
-      "",    // No root URL
-      file,  // The File object
+      "",    // import all
+      "",    // no root URL
+      file,  // File object
       scene,
       (evt) => {
-        // Show progress
         if (evt.lengthComputable) {
           const progress = ((evt.loaded * 100) / evt.total).toFixed();
           loadingText.textContent = `Loading: ${progress}%`;
@@ -681,24 +679,24 @@ async function loadGLBFile(file) {
       }
     );
 
-    // Assume the first mesh is the model's root for bounding-box calculations
+    // Get first mesh for bounding-box calc
     const model = result.meshes[0];
     window.currentGLBModel = model;
 
-    // Create or reuse glbRoot (no geometry, just a TransformNode)
+    // Create or reuse glbRoot
     if (!window.glbRoot) {
       window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
       window.glbRoot.metadata = { type: "glb", data: {} };
-      window.glbRoot.isPickable = false; // it has no geometry
+      window.glbRoot.isPickable = false;
     }
 
-    // Parent all imported meshes to glbRoot & make them pickable
+    // Parent imported meshes under glbRoot & make pickable
     result.meshes.forEach(mesh => {
       mesh.setParent(window.glbRoot);
       mesh.isPickable = true;
     });
 
-    // Optional: Center & scale the model
+    // Optional center & scale
     const boundingBox = model.getHierarchyBoundingVectors();
     const modelSize = boundingBox.max.subtract(boundingBox.min);
     const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
@@ -710,16 +708,9 @@ async function loadGLBFile(file) {
       -modelCenter.z * scaleFactor
     );
 
-    // Optional: Reset or position camera
-    const cam = scene.getCameraByName("Camera");
-    if (cam) {
-      cam.setTarget(BABYLON.Vector3.Zero());
-      cam.alpha = 0;
-      cam.beta = Math.PI / 2;
-      cam.radius = 10;
-    }
+    // (Removed camera reset code)
 
-    // Force materials to be opaque & double-sided if you like
+    // Force materials if you like
     scene.meshes.forEach(mesh => {
       if (mesh.material) {
         mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
@@ -731,16 +722,9 @@ async function loadGLBFile(file) {
     console.error("Error loading GLB file:", error);
     alert("Error loading 3D model. Please try another file.");
   }
-
-  // Hide loading overlay
   loadingText.style.display = "none";
 }
 
-
-/**
- * Setup the rotation/scale controls for the loaded GLB
- * (applies to glbRoot so entire GLB moves as one unit).
- */
 (function setupGLBControls() {
   document.getElementById("rotateXBtn").addEventListener("click", function() {
     window.glbRoot.rotation.x += Math.PI / 2;
@@ -799,9 +783,6 @@ function fillFuselageModal(data) {
 // 5) Rendering    //
 /////////////////////
 
-/**
- * Helper: check if child is a descendant of parent
- */
 function isDescendantOf(child, parent) {
   let curr = child.parent;
   while (curr) {
@@ -811,12 +792,8 @@ function isDescendantOf(child, parent) {
   return false;
 }
 
-/**
- * Rebuild the JSON-based geometry from aircraftData,
- * disposing old geometry (except .glb) first.
- */
 function renderAircraft() {
-  // Dispose old geometry (but keep ground, axis lines, glbRoot, etc.)
+  // Dispose old geometry but keep ground, axis lines, glbRoot, etc.
   scene.meshes.slice().forEach(function(mesh) {
     if (
       mesh === camera ||
@@ -841,10 +818,10 @@ function renderAircraft() {
     tn.dispose();
   });
 
-  // Recreate a fresh aircraftRoot
+  // Recreate aircraftRoot
   createAircraftRoot();
 
-  // Add back the lifting surfaces & fuselages from aircraftData
+  // Add from aircraftData
   aircraftData.lifting_surfaces.forEach(function(surface) {
     addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors);
   });
@@ -852,12 +829,7 @@ function renderAircraft() {
     addFuselageToScene(fus, aircraftRoot);
   });
 
-  // Optionally reset camera
-  const cam = scene.getCameraByName("Camera");
-  if (cam) {
-    cam.setTarget(BABYLON.Vector3.Zero());
-    cam.radius = 10;
-  }
+  // (Removed camera reset code)
 }
 
 function parseAircraft(jsonText) {
@@ -870,7 +842,7 @@ function parseAircraft(jsonText) {
 /////////////////////////////
 
 (function setupUI() {
-  // ===== Lifting Surface Modal =====
+  // Lifting Surface Modal
   const lsModal = document.getElementById("liftingSurfaceModal");
   const lsSubmitBtn = document.getElementById("ls_submit");
   const lsCancelBtn = document.getElementById("ls_cancel");
@@ -899,23 +871,17 @@ function parseAircraft(jsonText) {
       aerodynamic_center_pos_xyz_m: document.getElementById("ls_aerodynamic_center_pos_xyz_m").value.split(",").map(Number)
     };
 
-    // If editing an existing surface
     if (window.editingType === "lifting_surface" && window.editingObject) {
       Object.assign(window.editingObject, newData);
       window.editingObject = null;
       window.editingType = "";
     } else {
-      // Otherwise, push as new
       aircraftData.lifting_surfaces.push(newData);
     }
 
-    // Hide modal
     lsModal.style.display = "none";
-
-    // Re-render
     renderAircraft();
 
-    // Clear selection if any
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
@@ -930,7 +896,7 @@ function parseAircraft(jsonText) {
     window.editingObject = null;
   });
 
-  // ===== Fuselage Modal =====
+  // Fuselage Modal
   const fusModal = document.getElementById("fuselageModal");
   const fusSubmitBtn = document.getElementById("fus_submit");
   const fusCancelBtn = document.getElementById("fus_cancel");
@@ -943,26 +909,20 @@ function parseAircraft(jsonText) {
       nose_position: document.getElementById("fus_nose_position").value.split(",").map(Number)
     };
 
-    // If editing an existing fuselage
     if (window.editingType === "fuselage" && window.editingObject) {
       Object.assign(window.editingObject, newData);
       window.editingObject = null;
       window.editingType = "";
     } else {
-      // Otherwise, push as new
       if (!aircraftData.fuselages) {
         aircraftData.fuselages = [];
       }
       aircraftData.fuselages.push(newData);
     }
 
-    // Hide modal
     fusModal.style.display = "none";
-
-    // Re-render
     renderAircraft();
 
-    // Clear selection if any
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
@@ -977,7 +937,7 @@ function parseAircraft(jsonText) {
     window.editingObject = null;
   });
 
-  // ===== "Add" Buttons =====
+  // "Add" Buttons
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
     window.editingType = "";
     window.editingObject = null;
@@ -989,10 +949,10 @@ function parseAircraft(jsonText) {
     document.getElementById("fuselageModal").style.display = "block";
   });
 
-  // ===== "Edit Selected" Button =====
+  // "Edit Selected" Button
   const editBtn = document.getElementById("editComponentBtn");
   editBtn.addEventListener("pointerdown", function(e) {
-    e.stopPropagation(); // Prevent pointer logic from interfering
+    e.stopPropagation();
   });
   editBtn.addEventListener("click", function() {
     if (!window.selectedComponent) return;
@@ -1012,7 +972,7 @@ function parseAircraft(jsonText) {
     }
   });
 
-  // ===== JSON File Input =====
+  // JSON File Input
   const fileInput = document.getElementById("fileInput");
   fileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
@@ -1028,7 +988,7 @@ function parseAircraft(jsonText) {
     reader.readAsText(file);
   });
 
-  // ===== Download JSON =====
+  // Download JSON
   document.getElementById("downloadJsonBtn").addEventListener("click", function() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
       JSON.stringify(aircraftData, null, 2)
@@ -1041,33 +1001,26 @@ function parseAircraft(jsonText) {
     document.body.removeChild(dlAnchor);
   });
 
-  // ===== Clear Aircraft =====
+  // Clear Aircraft
   document.getElementById("clearAircraft").addEventListener("click", function() {
-    // Clear only JSON geometry; glbRoot remains intact
     aircraftData.lifting_surfaces = [];
     aircraftData.fuselages = [];
     renderAircraft();
-    // Clear selection
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
       window.selectedComponent = null;
     }
     clearSelectedNameDisplay();
-    // Optionally reset camera
-    const cam = scene.getCameraByName("Camera");
-    if (cam) {
-      cam.setTarget(BABYLON.Vector3.Zero());
-      cam.radius = 10;
-    }
+    // (Removed camera reset code)
   });
 
-  // ===== Toggle Ground =====
+  // Toggle Ground
   document.getElementById("toggleGround").addEventListener("click", function() {
     ground.isVisible = !ground.isVisible;
   });
 
-  // ===== GLB File Input =====
+  // GLB File Input
   const glbFileInput = document.getElementById("glbFileInput");
   glbFileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
@@ -1084,14 +1037,12 @@ function parseAircraft(jsonText) {
 // 7) Helper Functions //
 /////////////////////////
 
-/** Clears the selected name display */
 function clearSelectedNameDisplay() {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: None";
   document.getElementById("editComponentBtn").disabled = true;
 }
 
-/** Updates the selected name display & toggles Edit button */
 function updateSelectedNameDisplay(name) {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: " + name;
@@ -1099,12 +1050,9 @@ function updateSelectedNameDisplay(name) {
   document.getElementById("editComponentBtn").disabled = isNoneOrGround;
 }
 
-
+// Optional: same openEditModalForSelected if you needed
 function openEditModalForSelected() {
-  // If no selection, do nothing
   if (!window.selectedComponent) return;
-  
-  // Reuse the same logic from your "Edit Selected" button:
   const info = getMetadata(window.selectedComponent);
   if (info && info.metadata && info.metadata.data) {
     if (info.metadata.type === "lifting_surface") {
