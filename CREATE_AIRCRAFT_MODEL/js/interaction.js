@@ -40,7 +40,7 @@ scene.onPointerObservable.add(function (pointerInfo) {
       const isClick = dist < 5;
       pointerDownPos = null;
 
-      // Right-click => pivot camera only
+    
 // Right-click => pivot camera only
 if (pointerInfo.event.button === 2) {
   if (pointerInfo.pickInfo.hit) {

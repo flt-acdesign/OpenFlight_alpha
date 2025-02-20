@@ -26,11 +26,11 @@ function initBabylon() {
   scene.clearColor = new BABYLON.Color4(153 / 255, 204 / 255, 1, 1);
 
   // 3) Fog: linear mode, from 200 to 300
-  scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR;
-  scene.fogStart  = 200.0;
-  scene.fogEnd    = 300.0;
+  scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR
+  scene.fogStart  = 40.0;
+  scene.fogEnd    = 340.0;
   scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
-  scene.fogDensity = 0.58; // not used in FOGMODE_LINEAR but can stay for reference
+  scene.fogDensity = 0.01258; // not used in FOGMODE_LINEAR but can stay for reference
 
   // 4) Create ArcRotateCamera
   camera = new BABYLON.ArcRotateCamera(
@@ -137,34 +137,47 @@ function initBabylon() {
   // JSON/GLB loading in other files (render_aircraft.js, load_glb_file.js).
   // -----------------------------------------------------------
 
-  // 6) Build ground: 300 x 300 (smaller for clarity or 3000x3000 if you prefer)
-  ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 500, height: 500 }, scene);
-  const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-  groundMat.alpha = 0.5;
+// 6) Build ground: 500 x 500
+ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 500, height: 500 }, scene);
+const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+groundMat.alpha = 0.5;
 
-  // Checkerboard dynamic texture
-  const dt = new BABYLON.DynamicTexture("groundDT", { width: 512, height: 512 }, scene, false);
-  const ctx = dt.getContext();
+// Checkerboard dynamic texture with higher resolution
+const textureSize = 2048; // Increase texture resolution for crispness
+const dt = new BABYLON.DynamicTexture("groundDT", { width: textureSize, height: textureSize }, scene, false);
+const ctx = dt.getContext();
 
-  const squaresCount = 60; // total squares along one side
-  const tileSize = 2048 / squaresCount;
-  for (let i = 0; i < squaresCount; i++) {
-    for (let j = 0; j < squaresCount; j++) {
-      ctx.fillStyle = (i + j) % 2 === 0 ? "#99ccff" : "#66b3ff";
-      ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
-    }
+// Number of tiles along one side
+const squaresCount = 10 // Each tile will be 10x10 units (500 / 50 = 10)
+const tileSize = textureSize / squaresCount; // Calculate tile size based on texture resolution
+
+// Draw checkerboard pattern
+for (let i = 0; i < squaresCount; i++) {
+  for (let j = 0; j < squaresCount; j++) {
+    ctx.fillStyle = (i + j) % 2 === 0 ? "#99ccff" : "#66b3ff";
+    ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
   }
-  dt.update();
+}
+dt.update();
 
-  groundMat.diffuseTexture = dt;
-  ground.material = groundMat;
-  ground.isPickable = true;
-  ground.receiveShadows = true;
+// Apply texture to ground material
+groundMat.diffuseTexture = dt;
+groundMat.diffuseTexture.uScale = squaresCount; // Tile the texture horizontally
+groundMat.diffuseTexture.vScale = squaresCount; // Tile the texture vertically
+groundMat.diffuseTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE; // Enable wrapping
+groundMat.diffuseTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE; // Enable wrapping
+groundMat.diffuseTexture.anisotropicFilteringLevel = 16; // Improve texture quality
+groundMat.diffuseTexture.samplingMode = BABYLON.Texture.NEAREST_SAMPLINGMODE; // Prevent blurring
+
+// Assign material to ground
+ground.material = groundMat;
+ground.isPickable = true;
+ground.receiveShadows = true;
 
 
 
 
-  // --- Add Coordinate Axes and Origin Box ---
+// --- Add Coordinate Axes and Origin Box ---
   // Red line for X-axis
   var axisX = BABYLON.MeshBuilder.CreateLines("axisX", {
     points: [new BABYLON.Vector3(-40, 0, 0), new BABYLON.Vector3(40, 0, 0)]
@@ -183,11 +196,36 @@ var axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", {
 }, scene);
 axisZ.color = new BABYLON.Color3(0, 0, 1);
 
-// A wireframe box of size 1 centered at the origin
-var originBox = BABYLON.MeshBuilder.CreateBox("originBox", { size: 1 }, scene);
+
+// Reference box at origin
+// Store it as a global so it can be updated later.
+window.originBox = BABYLON.MeshBuilder.CreateBox("originBox", { size: 1 }, scene);
+
+// Create a material for the box
 var originBoxMat = new BABYLON.StandardMaterial("originBoxMat", scene);
-originBoxMat.wireframe = true;
-originBox.material = originBoxMat;
+
+// Set the diffuse color to pink (RGB: 1, 0.4, 0.7)
+originBoxMat.diffuseColor = new BABYLON.Color3(1, 0.4, 0.7);
+
+// Set the alpha (transparency) to 0.4
+originBoxMat.alpha = 0.4;
+
+// Enable transparency in the material using alpha blending
+originBoxMat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+
+// Enable a depth pre-pass to ensure proper blending of the transparent surfaces
+originBoxMat.needDepthPrePass = true;
+
+// Disable backface culling so the box is visible from all angles
+originBoxMat.backFaceCulling = false;
+
+// Assign the material to the box
+window.originBox.material = originBoxMat;
+
+// Optionally, if you need to adjust how transparency is rendered, you can tweak engine settings.
+// For example, the following settings help with blending but are not always required:
+ scene.autoClear = false;
+ scene.autoClearDepthAndStencil = false;
 
 
 
@@ -202,14 +240,35 @@ originBox.material = originBoxMat;
   gizmoManager.rotationGizmoEnabled = false;
   gizmoManager.scaleGizmoEnabled = false;
 
-  // 9) Large sphere that won't be disposed or shadowed
-  const sphere = BABYLON.MeshBuilder.CreateSphere(CAMERA_SPHERE_NAME, { diameter: 2000 }, scene);
-  sphere.receiveShadows = false; // do not receive shadows
-  const sphereMat = new BABYLON.StandardMaterial("cameraSphereMat", scene);
-  sphereMat.diffuseColor = new BABYLON.Color3(0, 1, 1);  // cyan
-  sphereMat.backFaceCulling = false;                    // see inside
-  sphere.material = sphereMat;
+
+
+
+  // 9) Large sphere that won't be disposed or shadowed (Sky Sphere)
+  const sphere = BABYLON.MeshBuilder.CreateSphere(CAMERA_SPHERE_NAME, { diameter: 600 }, scene);
+  sphere.receiveShadows = false;
   sphere.isPickable = false;
+
+  // Create a dynamic texture for a vertical gradient:
+  const skyDt = new BABYLON.DynamicTexture("skyTexture", { width: 512, height: 256 }, scene, false);
+  const skyCtx = skyDt.getContext();
+  // Create a vertical gradient (top to bottom)
+  const grd = skyCtx.createLinearGradient(0, 0, 0, 256);
+
+  grd.addColorStop(0, "#003366");     // Top: marine blue
+  grd.addColorStop(0.5, "#ffffff");   // Equator: white (cloud-like)
+  grd.addColorStop(1, "#ffff66");   // Bottom: light sky blue
+  skyCtx.fillStyle = grd;
+  skyCtx.fillRect(0, 0, 512, 256);
+  skyDt.update();
+
+  // Create and assign a material with the custom texture:
+  const sphereMat = new BABYLON.StandardMaterial("cameraSphereMat", scene);
+  // Use emissiveTexture so the sphere is self-illuminated
+  sphereMat.emissiveTexture = skyDt;
+  sphereMat.specularColor = new BABYLON.Color3(0, 0, 0);
+  sphereMat.backFaceCulling = false;   // Allows seeing inside the sphere
+  sphereMat.disableLighting = true;    // Ensures the texture shows as-is
+  sphere.material = sphereMat;
 
   // Move sphere with camera each frame
   scene.onBeforeRenderObservable.add(() => {

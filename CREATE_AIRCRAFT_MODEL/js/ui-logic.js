@@ -349,3 +349,18 @@ function openEditModalForSelected() {
 }
 
 
+
+
+  // Update Origin Box Size
+  document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
+    var newSize = parseFloat(document.getElementById("boxSizeInput").value);
+    if (isNaN(newSize) || newSize <= 0) {
+         alert("Please enter a positive number for box size.");
+         return;
+    }
+    if(window.originBox) {
+         // Since the box was originally created with size 1,
+         // setting the scaling to (newSize, newSize, newSize) updates its effective size.
+         window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
+    }
+  });
