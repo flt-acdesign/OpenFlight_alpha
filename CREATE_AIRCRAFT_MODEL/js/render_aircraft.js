@@ -3,20 +3,19 @@
 function renderAircraft() {
     // 1) Dispose old geometry but keep ground, axis lines, camera, etc.
     scene.meshes.slice().forEach(function(mesh) {
-      // Skip if it's the main camera, or ground, or the camera sphere,
-      // or belongs to glbRoot, or is the aircraftRoot itself
-      if (
-        mesh === camera ||
-        mesh.name.startsWith("axis") ||
-        mesh === ground ||
-        mesh.name === CAMERA_SPHERE_NAME ||
-        (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) ||
-        mesh === aircraftRoot
-      ) {
-        return; // don't dispose
-      }
-      mesh.dispose();
-    });
+        if (
+          mesh === camera ||
+          mesh.name.startsWith("axis") ||
+          mesh === ground ||
+          mesh.name === CAMERA_SPHERE_NAME ||
+          (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) ||
+          mesh === aircraftRoot ||
+          mesh.name === "originBox"  // Prevent disposal of the origin cube
+        ) {
+          return; // don't dispose
+        }
+        mesh.dispose();
+      });
   
     // Also dispose old transform nodes that are children of the old aircraftRoot
     scene.transformNodes.slice().forEach(function(tn) {

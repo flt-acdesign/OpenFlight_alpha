@@ -32,25 +32,35 @@ function createFuselageNode(name, diameter, length, nosePosition) {
   parent.name = name + "_transform";
   parent.position = new BABYLON.Vector3(...nosePosition);
   const color = new BABYLON.Color3(1.0, 0.7, 0.3);
+
   const cylinder = BABYLON.MeshBuilder.CreateCylinder(name, {
     height: length,
     diameter: diameter,
     tessellation: 32
   }, scene);
+
+  window.shadowGenerator.addShadowCaster(cylinder, true);
+
   cylinder.rotation.z = Math.PI / 2;
   cylinder.position = new BABYLON.Vector3(length/2, 0, 0);
   cylinder.isPickable = true;
   cylinder.parent = parent;
+
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.alpha = 0.8;
+  mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+  mat.needDepthPrePass = true;
+  mat.forceDepthWrite = true; // <-- added to ensure proper shadow casting
   cylinder.material = mat;
+
   parent.metadata = {
     type: "fuselage",
     data: null,
     originalColor: color
   };
   parent.isPickable = false;
+
   return parent;
 }
 

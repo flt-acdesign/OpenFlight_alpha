@@ -361,25 +361,34 @@ function createFuselageNode(name, diameter, length, nosePosition) {
   parent.name = name + "_transform";
   parent.position = new BABYLON.Vector3(...nosePosition);
   const color = new BABYLON.Color3(1.0, 0.7, 0.3);
+
   const cylinder = BABYLON.MeshBuilder.CreateCylinder(name, {
     height: length,
     diameter: diameter,
     tessellation: 32
   }, scene);
+
+  window.shadowGenerator.addShadowCaster(cylinder, true);
+
   cylinder.rotation.z = Math.PI / 2;
   cylinder.position = new BABYLON.Vector3(length/2, 0, 0);
   cylinder.isPickable = true;
   cylinder.parent = parent;
+
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.alpha = 0.8;
+ mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+ mat.needDepthPrePass = true; 
   cylinder.material = mat;
+
   parent.metadata = {
     type: "fuselage",
     data: null,
     originalColor: color
   };
   parent.isPickable = false;
+
   return parent;
 }
 
@@ -496,17 +505,21 @@ scene.onPointerObservable.add(function (pointerInfo) {
       pointerDownPos = null;
 
       // Right-click => pivot camera only
-      if (pointerInfo.event.button === 2) {
-        if (pointerInfo.pickInfo.hit) {
-          camera.target = pointerInfo.pickInfo.pickedPoint;
-          if (pointerInfo.pickInfo.pickedMesh &&
-              pointerInfo.pickInfo.pickedMesh.name === "ground") {
-            clearSelectedNameDisplay();
-            updateSelectedNameDisplay("Ground");
-          }
-        }
-        return;
-      }
+// Right-click => pivot camera only
+if (pointerInfo.event.button === 2) {
+  if (pointerInfo.pickInfo.hit) {
+    const pickedMesh = pointerInfo.pickInfo.pickedMesh;
+    // Only re-center if it's not the ground
+   if (pickedMesh && pickedMesh.name !== "ground") {
+     camera.target = pointerInfo.pickInfo.pickedPoint;
+   } else {
+     // If user right-clicked ground, do nothing
+     clearSelectedNameDisplay();
+     updateSelectedNameDisplay("Ground");
+   }
+  }
+  return;
+}
 
       if (!isClick) return;
 

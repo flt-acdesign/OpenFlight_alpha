@@ -41,17 +41,21 @@ scene.onPointerObservable.add(function (pointerInfo) {
       pointerDownPos = null;
 
       // Right-click => pivot camera only
-      if (pointerInfo.event.button === 2) {
-        if (pointerInfo.pickInfo.hit) {
-          camera.target = pointerInfo.pickInfo.pickedPoint;
-          if (pointerInfo.pickInfo.pickedMesh &&
-              pointerInfo.pickInfo.pickedMesh.name === "ground") {
-            clearSelectedNameDisplay();
-            updateSelectedNameDisplay("Ground");
-          }
-        }
-        return;
-      }
+// Right-click => pivot camera only
+if (pointerInfo.event.button === 2) {
+  if (pointerInfo.pickInfo.hit) {
+    const pickedMesh = pointerInfo.pickInfo.pickedMesh;
+    // Only re-center if it's not the ground
+   if (pickedMesh && pickedMesh.name !== "ground") {
+     camera.target = pointerInfo.pickInfo.pickedPoint;
+   } else {
+     // If user right-clicked ground, do nothing
+     clearSelectedNameDisplay();
+     updateSelectedNameDisplay("Ground");
+   }
+  }
+  return;
+}
 
       if (!isClick) return;
 

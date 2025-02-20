@@ -161,6 +161,38 @@ function initBabylon() {
   ground.isPickable = true;
   ground.receiveShadows = true;
 
+
+
+
+  // --- Add Coordinate Axes and Origin Box ---
+  // Red line for X-axis
+  var axisX = BABYLON.MeshBuilder.CreateLines("axisX", {
+    points: [new BABYLON.Vector3(-40, 0, 0), new BABYLON.Vector3(40, 0, 0)]
+}, scene);
+axisX.color = new BABYLON.Color3(1, 0, 0);
+
+// Green line for Y-axis
+var axisY = BABYLON.MeshBuilder.CreateLines("axisY", {
+    points: [new BABYLON.Vector3(0, -40, 0), new BABYLON.Vector3(0, 40, 0)]
+}, scene);
+axisY.color = new BABYLON.Color3(0, 1, 0);
+
+// Blue line for Z-axis
+var axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", {
+    points: [new BABYLON.Vector3(0, 0, -40), new BABYLON.Vector3(0, 0, 40)]
+}, scene);
+axisZ.color = new BABYLON.Color3(0, 0, 1);
+
+// A wireframe box of size 1 centered at the origin
+var originBox = BABYLON.MeshBuilder.CreateBox("originBox", { size: 1 }, scene);
+var originBoxMat = new BABYLON.StandardMaterial("originBoxMat", scene);
+originBoxMat.wireframe = true;
+originBox.material = originBoxMat;
+
+
+
+
+
   // 7) Highlight layer for selection
   window.hl = new BABYLON.HighlightLayer("hl1", scene);
 
