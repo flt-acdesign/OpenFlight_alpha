@@ -60,3 +60,27 @@ function setTranslucencyMode(enabled) {
     });
   }
 }
+
+
+/**
+ * Smoothly transition camera.target to newTarget over 'durationInSeconds'.
+ */
+function smoothTransitionToTarget(newTarget, camera, scene, durationInSeconds) {
+  const frameRate = 60;
+  const totalFrames = durationInSeconds * frameRate;
+
+  const animCamTarget = new BABYLON.Animation(
+    "animCam",
+    "target",
+    frameRate,
+    BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+    BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+  );
+
+  const keys = [];
+  keys.push({ frame: 0, value: camera.target });
+  keys.push({ frame: totalFrames, value: newTarget });
+  animCamTarget.setKeys(keys);
+
+  scene.beginDirectAnimation(camera, [animCamTarget], 0, totalFrames, false);
+}

@@ -30,79 +30,7 @@ window.editingObject = null;
 window.selectedComponent = null;
 window.currentGLBModel = null; // will store the root mesh of any imported GLB
 
-///////////////////////////////
-// 2) GLB Loading Functions  //
-///////////////////////////////
 
-async function loadGLBFile(file) {
-  const loadingText = document.getElementById("loadingText");
-  loadingText.style.display = "block";
-  loadingText.textContent = "Loading 3D Model...";
-
-  if (window.currentGLBModel) {
-    window.currentGLBModel.dispose();
-    window.currentGLBModel = null;
-  }
-
-  try {
-    const result = await BABYLON.SceneLoader.ImportMeshAsync(
-      "",    // import all
-      "",    // no root URL
-      file,  // File object
-      scene,
-      (evt) => {
-        if (evt.lengthComputable) {
-          const progress = ((evt.loaded * 100) / evt.total).toFixed();
-          loadingText.textContent = `Loading: ${progress}%`;
-        }
-      }
-    );
-
-    // Get first mesh for bounding-box calc
-    const model = result.meshes[0];
-    window.currentGLBModel = model;
-
-    // Create or reuse glbRoot
-    if (!window.glbRoot) {
-      window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
-      window.glbRoot.metadata = { type: "glb", data: {} };
-      window.glbRoot.isPickable = false;
-    }
-
-    // Parent imported meshes under glbRoot & make pickable
-    result.meshes.forEach(mesh => {
-      mesh.setParent(window.glbRoot);
-      mesh.isPickable = true;
-    });
-
-    // Optional center & scale
-    const boundingBox = model.getHierarchyBoundingVectors();
-    const modelSize = boundingBox.max.subtract(boundingBox.min);
-    const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
-    const scaleFactor = 5 / Math.max(modelSize.x, modelSize.y, modelSize.z);
-    model.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-    model.position = new BABYLON.Vector3(
-      -modelCenter.x * scaleFactor,
-      -modelCenter.y * scaleFactor,
-      -modelCenter.z * scaleFactor
-    );
-
-    // (Removed camera reset code)
-
-    // Force materials if you like
-    scene.meshes.forEach(mesh => {
-      if (mesh.material) {
-        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
-        mesh.material.backFaceCulling = false;
-      }
-    });
-
-  } catch (error) {
-    console.error("Error loading GLB file:", error);
-    alert("Error loading 3D model. Please try another file.");
-  }
-  loadingText.style.display = "none";
-}
 
 (function setupGLBControls() {
   document.getElementById("rotateXBtn").addEventListener("click", function() {
@@ -181,45 +109,7 @@ function isDescendantOf(child, parent) {
   return false;
 }
 
-function renderAircraft() {
-  // Dispose old geometry but keep ground, axis lines, glbRoot, etc.
-  scene.meshes.slice().forEach(function(mesh) {
-    if (
-      mesh === camera ||
-      mesh.name.startsWith("axis") ||
-      mesh === ground ||
-      (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) ||
-      mesh === aircraftRoot
-    ) {
-      return;
-    }
-    mesh.dispose();
-  });
 
-  scene.transformNodes.slice().forEach(function(tn) {
-    if (
-      tn === aircraftRoot ||
-      tn === window.glbRoot ||
-      (window.glbRoot && isDescendantOf(tn, window.glbRoot))
-    ) {
-      return;
-    }
-    tn.dispose();
-  });
-
-  // Recreate aircraftRoot
-  createAircraftRoot();
-
-  // Add from aircraftData
-  aircraftData.lifting_surfaces.forEach(function(surface) {
-    addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors);
-  });
-  aircraftData.fuselages.forEach(function(fus) {
-    addFuselageToScene(fus, aircraftRoot);
-  });
-
-  // (Removed camera reset code)
-}
 
 function parseAircraft(jsonText) {
   aircraftData = JSON.parse(jsonText);
