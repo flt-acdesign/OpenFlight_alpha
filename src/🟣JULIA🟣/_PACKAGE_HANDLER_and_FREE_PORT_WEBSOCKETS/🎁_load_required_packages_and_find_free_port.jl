@@ -36,7 +36,8 @@ required_packages = [
     "CSV",         # CSV file handling
     "DataFrames",  # Tabular data manipulation
     "StaticArrays",# Fixed-size arrays for performance
-    "YAML"         # YAML file parsing and generation
+    "YAML",         # YAML file parsing and generation
+    "VortexLattice" # Vortex lattice method for aerodynamics, only used for the aero model creation, not in the simulator
 ]
 
 # Iterate through required packages and ensure they're installed

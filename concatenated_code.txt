@@ -6,23 +6,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Aircraft Geometry Viewer and Editor</title>
+  <title>Aircraft Geometry Viewer & GLB Loader</title>
   <link rel="stylesheet" href="styles/style.css">
+  <!-- BabylonJS CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
+  <!-- The top bar with all controls -->
+  <div id="controls">
+    <input type="file" id="fileInput" accept=".json">
+    <button id="addLiftingSurfaceBtn">Add Lifting Surface</button>
+    <button id="addFuselageBtn">Add Fuselage</button>
+    <button id="downloadJsonBtn">Download JSON</button>
+    <button id="clearAircraft">Clear Aircraft</button>
+    <span id="selectedComponentName">Selected: None</span>
+    <button id="editComponentBtn" disabled>Edit Selected</button>
+    <input type="file" id="glbFileInput" accept=".glb" title="Load .glb model" style="margin-left:20px;">
+    <!-- GLB Manipulation Controls -->
+    <button id="rotateXBtn">Rotate X 90°</button>
+    <button id="rotateYBtn">Rotate Y 90°</button>
+    <button id="rotateZBtn">Rotate Z 90°</button>
+    <label>GLB Scale:</label>
+    <input type="number" id="glbScaleInput" value="1" step="0.1">
+    <button id="applyGlbScaleBtn">Apply Scale</button>
+  </div>
+  
 
-  <!-- Existing top bar, canvas, etc. -->
-  <div id="controls"> ... </div>
+  <!-- Canvas for BabylonJS -->
   <canvas id="renderCanvas"></canvas>
-  <button id="toggleGround">☀</button>
 
-  <!-- Insert our modals directly here -->
+  <!-- Toggle ground button -->
+  <button id="toggleGround" title="Show/Hide Ground">☀</button>
+
+  <!-- "Loading 3D Model..." overlay (used for GLB loading feedback) -->
+  <div id="loadingText">Loading 3D Model...</div>
+
+  <!-- Inline modals for Lifting Surfaces & Fuselages -->
   <div id="liftingSurfaceModal" class="modal">
     <div class="modal-content">
       <h3>Add / Edit Lifting Surface</h3>
-      <label>Name:</label> <input type="text" id="ls_name"><br>
-      <!-- (All your lifting surface fields) -->
+      <label>Name:</label> <input type="text" id="ls_name" value="wing"><br>
+      <label>Mass (kg):</label> <input type="number" id="ls_mass_kg" value="600"><br>
+      <label>Root LE (x,y,z):</label> <input type="text" id="ls_root_LE" value="0,0,0"><br>
+      <label>AR:</label> <input type="number" step="0.01" id="ls_AR" value="8.33"><br>
+      <label>TR:</label> <input type="number" step="0.01" id="ls_TR" value="0.6"><br>
+      <label>Mirror:</label> <input type="checkbox" id="ls_mirror"><br>
+      <label>Symmetric:</label> <input type="checkbox" id="ls_symmetric" checked><br>
+      <label>Dihedral (°):</label> <input type="number" step="0.1" id="ls_dihedral_DEG" value="3"><br>
+      <label>Vertical:</label> <input type="checkbox" id="ls_vertical"><br>
+      <label>Sweep (°):</label> <input type="number" step="0.1" id="ls_sweep_quarter_chord_DEG" value="15"><br>
+      <label>Area (m²):</label> <input type="number" step="0.1" id="ls_surface_area_m2" value="48"><br>
+      <label>Oswald:</label> <input type="number" step="0.01" id="ls_Oswald_factor" value="0.7"><br>
+      <label>MAC (m):</label> <input type="number" step="0.01" id="ls_mean_aerodynamic_chord_m" value="1.35"><br>
+      <label>Stations (η):</label> <input type="text" id="ls_stations_eta" value="0,0.5,1"><br>
+      <label>Gyration Pitch:</label> <input type="number" step="0.1" id="ls_radius_of_giration_pitch_m" value="3.5"><br>
+      <label>Gyration Yaw:</label> <input type="number" step="0.1" id="ls_radius_of_giration_yaw_m" value="4.0"><br>
+      <label>Gyration Roll:</label> <input type="number" step="0.1" id="ls_radius_of_giration_roll_m" value="4.0"><br>
+      <label>Pitch Up (°):</label> <input type="number" step="0.1" id="ls_principal_axis_pitch_up_DEG" value="-2"><br>
+      <label>CoG (x,y,z):</label> <input type="text" id="ls_CoG_pos_xyz_m" value="0,0,0"><br>
+      <label>AC (x,y,z):</label> <input type="text" id="ls_aerodynamic_center_pos_xyz_m" value="2.9,0,0"><br>
       <button id="ls_submit">Submit</button>
       <button id="ls_cancel">Cancel</button>
     </div>
@@ -31,15 +74,16 @@
   <div id="fuselageModal" class="modal">
     <div class="modal-content">
       <h3>Add / Edit Fuselage</h3>
-      <label>Name:</label> <input type="text" id="fus_name"><br>
-      <!-- (All your fuselage fields) -->
+      <label>Name:</label> <input type="text" id="fus_name" value="fus1"><br>
+      <label>Diameter:</label> <input type="number" step="0.1" id="fus_diameter" value="2.5"><br>
+      <label>Length:</label> <input type="number" step="0.1" id="fus_length" value="15.0"><br>
+      <label>Nose (x,y,z):</label> <input type="text" id="fus_nose_position" value="0,0,0"><br>
       <button id="fus_submit">Submit</button>
       <button id="fus_cancel">Cancel</button>
     </div>
   </div>
 
-  <!-- Optional: we don’t need <div id="modals"></div> anymore, or modal-loader.js -->
-  <!-- Existing scripts for babylon-setup, scene-utils, etc. -->
+  <!-- Scripts (order is important) -->
   <script src="js/babylon-setup.js"></script>
   <script src="js/component-creation.js"></script>
   <script src="js/interaction.js"></script>
@@ -54,86 +98,99 @@
 
 // js/babylon-setup.js
 
-// Global variables (attached to window)
+// Global references.
 window.canvas = document.getElementById("renderCanvas");
 window.engine = null;
 window.scene = null;
+window.camera = null;
+window.light = null;
+window.dirLight = null;
+window.ground = null;
+window.gizmoManager = null;
+window.aircraftRoot = null;
+window.glbRoot = null; // Parent node for GLB models
 
 function initBabylon() {
   engine = new BABYLON.Engine(canvas, true);
   scene = new BABYLON.Scene(engine);
   scene.clearColor = new BABYLON.Color3(0.9, 0.9, 0.97);
 
-  // Create camera
-  window.camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 3, 60, new BABYLON.Vector3(10, 5, 0), scene);
+  camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI/2, Math.PI/3, 60, new BABYLON.Vector3(10,5,0), scene);
   camera.attachControl(canvas, true);
   camera.inputs.remove(camera.inputs.attached["pointers"]);
-  var pointerInput = new BABYLON.ArcRotateCameraPointersInput();
+  const pointerInput = new BABYLON.ArcRotateCameraPointersInput();
   pointerInput.buttons = [0];
   camera.inputs.add(pointerInput);
   camera.inertia = 0;
+  camera.lowerRadiusLimit = 0.1;
+  camera.upperRadiusLimit = 1000;
 
-  // Create light
-  window.light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+  light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
+  light.intensity = 0.8;
+  dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,-1,1), scene);
+  dirLight.intensity = 0.3;
 
-  // Create ground with a checkerboard texture
-  window.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
-  var groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+  ground = BABYLON.MeshBuilder.CreateGround("ground", {width:100, height:100}, scene);
+  const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
   groundMat.alpha = 0.5;
-  var dt = new BABYLON.DynamicTexture("dt", { width: 512, height: 512 }, scene, false);
-  var ctx = dt.getContext();
-  var size = 64;
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      ctx.fillStyle = ((i+j) % 2 === 0) ? "#99ccff" : "#66b3ff";
-      ctx.fillRect(i*size, j*size, size, size);
+  const dt = new BABYLON.DynamicTexture("groundDT", {width:512, height:512}, scene, false);
+  const ctx = dt.getContext();
+  const tileSize = 64;
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      ctx.fillStyle = ((i+j)%2===0) ? "#99ccff" : "#66b3ff";
+      ctx.fillRect(i*tileSize, j*tileSize, tileSize, tileSize);
     }
   }
   dt.update();
   groundMat.diffuseTexture = dt;
   ground.material = groundMat;
+  ground.isPickable = true;
 
-  // Create global axis lines
-  var axisX = BABYLON.MeshBuilder.CreateLines("axisX", { points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(10,0,0)] }, scene);
+  // Optional axis lines.
+  const axisX = BABYLON.MeshBuilder.CreateLines("axisX", {points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(10,0,0)]}, scene);
   axisX.color = new BABYLON.Color3(1,0,0);
-  var axisY = BABYLON.MeshBuilder.CreateLines("axisY", { points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,10,0)] }, scene);
+  const axisY = BABYLON.MeshBuilder.CreateLines("axisY", {points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,10,0)]}, scene);
   axisY.color = new BABYLON.Color3(0,1,0);
-  var axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", { points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,0,10)] }, scene);
+  const axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", {points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,0,10)]}, scene);
   axisZ.color = new BABYLON.Color3(0,0,1);
 
-  // Create a glow layer for highlighting
-  window.glowLayer = new BABYLON.GlowLayer("glow", scene);
+  const glowLayer = new BABYLON.GlowLayer("glow", scene);
   glowLayer.intensity = 0.8;
 
-  // Setup GizmoManager for object manipulation
-  window.gizmoManager = new BABYLON.GizmoManager(scene);
+  gizmoManager = new BABYLON.GizmoManager(scene);
   gizmoManager.positionGizmoEnabled = true;
   gizmoManager.rotationGizmoEnabled = false;
   gizmoManager.scaleGizmoEnabled = false;
 
-  // Create the Aircraft Root Transform node
   createAircraftRoot();
 
-  // Start the render loop
-  engine.runRenderLoop(function() {
+  if (!window.glbRoot) {
+    window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
+    // Make glbRoot pickable and set its metadata.
+    window.glbRoot.isPickable = true;
+    window.glbRoot.metadata = { type: "glb", data: {} };
+  }
+
+  engine.runRenderLoop(function(){
     scene.render();
   });
-  window.addEventListener("resize", function() {
+
+  window.addEventListener("resize", function(){
     engine.resize();
   });
 }
 
-initBabylon();
-
-// Global function to create (or re-create) the aircraft root transform node.
 function createAircraftRoot() {
   if (window.aircraftRoot) {
     window.aircraftRoot.dispose();
   }
   window.aircraftRoot = new BABYLON.TransformNode("aircraftRoot", scene);
-  // Rotate -90° about the X-axis so that wings become horizontal.
-  window.aircraftRoot.rotation.x = -Math.PI / 2;
+  window.aircraftRoot.rotation.x = -Math.PI/2;
+  window.aircraftRoot.renderingGroupId = 2; // JSON geometry rendered on top
 }
+
+initBabylon();
 
 ###########################################
 # FILE: component-creation.js
@@ -345,246 +402,66 @@ scene.onPointerObservable.add(function(pointerInfo) {
 });
 
 ###########################################
-# FILE: modal-loader.js
-###########################################
-
-// js/modal-loader.js
-
-/**
- * Fetch the contents of a modal HTML file.
- * Throws an Error if the response is not OK (status >= 400).
- */
-function loadModal(url) {
-  return fetch(url)
-      .then(response => {
-          if (!response.ok) {
-              throw new Error(`Failed to fetch "${url}". HTTP status: ${response.status}`);
-          }
-          return response.text();
-      });
-}
-
-/**
-* After loading modal HTML snippets, insert them into #modals,
-* then attach event listeners (including the "Add Lifting Surface"/"Add Fuselage" buttons).
-*/
-function attachModalHTMLAndListeners(modalHTMLs) {
-  const modalsContainer = document.getElementById("modals");
-  if (!modalsContainer) {
-      console.error("No <div id='modals'></div> found in your HTML. Cannot insert modals.");
-      return;
-  }
-
-  // Insert all modal snippets together
-  modalsContainer.innerHTML = modalHTMLs.join("\n");
-
-  // Now that the modal elements exist in the DOM, attach event listeners
-  attachModalEventListeners();
-}
-
-/**
-* Attach event listeners to the newly injected modal DOM elements
-* and also to the "Add Lifting Surface" / "Add Fuselage" buttons.
-*/
-function attachModalEventListeners() {
-  // --- Lifting Surface Modal ---
-  const lsModal = document.getElementById("liftingSurfaceModal");
-  if (!lsModal) {
-      console.error("Cannot find #liftingSurfaceModal in DOM!");
-      return;
-  }
-
-  // Cancel button
-  const lsCancelBtn = document.getElementById("ls_cancel");
-  lsCancelBtn.addEventListener("click", function() {
-      lsModal.style.display = "none";
-      window.editingType = "";
-      window.editingObject = null;
-  });
-
-  // Submit button
-  const lsSubmitBtn = document.getElementById("ls_submit");
-  lsSubmitBtn.addEventListener("click", function() {
-      const newData = {
-          name: document.getElementById("ls_name").value,
-          mass_kg: parseFloat(document.getElementById("ls_mass_kg").value),
-          root_LE: document.getElementById("ls_root_LE").value.split(",").map(Number),
-          AR: parseFloat(document.getElementById("ls_AR").value),
-          TR: parseFloat(document.getElementById("ls_TR").value),
-          mirror: document.getElementById("ls_mirror").checked,
-          symmetric: document.getElementById("ls_symmetric").checked,
-          dihedral_DEG: parseFloat(document.getElementById("ls_dihedral_DEG").value),
-          vertical: document.getElementById("ls_vertical").checked,
-          sweep_quarter_chord_DEG: parseFloat(document.getElementById("ls_sweep_quarter_chord_DEG").value),
-          surface_area_m2: parseFloat(document.getElementById("ls_surface_area_m2").value),
-          Oswald_factor: parseFloat(document.getElementById("ls_Oswald_factor").value),
-          mean_aerodynamic_chord_m: parseFloat(document.getElementById("ls_mean_aerodynamic_chord_m").value),
-          stations_eta: document.getElementById("ls_stations_eta").value.split(",").map(Number),
-          radius_of_giration_pitch_m: parseFloat(document.getElementById("ls_radius_of_giration_pitch_m").value),
-          radius_of_giration_yaw_m: parseFloat(document.getElementById("ls_radius_of_giration_yaw_m").value),
-          radius_of_giration_roll_m: parseFloat(document.getElementById("ls_radius_of_giration_roll_m").value),
-          principal_axis_pitch_up_DEG: parseFloat(document.getElementById("ls_principal_axis_pitch_up_DEG").value),
-          CoG_pos_xyz_m: document.getElementById("ls_CoG_pos_xyz_m").value.split(",").map(Number),
-          aerodynamic_center_pos_xyz_m: document.getElementById("ls_aerodynamic_center_pos_xyz_m").value.split(",").map(Number)
-      };
-
-      // If editing an existing surface
-      if (window.editingType === "lifting_surface" && window.editingObject) {
-          Object.assign(window.editingObject, newData);
-          window.editingObject = null;
-          window.editingType = "";
-          lsModal.style.display = "none";
-          renderAircraft();
-          if (window.selectedComponent) {
-              revertColor(window.selectedComponent);
-              gizmoManager.attachToMesh(null);
-              window.selectedComponent = null;
-              clearSelectedNameDisplay();
-          }
-      } else {
-          // Else adding a new surface
-          aircraftData.lifting_surfaces.push(newData);
-          addLiftingSurfaceToScene(newData, aircraftData, aircraftRoot, liftingSurfaceColors);
-          lsModal.style.display = "none";
-      }
-  });
-
-  // --- Fuselage Modal ---
-  const fusModal = document.getElementById("fuselageModal");
-  if (!fusModal) {
-      console.error("Cannot find #fuselageModal in DOM!");
-      return;
-  }
-
-  // Cancel button
-  const fusCancelBtn = document.getElementById("fus_cancel");
-  fusCancelBtn.addEventListener("click", function() {
-      fusModal.style.display = "none";
-      window.editingType = "";
-      window.editingObject = null;
-  });
-
-  // Submit button
-  const fusSubmitBtn = document.getElementById("fus_submit");
-  fusSubmitBtn.addEventListener("click", function() {
-      const newData = {
-          name: document.getElementById("fus_name").value,
-          diameter: parseFloat(document.getElementById("fus_diameter").value),
-          length: parseFloat(document.getElementById("fus_length").value),
-          nose_position: document.getElementById("fus_nose_position").value.split(",").map(Number)
-      };
-
-      // If editing existing fuselage
-      if (window.editingType === "fuselage" && window.editingObject) {
-          Object.assign(window.editingObject, newData);
-          window.editingObject = null;
-          window.editingType = "";
-          fusModal.style.display = "none";
-          renderAircraft();
-          if (window.selectedComponent) {
-              revertColor(window.selectedComponent);
-              gizmoManager.attachToMesh(null);
-              window.selectedComponent = null;
-          }
-          clearSelectedNameDisplay();
-      } else {
-          // Else adding a new fuselage
-          if (!aircraftData.fuselages) {
-              aircraftData.fuselages = [];
-          }
-          aircraftData.fuselages.push(newData);
-          addFuselageToScene(newData, aircraftRoot);
-          fusModal.style.display = "none";
-      }
-  });
-
-  // --- Buttons in the top bar: "Add Lifting Surface", "Add Fuselage" ---
-  const addLSBtn = document.getElementById("addLiftingSurfaceBtn");
-  if (!addLSBtn) {
-      console.error("No #addLiftingSurfaceBtn found in the HTML. Check your <button> ID.");
-  } else {
-      addLSBtn.addEventListener("click", function() {
-          window.editingType = "";
-          window.editingObject = null;
-          lsModal.style.display = "block";
-      });
-  }
-
-  const addFusBtn = document.getElementById("addFuselageBtn");
-  if (!addFusBtn) {
-      console.error("No #addFuselageBtn found in the HTML. Check your <button> ID.");
-  } else {
-      addFusBtn.addEventListener("click", function() {
-          window.editingType = "";
-          window.editingObject = null;
-          fusModal.style.display = "block";
-      });
-  }
-}
-
-// -----------------------------------------------------------------------------
-// MAIN LOGIC: Load the two modal files, then attach them to the page.
-// -----------------------------------------------------------------------------
-Promise.all([
-  loadModal("modals/ls-modal.html"),
-  loadModal("modals/fuselage-modal.html")
-])
-.then(function(modalHTMLs) {
-  attachModalHTMLAndListeners(modalHTMLs);
-})
-.catch(function(error) {
-  console.error("Failed to load one or more modals. Make sure you run from a web server. Error:", error);
-});
-
-###########################################
 # FILE: scene-utils.js
 ###########################################
 
 // js/scene-utils.js
 
 function getMetadata(mesh) {
-    let current = mesh;
-    while (current) {
-      if (current.metadata && current.metadata.data) {
-        return { mesh: current, metadata: current.metadata };
-      }
-      current = current.parent;
+  let current = mesh;
+  while (current) {
+    if (current.metadata && current.metadata.data) {
+      return { mesh: current, metadata: current.metadata };
     }
-    return null;
+    current = current.parent;
   }
-  
-  function updateSelectedNameDisplay(name) {
-    const span = document.getElementById("selectedComponentName");
-    span.innerText = "Selected: " + name;
-    document.getElementById("editComponentBtn").disabled = (name === "None" || name === "Ground");
+  // If none found, check if mesh is descendant of glbRoot.
+  if (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) {
+    return { mesh: window.glbRoot, metadata: window.glbRoot.metadata };
   }
-  
-  function clearSelectedNameDisplay() {
-    document.getElementById("selectedComponentName").innerText = "Selected: None";
-    document.getElementById("editComponentBtn").disabled = true;
+  return null;
+}
+
+function isDescendantOf(child, parent) {
+  let curr = child.parent;
+  while (curr) {
+    if (curr === parent) return true;
+    curr = curr.parent;
   }
-  
-  function setColorLightPink(componentNode) {
-    const glowColor = new BABYLON.Color3(1, 0.4, 0.7);
-    componentNode.getChildMeshes().forEach(m => {
-      if (m.material) {
-        m.metadata = m.metadata || {};
-        if (!m.metadata.originalEmissive) {
-          m.metadata.originalEmissive = m.material.emissiveColor.clone();
-        }
-        m.material.emissiveColor = glowColor;
+  return false;
+}
+
+function updateSelectedNameDisplay(name) {
+  const span = document.getElementById("selectedComponentName");
+  span.innerText = "Selected: " + name;
+  document.getElementById("editComponentBtn").disabled = (name === "None" || name === "Ground");
+}
+
+function clearSelectedNameDisplay() {
+  document.getElementById("selectedComponentName").innerText = "Selected: None";
+  document.getElementById("editComponentBtn").disabled = true;
+}
+
+function setColorLightPink(componentNode) {
+  const glowColor = new BABYLON.Color3(1, 0.4, 0.7);
+  componentNode.getChildMeshes().forEach(m => {
+    if (m.material) {
+      m.metadata = m.metadata || {};
+      if (!m.metadata.originalEmissive) {
+        m.metadata.originalEmissive = m.material.emissiveColor.clone();
       }
-    });
-  }
-  
-  function revertColor(componentNode) {
-    componentNode.getChildMeshes().forEach(m => {
-      if (m.material && m.metadata && m.metadata.originalEmissive) {
-        m.material.emissiveColor = m.metadata.originalEmissive;
-      }
-    });
-  }
-  
+      m.material.emissiveColor = glowColor;
+    }
+  });
+}
+
+function revertColor(componentNode) {
+  componentNode.getChildMeshes().forEach(m => {
+    if (m.material && m.metadata && m.metadata.originalEmissive) {
+      m.material.emissiveColor = m.metadata.originalEmissive;
+    }
+  });
+}
 
 ###########################################
 # FILE: ui-logic.js
@@ -592,115 +469,396 @@ function getMetadata(mesh) {
 
 // js/ui-logic.js
 
+//////////////////////
+// 1) Global Setup  //
+//////////////////////
 
+var liftingSurfaceColors = [
+  new BABYLON.Color3(0.8, 1.0, 0.8),
+  new BABYLON.Color3(0.9, 0.8, 1.0),
+  new BABYLON.Color3(0.7, 0.9, 0.7),
+  new BABYLON.Color3(0.8, 0.7, 0.9)
+];
 
-// Example snippet:
-document.getElementById("ls_submit").addEventListener("click", function() {
-  // gather data from #ls_name, #ls_AR, etc...
-  // add or edit the lifting surface in aircraftData
-  // hide the modal with:
-  document.getElementById("liftingSurfaceModal").style.display = "none";
-});
-
-
-// Global aircraft data and editing variables
 window.aircraftData = {
-    general: {
-      aircraft_reference_surface_m2: 10.0,
-      aircraft_reference_mean_aerodynamic_chord_m: 3.0,
-      aircraft_CoG_coords_xyz_m: [2, 1, 0]
-    },
-    lifting_surfaces: [],
-    fuselages: [],
-    engines: []
-  };
-  
-  window.editingType = ""; // "lifting_surface" or "fuselage"
-  window.editingObject = null;
-  window.selectedComponent = null;
-  
-  var liftingSurfaceColors = [
-    new BABYLON.Color3(0.8, 1.0, 0.8),
-    new BABYLON.Color3(0.9, 0.8, 1.0),
-    new BABYLON.Color3(0.7, 0.9, 0.7),
-    new BABYLON.Color3(0.8, 0.7, 0.9)
-  ];
-  
-  function renderAircraft() {
-    // Dispose of meshes and transform nodes that are not part of the new aircraft
-    scene.meshes.slice().forEach(function(mesh) {
-      if (
-        mesh !== camera && mesh !== light && mesh !== ground &&
-        mesh.name.indexOf("axis") === -1 && mesh.name !== "aircraftRoot"
-      ) {
-        mesh.dispose();
-      }
-    });
-    scene.transformNodes.slice().forEach(function(tn) {
-      if (tn.name !== "aircraftRoot" && tn !== camera && tn !== light) {
-        tn.dispose();
-      }
-    });
-    createAircraftRoot();
-    aircraftData.lifting_surfaces.forEach(function(surface) {
-      addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors);
-    });
-    aircraftData.fuselages.forEach(function(fus) {
-      addFuselageToScene(fus, aircraftRoot);
-    });
+  general: {
+    aircraft_reference_surface_m2: 10.0,
+    aircraft_reference_mean_aerodynamic_chord_m: 3.0,
+    aircraft_CoG_coords_xyz_m: [2, 1, 0]
+  },
+  lifting_surfaces: [],
+  fuselages: [],
+  engines: []
+};
+
+window.editingType = "";
+window.editingObject = null;
+window.selectedComponent = null;
+window.currentGLBModel = null; // will store the root mesh of the imported GLB
+
+///////////////////////////////
+// 2) GLB Loading Functions  //
+///////////////////////////////
+
+/**
+ * Loads a .glb file into the scene using the previous method (passing the File object directly).
+ * Applies a corrective rotation (180° about X) to fix upside–down issues.
+ * Parents the imported meshes under glbRoot so they persist during JSON re‑render.
+ */
+async function loadGLBFile(file) {
+  const loadingText = document.getElementById("loadingText");
+  loadingText.style.display = "block";
+  loadingText.textContent = "Loading 3D Model...";
+
+  // Dispose previous GLB model if any.
+  if (window.currentGLBModel) {
+    window.currentGLBModel.dispose();
+    window.currentGLBModel = null;
   }
-  
-  function parseAircraft(data) {
-    aircraftData = JSON.parse(data);
+
+  try {
+    // Pass the file directly (as before) to ImportMeshAsync.
+    const result = await BABYLON.SceneLoader.ImportMeshAsync(
+      "",    // No specific mesh names
+      "",    // No root URL
+      file,  // Pass the File object directly
+      scene,
+      (evt) => {
+        if (evt.lengthComputable) {
+          const progress = ((evt.loaded / evt.total) * 100).toFixed();
+          loadingText.textContent = `Loading: ${progress}%`;
+        }
+      }
+    );
+    // Assume the first mesh is the GLB root.
+    const rootMesh = result.meshes[0];
+    window.currentGLBModel = rootMesh;
+    // Parent all imported meshes under glbRoot.
+    result.meshes.forEach(mesh => {
+      mesh.setParent(window.glbRoot);
+      // Optionally, disable individual picking; we'll pick glbRoot.
+      mesh.isPickable = false;
+    });
+    // Ensure glbRoot is pickable and has metadata.
+    window.glbRoot.isPickable = true;
+    window.glbRoot.metadata = { type: "glb", data: {} };
+
+    // Apply a corrective rotation: flip 180° about X.
+    window.glbRoot.rotation.x += Math.PI;
+
+    // Compute bounding box using the imported model hierarchy.
+    const boundingBox = rootMesh.getHierarchyBoundingVectors();
+    const sizeVec = boundingBox.max.subtract(boundingBox.min);
+    const centerVec = boundingBox.min.add(sizeVec.scale(0.5));
+    const largestDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z);
+    const scaleFactor = (largestDim > 0) ? 5 / largestDim : 1;
+    window.glbRoot.scaling.set(scaleFactor, scaleFactor, scaleFactor);
+    window.glbRoot.position.x = -centerVec.x * scaleFactor;
+    window.glbRoot.position.y = -centerVec.y * scaleFactor;
+    window.glbRoot.position.z = -centerVec.z * scaleFactor;
+
+    // Optionally reset the camera.
+    const cam = scene.getCameraByName("Camera");
+    if (cam) {
+      cam.setTarget(BABYLON.Vector3.Zero());
+      cam.alpha = 0;
+      cam.beta = Math.PI / 2;
+      cam.radius = 10;
+    }
+  } catch (err) {
+    console.error("Error loading GLB file:", err);
+    alert("Error loading 3D model. Please try another file.");
+  }
+  loadingText.style.display = "none";
+}
+
+///////////////////////////////
+// 3) GLB Manipulation UI  //
+///////////////////////////////
+
+// Apply rotation/scale to the glbRoot so that the entire GLB moves as one unit.
+(function setupGLBControls() {
+  document.getElementById("rotateXBtn").addEventListener("click", function() {
+    window.glbRoot.rotation.x += Math.PI / 2;
+  });
+  document.getElementById("rotateYBtn").addEventListener("click", function() {
+    window.glbRoot.rotation.y += Math.PI / 2;
+  });
+  document.getElementById("rotateZBtn").addEventListener("click", function() {
+    window.glbRoot.rotation.z += Math.PI / 2;
+  });
+  document.getElementById("applyGlbScaleBtn").addEventListener("click", function() {
+    const scaleValue = parseFloat(document.getElementById("glbScaleInput").value);
+    if (!isNaN(scaleValue)) {
+      window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
+    }
+  });
+})();
+
+///////////////////////////////
+// 4) Modal Fill & Show Fns  //
+///////////////////////////////
+
+function fillLiftingSurfaceModal(data) {
+  document.getElementById("ls_name").value = data.name || "";
+  document.getElementById("ls_mass_kg").value = data.mass_kg ?? 600;
+  document.getElementById("ls_root_LE").value = (data.root_LE || [0,0,0]).join(",");
+  document.getElementById("ls_AR").value = data.AR ?? 8.33;
+  document.getElementById("ls_TR").value = data.TR ?? 0.6;
+  document.getElementById("ls_mirror").checked = !!data.mirror;
+  document.getElementById("ls_symmetric").checked = !!data.symmetric;
+  document.getElementById("ls_dihedral_DEG").value = data.dihedral_DEG ?? 3;
+  document.getElementById("ls_vertical").checked = !!data.vertical;
+  document.getElementById("ls_sweep_quarter_chord_DEG").value = data.sweep_quarter_chord_DEG ?? 15;
+  document.getElementById("ls_surface_area_m2").value = data.surface_area_m2 ?? 48;
+  document.getElementById("ls_Oswald_factor").value = data.Oswald_factor ?? 0.7;
+  document.getElementById("ls_mean_aerodynamic_chord_m").value = data.mean_aerodynamic_chord_m ?? 1.35;
+  document.getElementById("ls_stations_eta").value = (data.stations_eta || [0,0.5,1]).join(",");
+  document.getElementById("ls_radius_of_giration_pitch_m").value = data.radius_of_giration_pitch_m ?? 3.5;
+  document.getElementById("ls_radius_of_giration_yaw_m").value = data.radius_of_giration_yaw_m ?? 4.0;
+  document.getElementById("ls_radius_of_giration_roll_m").value = data.radius_of_giration_roll_m ?? 4.0;
+  document.getElementById("ls_principal_axis_pitch_up_DEG").value = data.principal_axis_pitch_up_DEG ?? -2;
+  document.getElementById("ls_CoG_pos_xyz_m").value = (data.CoG_pos_xyz_m || [0,0,0]).join(",");
+  document.getElementById("ls_aerodynamic_center_pos_xyz_m").value = (data.aerodynamic_center_pos_xyz_m || [2.9,0,0]).join(",");
+  document.getElementById("liftingSurfaceModal").style.display = "block";
+}
+
+function fillFuselageModal(data) {
+  document.getElementById("fus_name").value = data.name || "fus1";
+  document.getElementById("fus_diameter").value = data.diameter ?? 2.5;
+  document.getElementById("fus_length").value = data.length ?? 15.0;
+  document.getElementById("fus_nose_position").value = (data.nose_position || [0,0,0]).join(",");
+  document.getElementById("fuselageModal").style.display = "block";
+}
+
+/////////////////////
+// 5) Rendering    //
+/////////////////////
+
+/**
+ * Helper: Returns true if child is a descendant of parent.
+ */
+function isDescendantOf(child, parent) {
+  let curr = child.parent;
+  while (curr) {
+    if (curr === parent) return true;
+    curr = curr.parent;
+  }
+  return false;
+}
+
+/**
+ * Rebuild JSON-based geometry from aircraftData.
+ * Disposes meshes/transform nodes not under glbRoot.
+ */
+function renderAircraft() {
+  scene.meshes.slice().forEach(function(mesh) {
+    if (
+      mesh === camera ||
+      mesh === light ||
+      mesh === ground ||
+      mesh.name.startsWith("axis") ||
+      mesh === aircraftRoot ||
+      (window.glbRoot && isDescendantOf(mesh, window.glbRoot))
+    ) {
+      return;
+    }
+    mesh.dispose();
+  });
+  scene.transformNodes.slice().forEach(function(tn) {
+    if (
+      tn === aircraftRoot ||
+      tn === window.glbRoot ||
+      (window.glbRoot && isDescendantOf(tn, window.glbRoot))
+    ) {
+      return;
+    }
+    tn.dispose();
+  });
+  createAircraftRoot();
+  aircraftData.lifting_surfaces.forEach(function(surface) {
+    addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors);
+  });
+  aircraftData.fuselages.forEach(function(fus) {
+    addFuselageToScene(fus, aircraftRoot);
+  });
+  const cam = scene.getCameraByName("Camera");
+  if (cam) {
+    cam.setTarget(BABYLON.Vector3.Zero());
+    cam.radius = 10;
+  }
+}
+
+function parseAircraft(jsonText) {
+  aircraftData = JSON.parse(jsonText);
+  renderAircraft();
+}
+
+/////////////////////////////
+// 6) Event Listener Bindings //
+/////////////////////////////
+
+(function setupUI() {
+  // ========= Lifting Surface Modal ========= //
+  const lsModal = document.getElementById("liftingSurfaceModal");
+  const lsSubmitBtn = document.getElementById("ls_submit");
+  const lsCancelBtn = document.getElementById("ls_cancel");
+
+  lsSubmitBtn.addEventListener("click", function() {
+    const newData = {
+      name: document.getElementById("ls_name").value,
+      mass_kg: parseFloat(document.getElementById("ls_mass_kg").value),
+      root_LE: document.getElementById("ls_root_LE").value.split(",").map(Number),
+      AR: parseFloat(document.getElementById("ls_AR").value),
+      TR: parseFloat(document.getElementById("ls_TR").value),
+      mirror: document.getElementById("ls_mirror").checked,
+      symmetric: document.getElementById("ls_symmetric").checked,
+      dihedral_DEG: parseFloat(document.getElementById("ls_dihedral_DEG").value),
+      vertical: document.getElementById("ls_vertical").checked,
+      sweep_quarter_chord_DEG: parseFloat(document.getElementById("ls_sweep_quarter_chord_DEG").value),
+      surface_area_m2: parseFloat(document.getElementById("ls_surface_area_m2").value),
+      Oswald_factor: parseFloat(document.getElementById("ls_Oswald_factor").value),
+      mean_aerodynamic_chord_m: parseFloat(document.getElementById("ls_mean_aerodynamic_chord_m").value),
+      stations_eta: document.getElementById("ls_stations_eta").value.split(",").map(Number),
+      radius_of_giration_pitch_m: parseFloat(document.getElementById("ls_radius_of_giration_pitch_m").value),
+      radius_of_giration_yaw_m: parseFloat(document.getElementById("ls_radius_of_giration_yaw_m").value),
+      radius_of_giration_roll_m: parseFloat(document.getElementById("ls_radius_of_giration_roll_m").value),
+      principal_axis_pitch_up_DEG: parseFloat(document.getElementById("ls_principal_axis_pitch_up_DEG").value),
+      CoG_pos_xyz_m: document.getElementById("ls_CoG_pos_xyz_m").value.split(",").map(Number),
+      aerodynamic_center_pos_xyz_m: document.getElementById("ls_aerodynamic_center_pos_xyz_m").value.split(",").map(Number)
+    };
+
+    if (window.editingType === "lifting_surface" && window.editingObject) {
+      Object.assign(window.editingObject, newData);
+      window.editingObject = null;
+      window.editingType = "";
+    } else {
+      aircraftData.lifting_surfaces.push(newData);
+    }
+
+    lsModal.style.display = "none";
     renderAircraft();
-  }
-  
-  // Prevent pointer events on the Edit button from reaching the scene.
-  document.getElementById("editComponentBtn").addEventListener("pointerdown", function(e) {
+    if (window.selectedComponent) {
+      revertColor(window.selectedComponent);
+      gizmoManager.attachToMesh(null);
+      window.selectedComponent = null;
+    }
+    clearSelectedNameDisplay();
+  });
+
+  lsCancelBtn.addEventListener("click", function() {
+    lsModal.style.display = "none";
+    window.editingType = "";
+    window.editingObject = null;
+  });
+
+  // ========= Fuselage Modal ========= //
+  const fusModal = document.getElementById("fuselageModal");
+  const fusSubmitBtn = document.getElementById("fus_submit");
+  const fusCancelBtn = document.getElementById("fus_cancel");
+
+  fusSubmitBtn.addEventListener("click", function() {
+    const newData = {
+      name: document.getElementById("fus_name").value,
+      diameter: parseFloat(document.getElementById("fus_diameter").value),
+      length: parseFloat(document.getElementById("fus_length").value),
+      nose_position: document.getElementById("fus_nose_position").value.split(",").map(Number)
+    };
+
+    if (window.editingType === "fuselage" && window.editingObject) {
+      Object.assign(window.editingObject, newData);
+      window.editingObject = null;
+      window.editingType = "";
+    } else {
+      if (!aircraftData.fuselages) {
+        aircraftData.fuselages = [];
+      }
+      aircraftData.fuselages.push(newData);
+    }
+
+    fusModal.style.display = "none";
+    renderAircraft();
+    if (window.selectedComponent) {
+      revertColor(window.selectedComponent);
+      gizmoManager.attachToMesh(null);
+      window.selectedComponent = null;
+    }
+    clearSelectedNameDisplay();
+  });
+
+  fusCancelBtn.addEventListener("click", function() {
+    fusModal.style.display = "none";
+    window.editingType = "";
+    window.editingObject = null;
+  });
+
+  // ========= "Add" Buttons ========= //
+  document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
+    window.editingType = "";
+    window.editingObject = null;
+    document.getElementById("liftingSurfaceModal").style.display = "block";
+  });
+  document.getElementById("addFuselageBtn").addEventListener("click", function() {
+    window.editingType = "";
+    window.editingObject = null;
+    document.getElementById("fuselageModal").style.display = "block";
+  });
+
+  // ========= "Edit Selected" Button ========= //
+  const editBtn = document.getElementById("editComponentBtn");
+  editBtn.addEventListener("pointerdown", function(e) {
     e.stopPropagation();
   });
-  document.getElementById("editComponentBtn").addEventListener("click", function() {
+  editBtn.addEventListener("click", function() {
     if (!window.selectedComponent) return;
-    var info = getMetadata(window.selectedComponent);
+    const info = getMetadata(window.selectedComponent);
     if (info && info.metadata && info.metadata.data) {
       if (info.metadata.type === "lifting_surface") {
         window.editingType = "lifting_surface";
         window.editingObject = info.metadata.data;
-        // Fill the modal fields via the modal loader (see modal-loader.js)
         fillLiftingSurfaceModal(window.editingObject);
       } else if (info.metadata.type === "fuselage") {
         window.editingType = "fuselage";
         window.editingObject = info.metadata.data;
         fillFuselageModal(window.editingObject);
+      } else if (info.metadata.type === "glb") {
+        console.log("GLB model selected");
       }
     }
   });
-  
-  // File input to load a JSON file
-  document.getElementById("fileInput").addEventListener("change", function(event) {
-    var file = event.target.files[0];
-    if (file && file.name.endsWith(".json")) {
-      var reader = new FileReader();
-      reader.onload = function(e) { parseAircraft(e.target.result); };
-      reader.readAsText(file);
-    } else {
+
+  // ========= JSON File Input ========= //
+  const fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".json")) {
       alert("Please select a valid '.json' file.");
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      parseAircraft(e.target.result);
+    };
+    reader.readAsText(file);
   });
-  
-  // Download the aircraft JSON
+
+  // ========= Download JSON ========= //
   document.getElementById("downloadJsonBtn").addEventListener("click", function() {
-    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(aircraftData, null, 2));
-    var dlAnchorElem = document.createElement("a");
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", "aircraft.json");
-    document.body.appendChild(dlAnchorElem);
-    dlAnchorElem.click();
-    document.body.removeChild(dlAnchorElem);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
+      JSON.stringify(aircraftData, null, 2)
+    );
+    const dlAnchor = document.createElement("a");
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", "aircraft.json");
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    document.body.removeChild(dlAnchor);
   });
-  
-  // Clear the aircraft
+
+  // ========= Clear Aircraft ========= //
   document.getElementById("clearAircraft").addEventListener("click", function() {
+    // Clear only JSON geometry; glbRoot remains intact.
     aircraftData.lifting_surfaces = [];
     aircraftData.fuselages = [];
     renderAircraft();
@@ -710,16 +868,40 @@ window.aircraftData = {
       window.selectedComponent = null;
     }
     clearSelectedNameDisplay();
+    const cam = scene.getCameraByName("Camera");
+    if (cam) {
+      cam.setTarget(BABYLON.Vector3.Zero());
+      cam.radius = 10;
+    }
   });
-  
-  // Toggle ground visibility
+
+  // ========= Toggle Ground ========= //
   document.getElementById("toggleGround").addEventListener("click", function() {
     ground.isVisible = !ground.isVisible;
   });
-  
 
+  // ========= GLB File Input ========= //
+  const glbFileInput = document.getElementById("glbFileInput");
+  glbFileInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".glb")) {
+      alert("Please select a valid '.glb' file.");
+      return;
+    }
+    loadGLBFile(file);
+  });
+})();
 
+/////////////////////////
+// 7) Helper Functions //
+/////////////////////////
 
+function clearSelectedNameDisplay() {
+  const span = document.getElementById("selectedComponentName");
+  span.innerText = "Selected: None";
+  document.getElementById("editComponentBtn").disabled = true;
+}
 
 ###########################################
 # FILE: fuselage-modal.html
@@ -777,133 +959,160 @@ window.aircraftData = {
 # FILE: style.css
 ###########################################
 
+/* Make the page fill the entire window and hide scrollbars */
 html, body {
-    width: 100%; 
-    height: 100%;
-    margin: 0; 
-    padding: 0;
-    overflow: hidden;
-    background: #f0f0f0;
-  }
-  
-  #renderCanvas {
-    width: 100%; 
-    height: 100%;
-    touch-action: none;
-    display: block;
-    margin-top: 60px; /* leave room for top controls */
-  }
-  
-  /* Top-fixed controls */
-  #controls {
-    position: fixed;
-    top: 0; 
-    left: 0;
-    width: 100%;
-    z-index: 50;
-    padding: 5px;
-    text-align: center;
-    background-color: #a9a9e9;
-    border-bottom: 1px solid #ccc;
-  }
-  #controls input, #controls button {
-    margin: 5px;
-    padding: 6px 10px;
-    font-size: 14px;
-  }
-  #selectedComponentName {
-    font-weight: bold;
-    margin-left: 20px;
-  }
-  
-  /* Toggle ground button at bottom center */
-  #toggleGround {
-    position: fixed;
-    bottom: 20px; 
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px; 
-    height: 40px;
-    border-radius: 50%;
-    background-color: #3366FF;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    font-size: 20px;
-    z-index: 100;
-  }
-  #toggleGround:hover { 
-    background-color: #254EDB; 
-  }
-  
-  /* Clear Aircraft Button */
-  #clearAircraft {
-    padding: 6px 10px;
-    border-radius: 3px;
-    background-color: #FF3333;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-  }
-  #clearAircraft:hover { 
-    background-color: #f87c56; 
-  }
-  
-  /* Modal styles – fixed at the top center */
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 100;
-    left: 0; 
-    top: 0;
-    width: 100%; 
-    height: 100%;
-    background-color: rgba(0,0,0,0.4);
-  }
-  .modal-content {
-    background-color: #fff;
-    position: fixed;
-    top: 20px; 
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 20px;
-    border: 2px solid #444;
-    border-radius: 5px;
-    width: 350px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-  }
-  .modal-content h3 {
-    margin-top: 0;
-    text-align: center;
-    color: #444;
-  }
-  .modal-content label {
-    display: inline-block;
-    width: 120px;
-    margin: 5px 0;
-  }
-  .modal-content input {
-    display: inline-block;
-    width: 200px;
-    margin: 5px 0;
-    padding: 4px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-  }
-  .modal-content button {
-    margin: 10px 10px 0 0;
-    padding: 6px 12px;
-    background-color: #3366FF;
-    border: none;
-    color: #fff;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  .modal-content button:hover { 
-    background-color: #254EDB; 
-  }
-  
+  width: 100%; 
+  height: 100%;
+  margin: 0; 
+  padding: 0;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+/* Babylon.js render canvas */
+#renderCanvas {
+  width: 100%; 
+  height: 100%;
+  touch-action: none;  /* prevent gestures from scrolling the page */
+  display: block;
+  margin-top: 60px; /* leaves room for the top controls bar */
+}
+
+/* The top-fixed controls bar */
+#controls {
+  position: fixed;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  z-index: 50; /* so it stays above the canvas */
+  padding: 5px;
+  text-align: center;
+  background-color: #a9a9e9;
+  border-bottom: 1px solid #ccc;
+}
+
+#controls input,
+#controls button {
+  margin: 5px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Display which component is selected */
+#selectedComponentName {
+  font-weight: bold;
+  margin-left: 20px;
+}
+
+/* Toggle ground button at bottom center */
+#toggleGround {
+  position: fixed;
+  bottom: 20px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px; 
+  height: 40px;
+  border-radius: 50%;
+  background-color: #3366FF;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  font-size: 20px;
+  z-index: 100;
+}
+#toggleGround:hover { 
+  background-color: #254EDB; 
+}
+
+/* The "Clear Aircraft" button styling */
+#clearAircraft {
+  padding: 6px 10px;
+  border-radius: 3px;
+  background-color: #FF3333;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+#clearAircraft:hover { 
+  background-color: #f87c56; 
+}
+
+/* Modal overlay for adding/editing surfaces/fuselages */
+.modal {
+  display: none;              /* hidden by default */
+  position: fixed;
+  z-index: 100;
+  left: 0; 
+  top: 0;
+  width: 100%; 
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);  /* semi-transparent backdrop */
+}
+
+.modal-content {
+  background-color: #fff;
+  position: fixed;
+  top: 20px; 
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 20px;
+  border: 2px solid #444;
+  border-radius: 5px;
+  width: 350px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #444;
+}
+
+.modal-content label {
+  display: inline-block;
+  width: 120px;
+  margin: 5px 0;
+}
+
+.modal-content input {
+  display: inline-block;
+  width: 200px;
+  margin: 5px 0;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.modal-content button {
+  margin: 10px 10px 0 0;
+  padding: 6px 12px;
+  background-color: #3366FF;
+  border: none;
+  color: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.modal-content button:hover { 
+  background-color: #254EDB; 
+}
+
+/* Overlay text for "Loading 3D Model..." (used when importing .glb files) */
+#loadingText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;  /* hidden by default; shown while loading a model */
+  color: white;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 200;  /* on top of everything else */
+}
 

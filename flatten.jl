@@ -10,7 +10,7 @@ using Base.Filesystem: walkdir, basename, joinpath, splitext
 # -----------------------------------------------------------------------------
 folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\CREATE_AIRCRAFT_MODEL"
 extensions  = [".html", ".css", ".js"]
-output_file = "concatenated_code.txt"
+output_file = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\concatenated_code.txt"
 
 # -----------------------------------------------------------------------------
 # Collect all matching files by recursively walking the directory

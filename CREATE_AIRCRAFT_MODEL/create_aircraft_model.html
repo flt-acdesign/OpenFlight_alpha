@@ -2,36 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Aircraft Geometry Viewer and Editor</title>
+  <title>Aircraft Geometry Viewer & GLB Loader</title>
   <link rel="stylesheet" href="styles/style.css">
-  <!-- BabylonJS from CDN -->
+  <!-- BabylonJS CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-
-  <!-- Top bar with buttons -->
+  <!-- The top bar with all controls -->
   <div id="controls">
-    <!-- File input to load JSON -->
     <input type="file" id="fileInput" accept=".json">
-    <!-- Add new surfaces/fuselage -->
     <button id="addLiftingSurfaceBtn">Add Lifting Surface</button>
     <button id="addFuselageBtn">Add Fuselage</button>
-    <!-- Download JSON -->
     <button id="downloadJsonBtn">Download JSON</button>
-    <!-- Clear entire aircraft -->
     <button id="clearAircraft">Clear Aircraft</button>
-    <!-- Currently selected component -->
     <span id="selectedComponentName">Selected: None</span>
-    <!-- Edit selected component -->
     <button id="editComponentBtn" disabled>Edit Selected</button>
+    <input type="file" id="glbFileInput" accept=".glb" title="Load .glb model" style="margin-left:20px;">
+    <!-- GLB Manipulation Controls -->
+    <button id="rotateXBtn">Rotate X 90°</button>
+    <button id="rotateYBtn">Rotate Y 90°</button>
+    <button id="rotateZBtn">Rotate Z 90°</button>
+    <label>GLB Scale:</label>
+    <input type="number" id="glbScaleInput" value="1" step="0.1">
+    <button id="applyGlbScaleBtn">Apply Scale</button>
   </div>
+  
 
+  <!-- Canvas for BabylonJS -->
   <canvas id="renderCanvas"></canvas>
+
+  <!-- Toggle ground button -->
   <button id="toggleGround" title="Show/Hide Ground">☀</button>
 
-  <!-- Inline modals: no external fetch required -->
+  <!-- "Loading 3D Model..." overlay (used for GLB loading feedback) -->
+  <div id="loadingText">Loading 3D Model...</div>
 
-  <!-- Lifting Surface Modal -->
+  <!-- Inline modals for Lifting Surfaces & Fuselages -->
   <div id="liftingSurfaceModal" class="modal">
     <div class="modal-content">
       <h3>Add / Edit Lifting Surface</h3>
@@ -55,13 +62,11 @@
       <label>Pitch Up (°):</label> <input type="number" step="0.1" id="ls_principal_axis_pitch_up_DEG" value="-2"><br>
       <label>CoG (x,y,z):</label> <input type="text" id="ls_CoG_pos_xyz_m" value="0,0,0"><br>
       <label>AC (x,y,z):</label> <input type="text" id="ls_aerodynamic_center_pos_xyz_m" value="2.9,0,0"><br>
-
       <button id="ls_submit">Submit</button>
       <button id="ls_cancel">Cancel</button>
     </div>
   </div>
 
-  <!-- Fuselage Modal -->
   <div id="fuselageModal" class="modal">
     <div class="modal-content">
       <h3>Add / Edit Fuselage</h3>
@@ -69,20 +74,16 @@
       <label>Diameter:</label> <input type="number" step="0.1" id="fus_diameter" value="2.5"><br>
       <label>Length:</label> <input type="number" step="0.1" id="fus_length" value="15.0"><br>
       <label>Nose (x,y,z):</label> <input type="text" id="fus_nose_position" value="0,0,0"><br>
-
       <button id="fus_submit">Submit</button>
       <button id="fus_cancel">Cancel</button>
     </div>
   </div>
 
-  <!-- Existing scripts for Babylon and your logic -->
+  <!-- Scripts (order is important) -->
   <script src="js/babylon-setup.js"></script>
   <script src="js/component-creation.js"></script>
   <script src="js/interaction.js"></script>
   <script src="js/scene-utils.js"></script>
-
-  <!-- Main UI logic with fillLiftingSurfaceModal/fillFuselageModal -->
   <script src="js/ui-logic.js"></script>
-
 </body>
 </html>
