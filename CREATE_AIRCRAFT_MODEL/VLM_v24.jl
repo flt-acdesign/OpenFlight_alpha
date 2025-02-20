@@ -264,7 +264,7 @@ function analyze_aircraft(aircraft)
                 ratioarray = fill(0.0, 2, nChord, nSpan)
                 for iC in 1:nChord
                     for jS in 1:nSpan
-                        ratioarray[1, iC, jS] = 0.25  # bound vortex
+                        ratioarray[1, iC, jS] = 0.55  # bound vortex
                         ratioarray[2, iC, jS] = 0.50  # control point
                     end
                 end

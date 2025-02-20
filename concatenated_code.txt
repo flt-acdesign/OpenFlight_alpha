@@ -1,0 +1,909 @@
+###########################################
+# FILE: create_aircraft_model.html
+###########################################
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aircraft Geometry Viewer and Editor</title>
+  <link rel="stylesheet" href="styles/style.css">
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+</head>
+<body>
+
+  <!-- Existing top bar, canvas, etc. -->
+  <div id="controls"> ... </div>
+  <canvas id="renderCanvas"></canvas>
+  <button id="toggleGround">☀</button>
+
+  <!-- Insert our modals directly here -->
+  <div id="liftingSurfaceModal" class="modal">
+    <div class="modal-content">
+      <h3>Add / Edit Lifting Surface</h3>
+      <label>Name:</label> <input type="text" id="ls_name"><br>
+      <!-- (All your lifting surface fields) -->
+      <button id="ls_submit">Submit</button>
+      <button id="ls_cancel">Cancel</button>
+    </div>
+  </div>
+
+  <div id="fuselageModal" class="modal">
+    <div class="modal-content">
+      <h3>Add / Edit Fuselage</h3>
+      <label>Name:</label> <input type="text" id="fus_name"><br>
+      <!-- (All your fuselage fields) -->
+      <button id="fus_submit">Submit</button>
+      <button id="fus_cancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Optional: we don’t need <div id="modals"></div> anymore, or modal-loader.js -->
+  <!-- Existing scripts for babylon-setup, scene-utils, etc. -->
+  <script src="js/babylon-setup.js"></script>
+  <script src="js/component-creation.js"></script>
+  <script src="js/interaction.js"></script>
+  <script src="js/scene-utils.js"></script>
+  <script src="js/ui-logic.js"></script>
+</body>
+</html>
+
+###########################################
+# FILE: babylon-setup.js
+###########################################
+
+// js/babylon-setup.js
+
+// Global variables (attached to window)
+window.canvas = document.getElementById("renderCanvas");
+window.engine = null;
+window.scene = null;
+
+function initBabylon() {
+  engine = new BABYLON.Engine(canvas, true);
+  scene = new BABYLON.Scene(engine);
+  scene.clearColor = new BABYLON.Color3(0.9, 0.9, 0.97);
+
+  // Create camera
+  window.camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 3, 60, new BABYLON.Vector3(10, 5, 0), scene);
+  camera.attachControl(canvas, true);
+  camera.inputs.remove(camera.inputs.attached["pointers"]);
+  var pointerInput = new BABYLON.ArcRotateCameraPointersInput();
+  pointerInput.buttons = [0];
+  camera.inputs.add(pointerInput);
+  camera.inertia = 0;
+
+  // Create light
+  window.light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+  // Create ground with a checkerboard texture
+  window.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
+  var groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+  groundMat.alpha = 0.5;
+  var dt = new BABYLON.DynamicTexture("dt", { width: 512, height: 512 }, scene, false);
+  var ctx = dt.getContext();
+  var size = 64;
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      ctx.fillStyle = ((i+j) % 2 === 0) ? "#99ccff" : "#66b3ff";
+      ctx.fillRect(i*size, j*size, size, size);
+    }
+  }
+  dt.update();
+  groundMat.diffuseTexture = dt;
+  ground.material = groundMat;
+
+  // Create global axis lines
+  var axisX = BABYLON.MeshBuilder.CreateLines("axisX", { points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(10,0,0)] }, scene);
+  axisX.color = new BABYLON.Color3(1,0,0);
+  var axisY = BABYLON.MeshBuilder.CreateLines("axisY", { points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,10,0)] }, scene);
+  axisY.color = new BABYLON.Color3(0,1,0);
+  var axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", { points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,0,10)] }, scene);
+  axisZ.color = new BABYLON.Color3(0,0,1);
+
+  // Create a glow layer for highlighting
+  window.glowLayer = new BABYLON.GlowLayer("glow", scene);
+  glowLayer.intensity = 0.8;
+
+  // Setup GizmoManager for object manipulation
+  window.gizmoManager = new BABYLON.GizmoManager(scene);
+  gizmoManager.positionGizmoEnabled = true;
+  gizmoManager.rotationGizmoEnabled = false;
+  gizmoManager.scaleGizmoEnabled = false;
+
+  // Create the Aircraft Root Transform node
+  createAircraftRoot();
+
+  // Start the render loop
+  engine.runRenderLoop(function() {
+    scene.render();
+  });
+  window.addEventListener("resize", function() {
+    engine.resize();
+  });
+}
+
+initBabylon();
+
+// Global function to create (or re-create) the aircraft root transform node.
+function createAircraftRoot() {
+  if (window.aircraftRoot) {
+    window.aircraftRoot.dispose();
+  }
+  window.aircraftRoot = new BABYLON.TransformNode("aircraftRoot", scene);
+  // Rotate -90° about the X-axis so that wings become horizontal.
+  window.aircraftRoot.rotation.x = -Math.PI / 2;
+}
+
+###########################################
+# FILE: component-creation.js
+###########################################
+
+// js/component-creation.js
+
+function createQuadMesh(name, pts, color) {
+    const customMesh = new BABYLON.Mesh(name, scene);
+    const positions = pts.flatMap(p => [p[0], p[1], p[2]]);
+    const pivot = BABYLON.Vector3.FromArray(pts[0]);
+    // Adjust positions relative to the pivot
+    for (let i = 0; i < positions.length; i += 3) {
+      positions[i]   -= pivot.x;
+      positions[i+1] -= pivot.y;
+      positions[i+2] -= pivot.z;
+    }
+    const indices = [0, 1, 2, 0, 2, 3];
+    const normals = [];
+    BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+    const vertexData = new BABYLON.VertexData();
+    vertexData.positions = positions;
+    vertexData.indices = indices;
+    vertexData.normals = normals;
+    vertexData.applyToMesh(customMesh);
+    const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
+    mat.diffuseColor = color;
+    mat.backFaceCulling = false;
+    customMesh.material = mat;
+    customMesh.position = pivot;
+    customMesh.isPickable = true;
+    return customMesh;
+  }
+  
+  function createFuselageNode(name, diameter, length, nosePosition) {
+    const parent = new BABYLON.TransformNode(name + "_parent", scene);
+    parent.name = name + "_transform";
+    parent.position = new BABYLON.Vector3(...nosePosition);
+    const color = new BABYLON.Color3(1.0, 0.7, 0.3);
+    const cylinder = BABYLON.MeshBuilder.CreateCylinder(name, {
+      height: length,
+      diameter: diameter,
+      tessellation: 32
+    }, scene);
+    cylinder.rotation.z = Math.PI / 2;
+    cylinder.position = new BABYLON.Vector3(length/2, 0, 0);
+    cylinder.isPickable = true;
+    cylinder.parent = parent;
+    const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
+    mat.diffuseColor = color;
+    mat.alpha = 0.8;
+    cylinder.material = mat;
+    parent.metadata = {
+      type: "fuselage",
+      data: null,
+      originalColor: color
+    };
+    parent.isPickable = false;
+    return parent;
+  }
+  
+  function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors) {
+    const parent = new BABYLON.TransformNode(surface.name + "_parent", scene);
+    parent.position = new BABYLON.Vector3(...surface.root_LE);
+    const index = aircraftData.lifting_surfaces.indexOf(surface);
+    const baseColor = liftingSurfaceColors[index % liftingSurfaceColors.length];
+    parent.metadata = {
+      type: "lifting_surface",
+      data: surface,
+      originalColor: baseColor
+    };
+    parent.parent = aircraftRoot;
+    parent.isPickable = false;
+  
+    const area = surface.surface_area_m2;
+    const AR = surface.AR;
+    const TR = surface.TR;
+    const sweep = deg2rad(surface.sweep_quarter_chord_DEG);
+    const dihedral = deg2rad(surface.dihedral_DEG);
+    const span = Math.sqrt(area * AR);
+    const semi_span = span / 2;
+    const root_chord = (2 * area) / (span * (1 + TR));
+    const tip_chord = root_chord * TR;
+    const root_LE = [0,0,0];
+    let tip_le, root_te, tip_te;
+    if (surface.vertical) {
+      tip_le = [
+        root_LE[0] + semi_span * Math.tan(sweep),
+        root_LE[1],
+        root_LE[2] + semi_span
+      ];
+      root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
+      tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
+    } else {
+      tip_le = [
+        root_LE[0] + semi_span * Math.tan(sweep),
+        root_LE[1] + semi_span * Math.cos(dihedral),
+        root_LE[2] + semi_span * Math.sin(dihedral)
+      ];
+      root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
+      tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
+    }
+    const points = [root_LE, root_te, tip_te, tip_le];
+    const mesh = createQuadMesh(surface.name, points, baseColor);
+    mesh.parent = parent;
+    // If the surface is symmetric (and not vertical), create a mirror.
+    if (surface.symmetric && !surface.vertical) {
+      const mirrorMesh = mesh.clone(surface.name + "_mirror");
+      mirrorMesh.scaling.y *= -1;
+      mirrorMesh.parent = parent;
+      mirrorMesh.material = mesh.material.clone(surface.name + "_mirrorMat");
+      mirrorMesh.material.diffuseColor = baseColor;
+      mirrorMesh.material.backFaceCulling = false;
+      mirrorMesh.isPickable = false;
+    }
+  }
+  
+  function addFuselageToScene(fusData, aircraftRoot) {
+    const fusNode = createFuselageNode(fusData.name, fusData.diameter, fusData.length, fusData.nose_position);
+    fusNode.metadata.data = fusData;
+    fusNode.parent = aircraftRoot;
+  }
+  
+  function deg2rad(deg) {
+    return (deg * Math.PI) / 180;
+  }
+  
+
+###########################################
+# FILE: interaction.js
+###########################################
+
+// js/interaction.js
+
+var pointerDownPos = null;
+
+scene.onPointerObservable.add(function(pointerInfo) {
+  if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+    pointerDownPos = { x: pointerInfo.event.clientX, y: pointerInfo.event.clientY };
+  } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
+    const dx = pointerInfo.event.clientX - pointerDownPos.x;
+    const dy = pointerInfo.event.clientY - pointerDownPos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const isClick = dist < 5;
+    pointerDownPos = null;
+    
+    if (pointerInfo.event.button === 2) { // right-click
+      if (pointerInfo.pickInfo.hit) {
+        camera.target = pointerInfo.pickInfo.pickedPoint;
+        if (pointerInfo.pickInfo.pickedMesh && pointerInfo.pickInfo.pickedMesh.name === "ground") {
+          clearSelectedNameDisplay();
+          updateSelectedNameDisplay("Ground");
+        }
+      }
+      return;
+    }
+    
+    if (!isClick) return;
+    
+    const pickInfo = pointerInfo.pickInfo;
+    if (!pickInfo.hit || (pickInfo.hit && pickInfo.pickedMesh.name === "ground")) {
+      if (window.selectedComponent) {
+        revertColor(window.selectedComponent);
+        gizmoManager.attachToMesh(null);
+        window.selectedComponent = null;
+      }
+      clearSelectedNameDisplay();
+      if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
+        updateSelectedNameDisplay("Ground");
+      }
+      return;
+    }
+    
+    const info = getMetadata(pickInfo.pickedMesh);
+    if (info) {
+      if (window.selectedComponent && window.selectedComponent === info.mesh) return;
+      if (window.selectedComponent && window.selectedComponent !== info.mesh) {
+        revertColor(window.selectedComponent);
+      }
+      window.selectedComponent = info.mesh;
+      setColorLightPink(window.selectedComponent);
+      gizmoManager.attachToMesh(window.selectedComponent);
+      updateSelectedNameDisplay(info.metadata.data.name || "Unnamed");
+    }
+  }
+});
+
+// When pointer is released, update the component’s data based on its new position.
+scene.onPointerObservable.add(function(pointerInfo) {
+  if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
+    if (!window.selectedComponent) return;
+    const md = window.selectedComponent.metadata;
+    if (md && md.data) {
+      if (md.type === "lifting_surface") {
+        md.data.root_LE = [
+          window.selectedComponent.position.x,
+          window.selectedComponent.position.y,
+          window.selectedComponent.position.z
+        ];
+      } else if (md.type === "fuselage") {
+        md.data.nose_position = [
+          window.selectedComponent.position.x,
+          window.selectedComponent.position.y,
+          window.selectedComponent.position.z
+        ];
+      }
+    }
+  }
+});
+
+###########################################
+# FILE: modal-loader.js
+###########################################
+
+// js/modal-loader.js
+
+/**
+ * Fetch the contents of a modal HTML file.
+ * Throws an Error if the response is not OK (status >= 400).
+ */
+function loadModal(url) {
+  return fetch(url)
+      .then(response => {
+          if (!response.ok) {
+              throw new Error(`Failed to fetch "${url}". HTTP status: ${response.status}`);
+          }
+          return response.text();
+      });
+}
+
+/**
+* After loading modal HTML snippets, insert them into #modals,
+* then attach event listeners (including the "Add Lifting Surface"/"Add Fuselage" buttons).
+*/
+function attachModalHTMLAndListeners(modalHTMLs) {
+  const modalsContainer = document.getElementById("modals");
+  if (!modalsContainer) {
+      console.error("No <div id='modals'></div> found in your HTML. Cannot insert modals.");
+      return;
+  }
+
+  // Insert all modal snippets together
+  modalsContainer.innerHTML = modalHTMLs.join("\n");
+
+  // Now that the modal elements exist in the DOM, attach event listeners
+  attachModalEventListeners();
+}
+
+/**
+* Attach event listeners to the newly injected modal DOM elements
+* and also to the "Add Lifting Surface" / "Add Fuselage" buttons.
+*/
+function attachModalEventListeners() {
+  // --- Lifting Surface Modal ---
+  const lsModal = document.getElementById("liftingSurfaceModal");
+  if (!lsModal) {
+      console.error("Cannot find #liftingSurfaceModal in DOM!");
+      return;
+  }
+
+  // Cancel button
+  const lsCancelBtn = document.getElementById("ls_cancel");
+  lsCancelBtn.addEventListener("click", function() {
+      lsModal.style.display = "none";
+      window.editingType = "";
+      window.editingObject = null;
+  });
+
+  // Submit button
+  const lsSubmitBtn = document.getElementById("ls_submit");
+  lsSubmitBtn.addEventListener("click", function() {
+      const newData = {
+          name: document.getElementById("ls_name").value,
+          mass_kg: parseFloat(document.getElementById("ls_mass_kg").value),
+          root_LE: document.getElementById("ls_root_LE").value.split(",").map(Number),
+          AR: parseFloat(document.getElementById("ls_AR").value),
+          TR: parseFloat(document.getElementById("ls_TR").value),
+          mirror: document.getElementById("ls_mirror").checked,
+          symmetric: document.getElementById("ls_symmetric").checked,
+          dihedral_DEG: parseFloat(document.getElementById("ls_dihedral_DEG").value),
+          vertical: document.getElementById("ls_vertical").checked,
+          sweep_quarter_chord_DEG: parseFloat(document.getElementById("ls_sweep_quarter_chord_DEG").value),
+          surface_area_m2: parseFloat(document.getElementById("ls_surface_area_m2").value),
+          Oswald_factor: parseFloat(document.getElementById("ls_Oswald_factor").value),
+          mean_aerodynamic_chord_m: parseFloat(document.getElementById("ls_mean_aerodynamic_chord_m").value),
+          stations_eta: document.getElementById("ls_stations_eta").value.split(",").map(Number),
+          radius_of_giration_pitch_m: parseFloat(document.getElementById("ls_radius_of_giration_pitch_m").value),
+          radius_of_giration_yaw_m: parseFloat(document.getElementById("ls_radius_of_giration_yaw_m").value),
+          radius_of_giration_roll_m: parseFloat(document.getElementById("ls_radius_of_giration_roll_m").value),
+          principal_axis_pitch_up_DEG: parseFloat(document.getElementById("ls_principal_axis_pitch_up_DEG").value),
+          CoG_pos_xyz_m: document.getElementById("ls_CoG_pos_xyz_m").value.split(",").map(Number),
+          aerodynamic_center_pos_xyz_m: document.getElementById("ls_aerodynamic_center_pos_xyz_m").value.split(",").map(Number)
+      };
+
+      // If editing an existing surface
+      if (window.editingType === "lifting_surface" && window.editingObject) {
+          Object.assign(window.editingObject, newData);
+          window.editingObject = null;
+          window.editingType = "";
+          lsModal.style.display = "none";
+          renderAircraft();
+          if (window.selectedComponent) {
+              revertColor(window.selectedComponent);
+              gizmoManager.attachToMesh(null);
+              window.selectedComponent = null;
+              clearSelectedNameDisplay();
+          }
+      } else {
+          // Else adding a new surface
+          aircraftData.lifting_surfaces.push(newData);
+          addLiftingSurfaceToScene(newData, aircraftData, aircraftRoot, liftingSurfaceColors);
+          lsModal.style.display = "none";
+      }
+  });
+
+  // --- Fuselage Modal ---
+  const fusModal = document.getElementById("fuselageModal");
+  if (!fusModal) {
+      console.error("Cannot find #fuselageModal in DOM!");
+      return;
+  }
+
+  // Cancel button
+  const fusCancelBtn = document.getElementById("fus_cancel");
+  fusCancelBtn.addEventListener("click", function() {
+      fusModal.style.display = "none";
+      window.editingType = "";
+      window.editingObject = null;
+  });
+
+  // Submit button
+  const fusSubmitBtn = document.getElementById("fus_submit");
+  fusSubmitBtn.addEventListener("click", function() {
+      const newData = {
+          name: document.getElementById("fus_name").value,
+          diameter: parseFloat(document.getElementById("fus_diameter").value),
+          length: parseFloat(document.getElementById("fus_length").value),
+          nose_position: document.getElementById("fus_nose_position").value.split(",").map(Number)
+      };
+
+      // If editing existing fuselage
+      if (window.editingType === "fuselage" && window.editingObject) {
+          Object.assign(window.editingObject, newData);
+          window.editingObject = null;
+          window.editingType = "";
+          fusModal.style.display = "none";
+          renderAircraft();
+          if (window.selectedComponent) {
+              revertColor(window.selectedComponent);
+              gizmoManager.attachToMesh(null);
+              window.selectedComponent = null;
+          }
+          clearSelectedNameDisplay();
+      } else {
+          // Else adding a new fuselage
+          if (!aircraftData.fuselages) {
+              aircraftData.fuselages = [];
+          }
+          aircraftData.fuselages.push(newData);
+          addFuselageToScene(newData, aircraftRoot);
+          fusModal.style.display = "none";
+      }
+  });
+
+  // --- Buttons in the top bar: "Add Lifting Surface", "Add Fuselage" ---
+  const addLSBtn = document.getElementById("addLiftingSurfaceBtn");
+  if (!addLSBtn) {
+      console.error("No #addLiftingSurfaceBtn found in the HTML. Check your <button> ID.");
+  } else {
+      addLSBtn.addEventListener("click", function() {
+          window.editingType = "";
+          window.editingObject = null;
+          lsModal.style.display = "block";
+      });
+  }
+
+  const addFusBtn = document.getElementById("addFuselageBtn");
+  if (!addFusBtn) {
+      console.error("No #addFuselageBtn found in the HTML. Check your <button> ID.");
+  } else {
+      addFusBtn.addEventListener("click", function() {
+          window.editingType = "";
+          window.editingObject = null;
+          fusModal.style.display = "block";
+      });
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MAIN LOGIC: Load the two modal files, then attach them to the page.
+// -----------------------------------------------------------------------------
+Promise.all([
+  loadModal("modals/ls-modal.html"),
+  loadModal("modals/fuselage-modal.html")
+])
+.then(function(modalHTMLs) {
+  attachModalHTMLAndListeners(modalHTMLs);
+})
+.catch(function(error) {
+  console.error("Failed to load one or more modals. Make sure you run from a web server. Error:", error);
+});
+
+###########################################
+# FILE: scene-utils.js
+###########################################
+
+// js/scene-utils.js
+
+function getMetadata(mesh) {
+    let current = mesh;
+    while (current) {
+      if (current.metadata && current.metadata.data) {
+        return { mesh: current, metadata: current.metadata };
+      }
+      current = current.parent;
+    }
+    return null;
+  }
+  
+  function updateSelectedNameDisplay(name) {
+    const span = document.getElementById("selectedComponentName");
+    span.innerText = "Selected: " + name;
+    document.getElementById("editComponentBtn").disabled = (name === "None" || name === "Ground");
+  }
+  
+  function clearSelectedNameDisplay() {
+    document.getElementById("selectedComponentName").innerText = "Selected: None";
+    document.getElementById("editComponentBtn").disabled = true;
+  }
+  
+  function setColorLightPink(componentNode) {
+    const glowColor = new BABYLON.Color3(1, 0.4, 0.7);
+    componentNode.getChildMeshes().forEach(m => {
+      if (m.material) {
+        m.metadata = m.metadata || {};
+        if (!m.metadata.originalEmissive) {
+          m.metadata.originalEmissive = m.material.emissiveColor.clone();
+        }
+        m.material.emissiveColor = glowColor;
+      }
+    });
+  }
+  
+  function revertColor(componentNode) {
+    componentNode.getChildMeshes().forEach(m => {
+      if (m.material && m.metadata && m.metadata.originalEmissive) {
+        m.material.emissiveColor = m.metadata.originalEmissive;
+      }
+    });
+  }
+  
+
+###########################################
+# FILE: ui-logic.js
+###########################################
+
+// js/ui-logic.js
+
+
+
+// Example snippet:
+document.getElementById("ls_submit").addEventListener("click", function() {
+  // gather data from #ls_name, #ls_AR, etc...
+  // add or edit the lifting surface in aircraftData
+  // hide the modal with:
+  document.getElementById("liftingSurfaceModal").style.display = "none";
+});
+
+
+// Global aircraft data and editing variables
+window.aircraftData = {
+    general: {
+      aircraft_reference_surface_m2: 10.0,
+      aircraft_reference_mean_aerodynamic_chord_m: 3.0,
+      aircraft_CoG_coords_xyz_m: [2, 1, 0]
+    },
+    lifting_surfaces: [],
+    fuselages: [],
+    engines: []
+  };
+  
+  window.editingType = ""; // "lifting_surface" or "fuselage"
+  window.editingObject = null;
+  window.selectedComponent = null;
+  
+  var liftingSurfaceColors = [
+    new BABYLON.Color3(0.8, 1.0, 0.8),
+    new BABYLON.Color3(0.9, 0.8, 1.0),
+    new BABYLON.Color3(0.7, 0.9, 0.7),
+    new BABYLON.Color3(0.8, 0.7, 0.9)
+  ];
+  
+  function renderAircraft() {
+    // Dispose of meshes and transform nodes that are not part of the new aircraft
+    scene.meshes.slice().forEach(function(mesh) {
+      if (
+        mesh !== camera && mesh !== light && mesh !== ground &&
+        mesh.name.indexOf("axis") === -1 && mesh.name !== "aircraftRoot"
+      ) {
+        mesh.dispose();
+      }
+    });
+    scene.transformNodes.slice().forEach(function(tn) {
+      if (tn.name !== "aircraftRoot" && tn !== camera && tn !== light) {
+        tn.dispose();
+      }
+    });
+    createAircraftRoot();
+    aircraftData.lifting_surfaces.forEach(function(surface) {
+      addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors);
+    });
+    aircraftData.fuselages.forEach(function(fus) {
+      addFuselageToScene(fus, aircraftRoot);
+    });
+  }
+  
+  function parseAircraft(data) {
+    aircraftData = JSON.parse(data);
+    renderAircraft();
+  }
+  
+  // Prevent pointer events on the Edit button from reaching the scene.
+  document.getElementById("editComponentBtn").addEventListener("pointerdown", function(e) {
+    e.stopPropagation();
+  });
+  document.getElementById("editComponentBtn").addEventListener("click", function() {
+    if (!window.selectedComponent) return;
+    var info = getMetadata(window.selectedComponent);
+    if (info && info.metadata && info.metadata.data) {
+      if (info.metadata.type === "lifting_surface") {
+        window.editingType = "lifting_surface";
+        window.editingObject = info.metadata.data;
+        // Fill the modal fields via the modal loader (see modal-loader.js)
+        fillLiftingSurfaceModal(window.editingObject);
+      } else if (info.metadata.type === "fuselage") {
+        window.editingType = "fuselage";
+        window.editingObject = info.metadata.data;
+        fillFuselageModal(window.editingObject);
+      }
+    }
+  });
+  
+  // File input to load a JSON file
+  document.getElementById("fileInput").addEventListener("change", function(event) {
+    var file = event.target.files[0];
+    if (file && file.name.endsWith(".json")) {
+      var reader = new FileReader();
+      reader.onload = function(e) { parseAircraft(e.target.result); };
+      reader.readAsText(file);
+    } else {
+      alert("Please select a valid '.json' file.");
+    }
+  });
+  
+  // Download the aircraft JSON
+  document.getElementById("downloadJsonBtn").addEventListener("click", function() {
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(aircraftData, null, 2));
+    var dlAnchorElem = document.createElement("a");
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "aircraft.json");
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    document.body.removeChild(dlAnchorElem);
+  });
+  
+  // Clear the aircraft
+  document.getElementById("clearAircraft").addEventListener("click", function() {
+    aircraftData.lifting_surfaces = [];
+    aircraftData.fuselages = [];
+    renderAircraft();
+    if (window.selectedComponent) {
+      revertColor(window.selectedComponent);
+      gizmoManager.attachToMesh(null);
+      window.selectedComponent = null;
+    }
+    clearSelectedNameDisplay();
+  });
+  
+  // Toggle ground visibility
+  document.getElementById("toggleGround").addEventListener("click", function() {
+    ground.isVisible = !ground.isVisible;
+  });
+  
+
+
+
+
+###########################################
+# FILE: fuselage-modal.html
+###########################################
+
+<!-- modals/fuselage-modal.html -->
+<div id="fuselageModal" class="modal">
+    <div class="modal-content">
+      <h3>Add / Edit Fuselage</h3>
+      <label>Name:</label> <input type="text" id="fus_name" value="fus1"><br>
+      <label>Diameter:</label> <input type="number" step="0.1" id="fus_diameter" value="2.5"><br>
+      <label>Length:</label> <input type="number" step="0.1" id="fus_length" value="15.0"><br>
+      <label>Nose (x,y,z):</label> <input type="text" id="fus_nose_position" value="0,0,0"><br>
+      <button id="fus_submit">Submit</button>
+      <button id="fus_cancel">Cancel</button>
+    </div>
+  </div>
+  
+
+###########################################
+# FILE: ls-modal.html
+###########################################
+
+<!-- modals/ls-modal.html -->
+<div id="liftingSurfaceModal" class="modal">
+    <div class="modal-content">
+      <h3>Add / Edit Lifting Surface</h3>
+      <label>Name:</label> <input type="text" id="ls_name" value="wing"><br>
+      <label>Mass (kg):</label> <input type="number" id="ls_mass_kg" value="600"><br>
+      <label>Root LE (x,y,z):</label> <input type="text" id="ls_root_LE" value="0,0,0"><br>
+      <label>AR:</label> <input type="number" step="0.01" id="ls_AR" value="8.33"><br>
+      <label>TR:</label> <input type="number" step="0.01" id="ls_TR" value="0.6"><br>
+      <label>Mirror:</label> <input type="checkbox" id="ls_mirror"><br>
+      <label>Symmetric:</label> <input type="checkbox" id="ls_symmetric" checked><br>
+      <label>Dihedral (°):</label> <input type="number" step="0.1" id="ls_dihedral_DEG" value="3"><br>
+      <label>Vertical:</label> <input type="checkbox" id="ls_vertical"><br>
+      <label>Sweep (°):</label> <input type="number" step="0.1" id="ls_sweep_quarter_chord_DEG" value="15"><br>
+      <label>Area (m²):</label> <input type="number" step="0.1" id="ls_surface_area_m2" value="48"><br>
+      <label>Oswald:</label> <input type="number" step="0.01" id="ls_Oswald_factor" value="0.7"><br>
+      <label>MAC (m):</label> <input type="number" step="0.01" id="ls_mean_aerodynamic_chord_m" value="1.35"><br>
+      <label>Stations (η):</label> <input type="text" id="ls_stations_eta" value="0,0.5,1"><br>
+      <label>Gyration Pitch:</label> <input type="number" step="0.1" id="ls_radius_of_giration_pitch_m" value="3.5"><br>
+      <label>Gyration Yaw:</label> <input type="number" step="0.1" id="ls_radius_of_giration_yaw_m" value="4.0"><br>
+      <label>Gyration Roll:</label> <input type="number" step="0.1" id="ls_radius_of_giration_roll_m" value="4.0"><br>
+      <label>Pitch Up (°):</label> <input type="number" step="0.1" id="ls_principal_axis_pitch_up_DEG" value="-2"><br>
+      <label>CoG (x,y,z):</label> <input type="text" id="ls_CoG_pos_xyz_m" value="0,0,0"><br>
+      <label>AC (x,y,z):</label> <input type="text" id="ls_aerodynamic_center_pos_xyz_m" value="2.9,0,0"><br>
+      <button id="ls_submit">Submit</button>
+      <button id="ls_cancel">Cancel</button>
+    </div>
+  </div>
+  
+
+###########################################
+# FILE: style.css
+###########################################
+
+html, body {
+    width: 100%; 
+    height: 100%;
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  
+  #renderCanvas {
+    width: 100%; 
+    height: 100%;
+    touch-action: none;
+    display: block;
+    margin-top: 60px; /* leave room for top controls */
+  }
+  
+  /* Top-fixed controls */
+  #controls {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    padding: 5px;
+    text-align: center;
+    background-color: #a9a9e9;
+    border-bottom: 1px solid #ccc;
+  }
+  #controls input, #controls button {
+    margin: 5px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  #selectedComponentName {
+    font-weight: bold;
+    margin-left: 20px;
+  }
+  
+  /* Toggle ground button at bottom center */
+  #toggleGround {
+    position: fixed;
+    bottom: 20px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px; 
+    height: 40px;
+    border-radius: 50%;
+    background-color: #3366FF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    font-size: 20px;
+    z-index: 100;
+  }
+  #toggleGround:hover { 
+    background-color: #254EDB; 
+  }
+  
+  /* Clear Aircraft Button */
+  #clearAircraft {
+    padding: 6px 10px;
+    border-radius: 3px;
+    background-color: #FF3333;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  #clearAircraft:hover { 
+    background-color: #f87c56; 
+  }
+  
+  /* Modal styles – fixed at the top center */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0; 
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #fff;
+    position: fixed;
+    top: 20px; 
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 20px;
+    border: 2px solid #444;
+    border-radius: 5px;
+    width: 350px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+  .modal-content h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #444;
+  }
+  .modal-content label {
+    display: inline-block;
+    width: 120px;
+    margin: 5px 0;
+  }
+  .modal-content input {
+    display: inline-block;
+    width: 200px;
+    margin: 5px 0;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+  }
+  .modal-content button {
+    margin: 10px 10px 0 0;
+    padding: 6px 12px;
+    background-color: #3366FF;
+    border: none;
+    color: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .modal-content button:hover { 
+    background-color: #254EDB; 
+  }
+  
+

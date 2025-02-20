@@ -8,7 +8,7 @@ window.scene = null;
 function initBabylon() {
   engine = new BABYLON.Engine(canvas, true);
   scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color3(0.1, 0.1, 0.5);
+  scene.clearColor = new BABYLON.Color3(0.9, 0.9, 0.97);
 
   // Create camera
   window.camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 3, 60, new BABYLON.Vector3(10, 5, 0), scene);
@@ -31,7 +31,7 @@ function initBabylon() {
   var size = 64;
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
-      ctx.fillStyle = ((i+j) % 2 === 0) ? "#3366FF" : "#99CCFF";
+      ctx.fillStyle = ((i+j) % 2 === 0) ? "#99ccff" : "#66b3ff";
       ctx.fillRect(i*size, j*size, size, size);
     }
   }
