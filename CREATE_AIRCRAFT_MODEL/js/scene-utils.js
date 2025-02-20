@@ -42,23 +42,27 @@ function clearHighlight(componentNode) {
 
 function setTranslucencyMode(enabled) {
   const alphaValue = enabled ? 0.5 : 1.0;
+  // When enabled, use ALPHABLEND; when disabled, use OPAQUE.
+  const transparencyMode = enabled ? BABYLON.Material.MATERIAL_ALPHABLEND : BABYLON.Material.MATERIAL_OPAQUE;
 
-  // Set alpha on all child meshes under aircraftRoot, except those that are labels.
+  // Update materials for all child meshes under aircraftRoot.
   if (window.aircraftRoot) {
     window.aircraftRoot.getChildMeshes().forEach(mesh => {
       if (mesh.name.startsWith("label_")) return;  // Skip labels
-      if (mesh.material && typeof mesh.material.alpha === "number") {
+      if (mesh.material) {
         mesh.material.alpha = alphaValue;
+        mesh.material.transparencyMode = transparencyMode;
       }
     });
   }
 
-  // Set alpha on all child meshes under glbRoot, except those that are labels.
+  // Update materials for all child meshes under glbRoot.
   if (window.glbRoot) {
     window.glbRoot.getChildMeshes().forEach(mesh => {
       if (mesh.name.startsWith("label_")) return;  // Skip labels
-      if (mesh.material && typeof mesh.material.alpha === "number") {
+      if (mesh.material) {
         mesh.material.alpha = alphaValue;
+        mesh.material.transparencyMode = transparencyMode;
       }
     });
   }
