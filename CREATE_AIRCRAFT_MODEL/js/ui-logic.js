@@ -120,6 +120,16 @@ async function loadGLBFile(file) {
       window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
     }
   });
+// 1) A global or local flag to track current translucency mode
+window.isTranslucent = false;
+
+document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
+  // Toggle the global flag
+  window.isTranslucent = !window.isTranslucent;
+  // Apply new mode
+  setTranslucencyMode(window.isTranslucent);
+});
+
 })();
 
 ///////////////////////////////
@@ -447,3 +457,5 @@ function openEditModalForSelected() {
     }
   }
 }
+
+
