@@ -8,7 +8,7 @@ function getMetadata(mesh) {
     }
     current = current.parent;
   }
-  // If none found, check if mesh is descendant of glbRoot.
+  // If none found, check if mesh is descendant of glbRoot
   if (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) {
     return { mesh: window.glbRoot, metadata: window.glbRoot.metadata };
   }
@@ -24,34 +24,16 @@ function isDescendantOf(child, parent) {
   return false;
 }
 
-function updateSelectedNameDisplay(name) {
-  const span = document.getElementById("selectedComponentName");
-  span.innerText = "Selected: " + name;
-  document.getElementById("editComponentBtn").disabled = (name === "None" || name === "Ground");
-}
-
-function clearSelectedNameDisplay() {
-  document.getElementById("selectedComponentName").innerText = "Selected: None";
-  document.getElementById("editComponentBtn").disabled = true;
-}
-
+// Add highlight
 function setColorLightPink(componentNode) {
-  const glowColor = new BABYLON.Color3(1, 0.4, 0.7);
-  componentNode.getChildMeshes().forEach(m => {
-    if (m.material) {
-      m.metadata = m.metadata || {};
-      if (!m.metadata.originalEmissive) {
-        m.metadata.originalEmissive = m.material.emissiveColor.clone();
-      }
-      m.material.emissiveColor = glowColor;
-    }
+  componentNode.getChildMeshes().forEach(mesh => {
+    window.hl.addMesh(mesh, new BABYLON.Color3(1.0, 0.4, 0.7));
   });
 }
 
-function revertColor(componentNode) {
-  componentNode.getChildMeshes().forEach(m => {
-    if (m.material && m.metadata && m.metadata.originalEmissive) {
-      m.material.emissiveColor = m.metadata.originalEmissive;
-    }
+// Remove highlight
+function clearHighlight(componentNode) {
+  componentNode.getChildMeshes().forEach(mesh => {
+    window.hl.removeMesh(mesh);
   });
 }

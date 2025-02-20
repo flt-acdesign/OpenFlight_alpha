@@ -1,64 +1,107 @@
 // js/interaction.js
 
 var pointerDownPos = null;
+window.ctrlIsPressed = false;
 
-scene.onPointerObservable.add(function(pointerInfo) {
-  if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-    pointerDownPos = { x: pointerInfo.event.clientX, y: pointerInfo.event.clientY };
-  } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
-    const dx = pointerInfo.event.clientX - pointerDownPos.x;
-    const dy = pointerInfo.event.clientY - pointerDownPos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const isClick = dist < 5;
-    pointerDownPos = null;
-    
-    if (pointerInfo.event.button === 2) { // right-click
-      if (pointerInfo.pickInfo.hit) {
-        camera.target = pointerInfo.pickInfo.pickedPoint;
-        if (pointerInfo.pickInfo.pickedMesh && pointerInfo.pickInfo.pickedMesh.name === "ground") {
-          clearSelectedNameDisplay();
-          updateSelectedNameDisplay("Ground");
-        }
-      }
-      return;
-    }
-    
-    if (!isClick) return;
-    
-    const pickInfo = pointerInfo.pickInfo;
-    if (!pickInfo.hit || (pickInfo.hit && pickInfo.pickedMesh.name === "ground")) {
-      if (window.selectedComponent) {
-        revertColor(window.selectedComponent);
-        gizmoManager.attachToMesh(null);
-        window.selectedComponent = null;
-      }
-      clearSelectedNameDisplay();
-      if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
-        updateSelectedNameDisplay("Ground");
-      }
-      return;
-    }
-    
-    const info = getMetadata(pickInfo.pickedMesh);
-    if (info) {
-      if (window.selectedComponent && window.selectedComponent === info.mesh) return;
-      if (window.selectedComponent && window.selectedComponent !== info.mesh) {
-        revertColor(window.selectedComponent);
-      }
-      window.selectedComponent = info.mesh;
-      setColorLightPink(window.selectedComponent);
+// Here we track Ctrl so that we only allow dragging while it’s pressed
+window.addEventListener("keydown", function (evt) {
+  if (evt.key === "Control") {
+    window.ctrlIsPressed = true;
+    // If we already have something selected, attach the gizmo
+    if (window.selectedComponent) {
       gizmoManager.attachToMesh(window.selectedComponent);
-      updateSelectedNameDisplay(info.metadata.data.name || "Unnamed");
     }
   }
 });
 
-// When pointer is released, update the component’s data based on its new position.
-scene.onPointerObservable.add(function(pointerInfo) {
+window.addEventListener("keyup", function (evt) {
+  if (evt.key === "Control") {
+    window.ctrlIsPressed = false;
+    // If we had a gizmo, detach it now
+    gizmoManager.attachToMesh(null);
+  }
+});
+
+scene.onPointerObservable.add(function (pointerInfo) {
+  switch (pointerInfo.type) {
+    case BABYLON.PointerEventTypes.POINTERDOWN:
+      pointerDownPos = {
+        x: pointerInfo.event.clientX,
+        y: pointerInfo.event.clientY
+      };
+      break;
+
+    case BABYLON.PointerEventTypes.POINTERUP:
+      // Distinguish "click" vs. "drag"
+      if (!pointerDownPos) return;
+      const dx = pointerInfo.event.clientX - pointerDownPos.x;
+      const dy = pointerInfo.event.clientY - pointerDownPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const isClick = dist < 5;
+      pointerDownPos = null;
+
+      // Right-click => pivot camera only
+      if (pointerInfo.event.button === 2) {
+        if (pointerInfo.pickInfo.hit) {
+          camera.target = pointerInfo.pickInfo.pickedPoint;
+          if (pointerInfo.pickInfo.pickedMesh &&
+              pointerInfo.pickInfo.pickedMesh.name === "ground") {
+            clearSelectedNameDisplay();
+            updateSelectedNameDisplay("Ground");
+          }
+        }
+        return;
+      }
+
+      if (!isClick) return;
+
+      const pickInfo = pointerInfo.pickInfo;
+      // If click missed or clicked ground => unselect
+      if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
+        if (window.selectedComponent) {
+          clearHighlight(window.selectedComponent);
+          gizmoManager.attachToMesh(null);
+          window.selectedComponent = null;
+        }
+        clearSelectedNameDisplay();
+        if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
+          updateSelectedNameDisplay("Ground");
+        }
+        return;
+      }
+
+      // Otherwise, we clicked a mesh
+      const info = getMetadata(pickInfo.pickedMesh);
+      if (info) {
+        // If something else was selected, revert highlight
+        if (window.selectedComponent && window.selectedComponent !== info.mesh) {
+          clearHighlight(window.selectedComponent);
+        }
+        window.selectedComponent = info.mesh;
+        setColorLightPink(window.selectedComponent);
+
+        // Only attach gizmo if Ctrl is pressed
+        if (window.ctrlIsPressed) {
+          gizmoManager.attachToMesh(window.selectedComponent);
+        } else {
+          gizmoManager.attachToMesh(null);
+        }
+
+        const compName = info.metadata.data.name ||
+                         (info.metadata.type === "glb" ? "GLB Model" : "Unnamed");
+        updateSelectedNameDisplay(compName);
+      }
+      break;
+  }
+});
+
+// If pointer is released, we may update JSON data
+scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
+      // Store new position
       if (md.type === "lifting_surface") {
         md.data.root_LE = [
           window.selectedComponent.position.x,
@@ -72,6 +115,7 @@ scene.onPointerObservable.add(function(pointerInfo) {
           window.selectedComponent.position.z
         ];
       }
+      // if glb => store position in md.data if needed
     }
   }
 });

@@ -32,7 +32,6 @@
     <button id="applyGlbScaleBtn">Apply Scale</button>
   </div>
   
-
   <!-- Canvas for BabylonJS -->
   <canvas id="renderCanvas"></canvas>
 
@@ -98,48 +97,156 @@
 
 // js/babylon-setup.js
 
-// Global references.
 window.canvas = document.getElementById("renderCanvas");
 window.engine = null;
 window.scene = null;
 window.camera = null;
-window.light = null;
-window.dirLight = null;
 window.ground = null;
 window.gizmoManager = null;
 window.aircraftRoot = null;
-window.glbRoot = null; // Parent node for GLB models
+window.glbRoot = null;
+
+// We'll use a highlight layer for selection
+window.hl = null;
+// If you need references to shadow gen, directional lights, etc.
+window.shadowGenerator = null;
 
 function initBabylon() {
-  engine = new BABYLON.Engine(canvas, true);
+  // 1) Engine & Scene
+  engine = new BABYLON.Engine(canvas, true, { stencil: true });
   scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color3(0.9, 0.9, 0.97);
 
-  camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI/2, Math.PI/3, 60, new BABYLON.Vector3(10,5,0), scene);
+  // 2) Set background color from the snippet
+  scene.clearColor = new BABYLON.Color4(153 / 255, 204 / 255, 1, 1); // RGBA
+
+  // 3) Snippet's ArcRotateCamera
+  camera = new BABYLON.ArcRotateCamera(
+    "Camera",
+    -2.21,           // alpha
+    1.088,           // beta
+    35,              // radius
+    new BABYLON.Vector3(19, 11, 6),  // target
+    scene
+  );
+  camera.fov = 0.647;
+  //camera.upVector = new BABYLON.Vector3(0, 0, 1);
+  camera.rotation.z = Math.PI / 2;
   camera.attachControl(canvas, true);
-  camera.inputs.remove(camera.inputs.attached["pointers"]);
-  const pointerInput = new BABYLON.ArcRotateCameraPointersInput();
-  pointerInput.buttons = [0];
-  camera.inputs.add(pointerInput);
-  camera.inertia = 0;
-  camera.lowerRadiusLimit = 0.1;
-  camera.upperRadiusLimit = 1000;
+  camera.upperBetaLimit = Math.PI;
+  camera.lowerBetaLimit = 0;
+  camera.lowerAlphaLimit = null;
+  camera.upperAlphaLimit = null;
+  camera.inertia = 0.9;
+  camera.lowerRadiusLimit = 0.2;
+  camera.upperRadiusLimit = 150;
+  camera.wheelPrecision = 150;
 
-  light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0,1,0), scene);
-  light.intensity = 0.8;
-  dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0,-1,1), scene);
-  dirLight.intensity = 0.3;
+  // Zoom rate & panning sensibility based on distance
+  camera.onViewMatrixChangedObservable.add(() => {
+    const distance = BABYLON.Vector3.Distance(camera.position, camera.target);
+    camera.wheelPrecision = 200 / distance;
+    camera.panningSensibility = 5000 / distance;
+  });
 
-  ground = BABYLON.MeshBuilder.CreateGround("ground", {width:100, height:100}, scene);
+  // Track original & last target for camera transitions
+  const originalTarget = camera.target.clone();
+  let lastTarget = camera.target.clone();
+
+  // Middle-mouse click => pick & pivot
+  canvas.addEventListener("pointerdown", function (evt) {
+    // NOTE: Typically button===1 is Middle in most browsers
+    if (evt.button === 1) {
+      evt.preventDefault(); // skip context menu
+      const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+      if (pickResult.hit) {
+        lastTarget = camera.target.clone();
+        smoothTransitionToTarget(pickResult.pickedPoint, camera, scene, 0.3);
+      }
+    }
+  });
+
+
+
+  canvas.addEventListener("dblclick", function () {
+    const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+  
+    if (pickResult.hit) {
+      // Did we double-click the same object that is currently selected?
+      const info = getMetadata(pickResult.pickedMesh);
+      if (info && window.selectedComponent === info.mesh) {
+        // Yes => open the edit modal
+        openEditModalForSelected();
+        return; 
+      }
+      // If we hit a different mesh (or unselected item), do nothing special,
+      // or you can also choose to select it. But for now, we do nothing.
+    }
+  
+    // If the user double-clicked empty space => revert to last target
+    if (!pickResult.hit) {
+      smoothTransitionToTarget(lastTarget, camera, scene, 0.3);
+    }
+  });
+
+
+  // Keyboard 'h' => lastTarget, 'o' => originalTarget
+  window.addEventListener("keydown", function (evt) {
+    if (evt.key === "h" || evt.key === "H") {
+      smoothTransitionToTarget(lastTarget, camera, scene, 0.3);
+    } else if (evt.key === "o" || evt.key === "O") {
+      smoothTransitionToTarget(originalTarget, camera, scene, 0.3);
+    }
+  });
+
+  // 4) Lights from snippet
+  const hemi_light_from_above = new BABYLON.HemisphericLight(
+    "hemiLight_above",
+    new BABYLON.Vector3(0, 1, 0),
+    scene
+  );
+  hemi_light_from_above.intensity = 0.5;
+  hemi_light_from_above.diffuse = new BABYLON.Color3(1, 1, 1);
+
+  const hemi_light_from_below = new BABYLON.HemisphericLight(
+    "hemiLight_below",
+    new BABYLON.Vector3(0, -1, 0),
+    scene
+  );
+  hemi_light_from_below.intensity = 0.4;
+  hemi_light_from_below.groundColor = new BABYLON.Color3(0, 0, 1);
+
+  const dlight = new BABYLON.DirectionalLight(
+    "dir_from_below",
+    new BABYLON.Vector3(0, 0, 1),
+    scene
+  );
+  dlight.position = new BABYLON.Vector3(0, 0, 0);
+  dlight.intensity = 0.5;
+
+  // Let directional light track camera direction
+  scene.registerBeforeRender(function () {
+    dlight.direction = camera.getTarget().subtract(camera.position).normalize();
+  });
+
+  // 5) Shadow generator (optional)
+  window.shadowGenerator = new BABYLON.ShadowGenerator(2048, dlight);
+  shadowGenerator.useBlurExponentialShadowMap = true;
+  shadowGenerator.blurKernel = 32;
+
+  // 6) Create a highlight layer
+  window.hl = new BABYLON.HighlightLayer("hl1", scene);
+
+  // 7) Create ground (from your original code):
+  ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
   const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
   groundMat.alpha = 0.5;
-  const dt = new BABYLON.DynamicTexture("groundDT", {width:512, height:512}, scene, false);
+  const dt = new BABYLON.DynamicTexture("groundDT", { width: 512, height: 512 }, scene, false);
   const ctx = dt.getContext();
   const tileSize = 64;
-  for(let i=0;i<8;i++){
-    for(let j=0;j<8;j++){
-      ctx.fillStyle = ((i+j)%2===0) ? "#99ccff" : "#66b3ff";
-      ctx.fillRect(i*tileSize, j*tileSize, tileSize, tileSize);
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      ctx.fillStyle = ( (i + j) % 2 === 0 ) ? "#99ccff" : "#66b3ff";
+      ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
     }
   }
   dt.update();
@@ -147,38 +254,53 @@ function initBabylon() {
   ground.material = groundMat;
   ground.isPickable = true;
 
-  // Optional axis lines.
-  const axisX = BABYLON.MeshBuilder.CreateLines("axisX", {points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(10,0,0)]}, scene);
-  axisX.color = new BABYLON.Color3(1,0,0);
-  const axisY = BABYLON.MeshBuilder.CreateLines("axisY", {points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,10,0)]}, scene);
-  axisY.color = new BABYLON.Color3(0,1,0);
-  const axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", {points: [new BABYLON.Vector3(0,0,0), new BABYLON.Vector3(0,0,10)]}, scene);
-  axisZ.color = new BABYLON.Color3(0,0,1);
-
-  const glowLayer = new BABYLON.GlowLayer("glow", scene);
-  glowLayer.intensity = 0.8;
-
+  // 8) Gizmo Manager
   gizmoManager = new BABYLON.GizmoManager(scene);
   gizmoManager.positionGizmoEnabled = true;
   gizmoManager.rotationGizmoEnabled = false;
   gizmoManager.scaleGizmoEnabled = false;
 
+  // 9) Create the aircraft root
   createAircraftRoot();
 
+  // 10) If glbRoot not existing, create it
   if (!window.glbRoot) {
     window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
-    // Make glbRoot pickable and set its metadata.
-    window.glbRoot.isPickable = true;
+    window.glbRoot.isPickable = false;
     window.glbRoot.metadata = { type: "glb", data: {} };
   }
 
-  engine.runRenderLoop(function(){
+  // 11) Start rendering
+  engine.runRenderLoop(function () {
     scene.render();
   });
 
-  window.addEventListener("resize", function(){
+  // 12) Resize on window changes
+  window.addEventListener("resize", function () {
     engine.resize();
   });
+}
+
+// Smooth transition function from the snippet
+function smoothTransitionToTarget(newTarget, camera, scene, durationInSeconds) {
+  const frameRate = 60;
+  const totalFrames = durationInSeconds * frameRate;
+
+  const animCamTarget = new BABYLON.Animation(
+    "animCam",
+    "target",
+    frameRate,
+    BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+    BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+  );
+
+  const keys = [];
+  keys.push({ frame: 0, value: camera.target });
+  keys.push({ frame: totalFrames, value: newTarget });
+
+  animCamTarget.setKeys(keys);
+
+  scene.beginDirectAnimation(camera, [animCamTarget], 0, totalFrames, false);
 }
 
 function createAircraftRoot() {
@@ -186,8 +308,9 @@ function createAircraftRoot() {
     window.aircraftRoot.dispose();
   }
   window.aircraftRoot = new BABYLON.TransformNode("aircraftRoot", scene);
-  window.aircraftRoot.rotation.x = -Math.PI/2;
-  window.aircraftRoot.renderingGroupId = 2; // JSON geometry rendered on top
+  // Rotate so that +z is up if you like:
+  window.aircraftRoot.rotation.x = -Math.PI / 2;
+  window.aircraftRoot.renderingGroupId = 2;
 }
 
 initBabylon();
@@ -199,125 +322,124 @@ initBabylon();
 // js/component-creation.js
 
 function createQuadMesh(name, pts, color) {
-    const customMesh = new BABYLON.Mesh(name, scene);
-    const positions = pts.flatMap(p => [p[0], p[1], p[2]]);
-    const pivot = BABYLON.Vector3.FromArray(pts[0]);
-    // Adjust positions relative to the pivot
-    for (let i = 0; i < positions.length; i += 3) {
-      positions[i]   -= pivot.x;
-      positions[i+1] -= pivot.y;
-      positions[i+2] -= pivot.z;
-    }
-    const indices = [0, 1, 2, 0, 2, 3];
-    const normals = [];
-    BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-    const vertexData = new BABYLON.VertexData();
-    vertexData.positions = positions;
-    vertexData.indices = indices;
-    vertexData.normals = normals;
-    vertexData.applyToMesh(customMesh);
-    const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
-    mat.diffuseColor = color;
-    mat.backFaceCulling = false;
-    customMesh.material = mat;
-    customMesh.position = pivot;
-    customMesh.isPickable = true;
-    return customMesh;
+  const customMesh = new BABYLON.Mesh(name, scene);
+  const positions = pts.flatMap(p => [p[0], p[1], p[2]]);
+  const pivot = BABYLON.Vector3.FromArray(pts[0]);
+  // Adjust positions relative to pivot
+  for (let i = 0; i < positions.length; i += 3) {
+    positions[i]   -= pivot.x;
+    positions[i+1] -= pivot.y;
+    positions[i+2] -= pivot.z;
   }
-  
-  function createFuselageNode(name, diameter, length, nosePosition) {
-    const parent = new BABYLON.TransformNode(name + "_parent", scene);
-    parent.name = name + "_transform";
-    parent.position = new BABYLON.Vector3(...nosePosition);
-    const color = new BABYLON.Color3(1.0, 0.7, 0.3);
-    const cylinder = BABYLON.MeshBuilder.CreateCylinder(name, {
-      height: length,
-      diameter: diameter,
-      tessellation: 32
-    }, scene);
-    cylinder.rotation.z = Math.PI / 2;
-    cylinder.position = new BABYLON.Vector3(length/2, 0, 0);
-    cylinder.isPickable = true;
-    cylinder.parent = parent;
-    const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
-    mat.diffuseColor = color;
-    mat.alpha = 0.8;
-    cylinder.material = mat;
-    parent.metadata = {
-      type: "fuselage",
-      data: null,
-      originalColor: color
-    };
-    parent.isPickable = false;
-    return parent;
+  const indices = [0, 1, 2, 0, 2, 3];
+  const normals = [];
+  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+  const vertexData = new BABYLON.VertexData();
+  vertexData.positions = positions;
+  vertexData.indices = indices;
+  vertexData.normals = normals;
+  vertexData.applyToMesh(customMesh);
+  const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
+  mat.diffuseColor = color;
+  mat.backFaceCulling = false;
+  customMesh.material = mat;
+  customMesh.position = pivot;
+  customMesh.isPickable = true;
+  return customMesh;
+}
+
+function createFuselageNode(name, diameter, length, nosePosition) {
+  const parent = new BABYLON.TransformNode(name + "_parent", scene);
+  parent.name = name + "_transform";
+  parent.position = new BABYLON.Vector3(...nosePosition);
+  const color = new BABYLON.Color3(1.0, 0.7, 0.3);
+  const cylinder = BABYLON.MeshBuilder.CreateCylinder(name, {
+    height: length,
+    diameter: diameter,
+    tessellation: 32
+  }, scene);
+  cylinder.rotation.z = Math.PI / 2;
+  cylinder.position = new BABYLON.Vector3(length/2, 0, 0);
+  cylinder.isPickable = true;
+  cylinder.parent = parent;
+  const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
+  mat.diffuseColor = color;
+  mat.alpha = 0.8;
+  cylinder.material = mat;
+  parent.metadata = {
+    type: "fuselage",
+    data: null,
+    originalColor: color
+  };
+  parent.isPickable = false;
+  return parent;
+}
+
+function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors) {
+  const parent = new BABYLON.TransformNode(surface.name + "_parent", scene);
+  parent.position = new BABYLON.Vector3(...surface.root_LE);
+  const index = aircraftData.lifting_surfaces.indexOf(surface);
+  const baseColor = liftingSurfaceColors[index % liftingSurfaceColors.length];
+  parent.metadata = {
+    type: "lifting_surface",
+    data: surface,
+    originalColor: baseColor
+  };
+  parent.parent = aircraftRoot;
+  parent.isPickable = false;
+
+  const area = surface.surface_area_m2;
+  const AR = surface.AR;
+  const TR = surface.TR;
+  const sweep = deg2rad(surface.sweep_quarter_chord_DEG);
+  const dihedral = deg2rad(surface.dihedral_DEG);
+  const span = Math.sqrt(area * AR);
+  const semi_span = span / 2;
+  const root_chord = (2 * area) / (span * (1 + TR));
+  const tip_chord = root_chord * TR;
+  const root_LE = [0,0,0];
+  let tip_le, root_te, tip_te;
+  if (surface.vertical) {
+    tip_le = [
+      root_LE[0] + semi_span * Math.tan(sweep),
+      root_LE[1],
+      root_LE[2] + semi_span
+    ];
+    root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
+    tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
+  } else {
+    tip_le = [
+      root_LE[0] + semi_span * Math.tan(sweep),
+      root_LE[1] + semi_span * Math.cos(dihedral),
+      root_LE[2] + semi_span * Math.sin(dihedral)
+    ];
+    root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
+    tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
   }
-  
-  function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors) {
-    const parent = new BABYLON.TransformNode(surface.name + "_parent", scene);
-    parent.position = new BABYLON.Vector3(...surface.root_LE);
-    const index = aircraftData.lifting_surfaces.indexOf(surface);
-    const baseColor = liftingSurfaceColors[index % liftingSurfaceColors.length];
-    parent.metadata = {
-      type: "lifting_surface",
-      data: surface,
-      originalColor: baseColor
-    };
-    parent.parent = aircraftRoot;
-    parent.isPickable = false;
-  
-    const area = surface.surface_area_m2;
-    const AR = surface.AR;
-    const TR = surface.TR;
-    const sweep = deg2rad(surface.sweep_quarter_chord_DEG);
-    const dihedral = deg2rad(surface.dihedral_DEG);
-    const span = Math.sqrt(area * AR);
-    const semi_span = span / 2;
-    const root_chord = (2 * area) / (span * (1 + TR));
-    const tip_chord = root_chord * TR;
-    const root_LE = [0,0,0];
-    let tip_le, root_te, tip_te;
-    if (surface.vertical) {
-      tip_le = [
-        root_LE[0] + semi_span * Math.tan(sweep),
-        root_LE[1],
-        root_LE[2] + semi_span
-      ];
-      root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
-      tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
-    } else {
-      tip_le = [
-        root_LE[0] + semi_span * Math.tan(sweep),
-        root_LE[1] + semi_span * Math.cos(dihedral),
-        root_LE[2] + semi_span * Math.sin(dihedral)
-      ];
-      root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
-      tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
-    }
-    const points = [root_LE, root_te, tip_te, tip_le];
-    const mesh = createQuadMesh(surface.name, points, baseColor);
-    mesh.parent = parent;
-    // If the surface is symmetric (and not vertical), create a mirror.
-    if (surface.symmetric && !surface.vertical) {
-      const mirrorMesh = mesh.clone(surface.name + "_mirror");
-      mirrorMesh.scaling.y *= -1;
-      mirrorMesh.parent = parent;
-      mirrorMesh.material = mesh.material.clone(surface.name + "_mirrorMat");
-      mirrorMesh.material.diffuseColor = baseColor;
-      mirrorMesh.material.backFaceCulling = false;
-      mirrorMesh.isPickable = false;
-    }
+  const points = [root_LE, root_te, tip_te, tip_le];
+  const mesh = createQuadMesh(surface.name, points, baseColor);
+  mesh.parent = parent;
+  // If the surface is symmetric (and not vertical), create a mirror.
+  if (surface.symmetric && !surface.vertical) {
+    const mirrorMesh = mesh.clone(surface.name + "_mirror");
+    mirrorMesh.scaling.y *= -1;
+    mirrorMesh.parent = parent;
+    mirrorMesh.material = mesh.material.clone(surface.name + "_mirrorMat");
+    mirrorMesh.material.diffuseColor = baseColor;
+    mirrorMesh.material.backFaceCulling = false;
+    mirrorMesh.isPickable = false;
   }
-  
-  function addFuselageToScene(fusData, aircraftRoot) {
-    const fusNode = createFuselageNode(fusData.name, fusData.diameter, fusData.length, fusData.nose_position);
-    fusNode.metadata.data = fusData;
-    fusNode.parent = aircraftRoot;
-  }
-  
-  function deg2rad(deg) {
-    return (deg * Math.PI) / 180;
-  }
-  
+}
+
+function addFuselageToScene(fusData, aircraftRoot) {
+  const fusNode = createFuselageNode(fusData.name, fusData.diameter, fusData.length, fusData.nose_position);
+  fusNode.metadata.data = fusData;
+  fusNode.parent = aircraftRoot;
+}
+
+function deg2rad(deg) {
+  return (deg * Math.PI) / 180;
+}
 
 ###########################################
 # FILE: interaction.js
@@ -326,64 +448,107 @@ function createQuadMesh(name, pts, color) {
 // js/interaction.js
 
 var pointerDownPos = null;
+window.ctrlIsPressed = false;
 
-scene.onPointerObservable.add(function(pointerInfo) {
-  if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
-    pointerDownPos = { x: pointerInfo.event.clientX, y: pointerInfo.event.clientY };
-  } else if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
-    const dx = pointerInfo.event.clientX - pointerDownPos.x;
-    const dy = pointerInfo.event.clientY - pointerDownPos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const isClick = dist < 5;
-    pointerDownPos = null;
-    
-    if (pointerInfo.event.button === 2) { // right-click
-      if (pointerInfo.pickInfo.hit) {
-        camera.target = pointerInfo.pickInfo.pickedPoint;
-        if (pointerInfo.pickInfo.pickedMesh && pointerInfo.pickInfo.pickedMesh.name === "ground") {
-          clearSelectedNameDisplay();
-          updateSelectedNameDisplay("Ground");
-        }
-      }
-      return;
-    }
-    
-    if (!isClick) return;
-    
-    const pickInfo = pointerInfo.pickInfo;
-    if (!pickInfo.hit || (pickInfo.hit && pickInfo.pickedMesh.name === "ground")) {
-      if (window.selectedComponent) {
-        revertColor(window.selectedComponent);
-        gizmoManager.attachToMesh(null);
-        window.selectedComponent = null;
-      }
-      clearSelectedNameDisplay();
-      if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
-        updateSelectedNameDisplay("Ground");
-      }
-      return;
-    }
-    
-    const info = getMetadata(pickInfo.pickedMesh);
-    if (info) {
-      if (window.selectedComponent && window.selectedComponent === info.mesh) return;
-      if (window.selectedComponent && window.selectedComponent !== info.mesh) {
-        revertColor(window.selectedComponent);
-      }
-      window.selectedComponent = info.mesh;
-      setColorLightPink(window.selectedComponent);
+// Here we track Ctrl so that we only allow dragging while it’s pressed
+window.addEventListener("keydown", function (evt) {
+  if (evt.key === "Control") {
+    window.ctrlIsPressed = true;
+    // If we already have something selected, attach the gizmo
+    if (window.selectedComponent) {
       gizmoManager.attachToMesh(window.selectedComponent);
-      updateSelectedNameDisplay(info.metadata.data.name || "Unnamed");
     }
   }
 });
 
-// When pointer is released, update the component’s data based on its new position.
-scene.onPointerObservable.add(function(pointerInfo) {
+window.addEventListener("keyup", function (evt) {
+  if (evt.key === "Control") {
+    window.ctrlIsPressed = false;
+    // If we had a gizmo, detach it now
+    gizmoManager.attachToMesh(null);
+  }
+});
+
+scene.onPointerObservable.add(function (pointerInfo) {
+  switch (pointerInfo.type) {
+    case BABYLON.PointerEventTypes.POINTERDOWN:
+      pointerDownPos = {
+        x: pointerInfo.event.clientX,
+        y: pointerInfo.event.clientY
+      };
+      break;
+
+    case BABYLON.PointerEventTypes.POINTERUP:
+      // Distinguish "click" vs. "drag"
+      if (!pointerDownPos) return;
+      const dx = pointerInfo.event.clientX - pointerDownPos.x;
+      const dy = pointerInfo.event.clientY - pointerDownPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const isClick = dist < 5;
+      pointerDownPos = null;
+
+      // Right-click => pivot camera only
+      if (pointerInfo.event.button === 2) {
+        if (pointerInfo.pickInfo.hit) {
+          camera.target = pointerInfo.pickInfo.pickedPoint;
+          if (pointerInfo.pickInfo.pickedMesh &&
+              pointerInfo.pickInfo.pickedMesh.name === "ground") {
+            clearSelectedNameDisplay();
+            updateSelectedNameDisplay("Ground");
+          }
+        }
+        return;
+      }
+
+      if (!isClick) return;
+
+      const pickInfo = pointerInfo.pickInfo;
+      // If click missed or clicked ground => unselect
+      if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
+        if (window.selectedComponent) {
+          clearHighlight(window.selectedComponent);
+          gizmoManager.attachToMesh(null);
+          window.selectedComponent = null;
+        }
+        clearSelectedNameDisplay();
+        if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
+          updateSelectedNameDisplay("Ground");
+        }
+        return;
+      }
+
+      // Otherwise, we clicked a mesh
+      const info = getMetadata(pickInfo.pickedMesh);
+      if (info) {
+        // If something else was selected, revert highlight
+        if (window.selectedComponent && window.selectedComponent !== info.mesh) {
+          clearHighlight(window.selectedComponent);
+        }
+        window.selectedComponent = info.mesh;
+        setColorLightPink(window.selectedComponent);
+
+        // Only attach gizmo if Ctrl is pressed
+        if (window.ctrlIsPressed) {
+          gizmoManager.attachToMesh(window.selectedComponent);
+        } else {
+          gizmoManager.attachToMesh(null);
+        }
+
+        const compName = info.metadata.data.name ||
+                         (info.metadata.type === "glb" ? "GLB Model" : "Unnamed");
+        updateSelectedNameDisplay(compName);
+      }
+      break;
+  }
+});
+
+// If pointer is released, we may update JSON data
+scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
+      // Store new position
       if (md.type === "lifting_surface") {
         md.data.root_LE = [
           window.selectedComponent.position.x,
@@ -397,6 +562,7 @@ scene.onPointerObservable.add(function(pointerInfo) {
           window.selectedComponent.position.z
         ];
       }
+      // if glb => store position in md.data if needed
     }
   }
 });
@@ -415,7 +581,7 @@ function getMetadata(mesh) {
     }
     current = current.parent;
   }
-  // If none found, check if mesh is descendant of glbRoot.
+  // If none found, check if mesh is descendant of glbRoot
   if (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) {
     return { mesh: window.glbRoot, metadata: window.glbRoot.metadata };
   }
@@ -431,35 +597,17 @@ function isDescendantOf(child, parent) {
   return false;
 }
 
-function updateSelectedNameDisplay(name) {
-  const span = document.getElementById("selectedComponentName");
-  span.innerText = "Selected: " + name;
-  document.getElementById("editComponentBtn").disabled = (name === "None" || name === "Ground");
-}
-
-function clearSelectedNameDisplay() {
-  document.getElementById("selectedComponentName").innerText = "Selected: None";
-  document.getElementById("editComponentBtn").disabled = true;
-}
-
+// Add highlight
 function setColorLightPink(componentNode) {
-  const glowColor = new BABYLON.Color3(1, 0.4, 0.7);
-  componentNode.getChildMeshes().forEach(m => {
-    if (m.material) {
-      m.metadata = m.metadata || {};
-      if (!m.metadata.originalEmissive) {
-        m.metadata.originalEmissive = m.material.emissiveColor.clone();
-      }
-      m.material.emissiveColor = glowColor;
-    }
+  componentNode.getChildMeshes().forEach(mesh => {
+    window.hl.addMesh(mesh, new BABYLON.Color3(1.0, 0.4, 0.7));
   });
 }
 
-function revertColor(componentNode) {
-  componentNode.getChildMeshes().forEach(m => {
-    if (m.material && m.metadata && m.metadata.originalEmissive) {
-      m.material.emissiveColor = m.metadata.originalEmissive;
-    }
+// Remove highlight
+function clearHighlight(componentNode) {
+  componentNode.getChildMeshes().forEach(mesh => {
+    window.hl.removeMesh(mesh);
   });
 }
 
@@ -473,6 +621,7 @@ function revertColor(componentNode) {
 // 1) Global Setup  //
 //////////////////////
 
+// Colors for subsequent lifting surfaces
 var liftingSurfaceColors = [
   new BABYLON.Color3(0.8, 1.0, 0.8),
   new BABYLON.Color3(0.9, 0.8, 1.0),
@@ -480,6 +629,7 @@ var liftingSurfaceColors = [
   new BABYLON.Color3(0.8, 0.7, 0.9)
 ];
 
+// Main JSON data structure
 window.aircraftData = {
   general: {
     aircraft_reference_surface_m2: 10.0,
@@ -494,70 +644,73 @@ window.aircraftData = {
 window.editingType = "";
 window.editingObject = null;
 window.selectedComponent = null;
-window.currentGLBModel = null; // will store the root mesh of the imported GLB
+window.currentGLBModel = null; // will store the root mesh of any imported GLB
 
 ///////////////////////////////
 // 2) GLB Loading Functions  //
 ///////////////////////////////
 
 /**
- * Loads a .glb file into the scene using the previous method (passing the File object directly).
- * Applies a corrective rotation (180° about X) to fix upside–down issues.
- * Parents the imported meshes under glbRoot so they persist during JSON re‑render.
+ * Loads a .glb file into the scene using BABYLON.SceneLoader.ImportMeshAsync.
+ * Parents all imported meshes under glbRoot so they persist during JSON re‑render.
  */
 async function loadGLBFile(file) {
   const loadingText = document.getElementById("loadingText");
   loadingText.style.display = "block";
   loadingText.textContent = "Loading 3D Model...";
 
-  // Dispose previous GLB model if any.
+  // Dispose any previously loaded GLB model
   if (window.currentGLBModel) {
     window.currentGLBModel.dispose();
     window.currentGLBModel = null;
   }
 
   try {
-    // Pass the file directly (as before) to ImportMeshAsync.
+    // Import the file directly
     const result = await BABYLON.SceneLoader.ImportMeshAsync(
-      "",    // No specific mesh names
+      "",    // Import all meshes
       "",    // No root URL
-      file,  // Pass the File object directly
+      file,  // The File object
       scene,
       (evt) => {
+        // Show progress
         if (evt.lengthComputable) {
-          const progress = ((evt.loaded / evt.total) * 100).toFixed();
+          const progress = ((evt.loaded * 100) / evt.total).toFixed();
           loadingText.textContent = `Loading: ${progress}%`;
         }
       }
     );
-    // Assume the first mesh is the GLB root.
-    const rootMesh = result.meshes[0];
-    window.currentGLBModel = rootMesh;
-    // Parent all imported meshes under glbRoot.
+
+    // Assume the first mesh is the model's root for bounding-box calculations
+    const model = result.meshes[0];
+    window.currentGLBModel = model;
+
+    // Create or reuse glbRoot (no geometry, just a TransformNode)
+    if (!window.glbRoot) {
+      window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
+      window.glbRoot.metadata = { type: "glb", data: {} };
+      window.glbRoot.isPickable = false; // it has no geometry
+    }
+
+    // Parent all imported meshes to glbRoot & make them pickable
     result.meshes.forEach(mesh => {
       mesh.setParent(window.glbRoot);
-      // Optionally, disable individual picking; we'll pick glbRoot.
-      mesh.isPickable = false;
+      mesh.isPickable = true;
     });
-    // Ensure glbRoot is pickable and has metadata.
-    window.glbRoot.isPickable = true;
-    window.glbRoot.metadata = { type: "glb", data: {} };
 
-    // Apply a corrective rotation: flip 180° about X.
-    window.glbRoot.rotation.x += Math.PI;
+    // Optional: Center & scale the model
+    const boundingBox = model.getHierarchyBoundingVectors();
+    const modelSize = boundingBox.max.subtract(boundingBox.min);
+    const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
+    const scaleFactor = 5 / Math.max(modelSize.x, modelSize.y, modelSize.z);
+    model.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+    model.position = new BABYLON.Vector3(
+      -modelCenter.x * scaleFactor,
+      -modelCenter.y * scaleFactor,
+      -modelCenter.z * scaleFactor
+    );
 
-    // Compute bounding box using the imported model hierarchy.
-    const boundingBox = rootMesh.getHierarchyBoundingVectors();
-    const sizeVec = boundingBox.max.subtract(boundingBox.min);
-    const centerVec = boundingBox.min.add(sizeVec.scale(0.5));
-    const largestDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z);
-    const scaleFactor = (largestDim > 0) ? 5 / largestDim : 1;
-    window.glbRoot.scaling.set(scaleFactor, scaleFactor, scaleFactor);
-    window.glbRoot.position.x = -centerVec.x * scaleFactor;
-    window.glbRoot.position.y = -centerVec.y * scaleFactor;
-    window.glbRoot.position.z = -centerVec.z * scaleFactor;
-
-    // Optionally reset the camera.
+    // Optional: Reset or position camera
     const cam = scene.getCameraByName("Camera");
     if (cam) {
       cam.setTarget(BABYLON.Vector3.Zero());
@@ -565,18 +718,29 @@ async function loadGLBFile(file) {
       cam.beta = Math.PI / 2;
       cam.radius = 10;
     }
-  } catch (err) {
-    console.error("Error loading GLB file:", err);
+
+    // Force materials to be opaque & double-sided if you like
+    scene.meshes.forEach(mesh => {
+      if (mesh.material) {
+        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
+        mesh.material.backFaceCulling = false;
+      }
+    });
+
+  } catch (error) {
+    console.error("Error loading GLB file:", error);
     alert("Error loading 3D model. Please try another file.");
   }
+
+  // Hide loading overlay
   loadingText.style.display = "none";
 }
 
-///////////////////////////////
-// 3) GLB Manipulation UI  //
-///////////////////////////////
 
-// Apply rotation/scale to the glbRoot so that the entire GLB moves as one unit.
+/**
+ * Setup the rotation/scale controls for the loaded GLB
+ * (applies to glbRoot so entire GLB moves as one unit).
+ */
 (function setupGLBControls() {
   document.getElementById("rotateXBtn").addEventListener("click", function() {
     window.glbRoot.rotation.x += Math.PI / 2;
@@ -636,7 +800,7 @@ function fillFuselageModal(data) {
 /////////////////////
 
 /**
- * Helper: Returns true if child is a descendant of parent.
+ * Helper: check if child is a descendant of parent
  */
 function isDescendantOf(child, parent) {
   let curr = child.parent;
@@ -648,23 +812,24 @@ function isDescendantOf(child, parent) {
 }
 
 /**
- * Rebuild JSON-based geometry from aircraftData.
- * Disposes meshes/transform nodes not under glbRoot.
+ * Rebuild the JSON-based geometry from aircraftData,
+ * disposing old geometry (except .glb) first.
  */
 function renderAircraft() {
+  // Dispose old geometry (but keep ground, axis lines, glbRoot, etc.)
   scene.meshes.slice().forEach(function(mesh) {
     if (
       mesh === camera ||
-      mesh === light ||
-      mesh === ground ||
       mesh.name.startsWith("axis") ||
-      mesh === aircraftRoot ||
-      (window.glbRoot && isDescendantOf(mesh, window.glbRoot))
+      mesh === ground ||
+      (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) ||
+      mesh === aircraftRoot
     ) {
       return;
     }
     mesh.dispose();
   });
+
   scene.transformNodes.slice().forEach(function(tn) {
     if (
       tn === aircraftRoot ||
@@ -675,13 +840,19 @@ function renderAircraft() {
     }
     tn.dispose();
   });
+
+  // Recreate a fresh aircraftRoot
   createAircraftRoot();
+
+  // Add back the lifting surfaces & fuselages from aircraftData
   aircraftData.lifting_surfaces.forEach(function(surface) {
     addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors);
   });
   aircraftData.fuselages.forEach(function(fus) {
     addFuselageToScene(fus, aircraftRoot);
   });
+
+  // Optionally reset camera
   const cam = scene.getCameraByName("Camera");
   if (cam) {
     cam.setTarget(BABYLON.Vector3.Zero());
@@ -695,11 +866,11 @@ function parseAircraft(jsonText) {
 }
 
 /////////////////////////////
-// 6) Event Listener Bindings //
+// 6) Event Listener Setup //
 /////////////////////////////
 
 (function setupUI() {
-  // ========= Lifting Surface Modal ========= //
+  // ===== Lifting Surface Modal =====
   const lsModal = document.getElementById("liftingSurfaceModal");
   const lsSubmitBtn = document.getElementById("ls_submit");
   const lsCancelBtn = document.getElementById("ls_cancel");
@@ -728,18 +899,25 @@ function parseAircraft(jsonText) {
       aerodynamic_center_pos_xyz_m: document.getElementById("ls_aerodynamic_center_pos_xyz_m").value.split(",").map(Number)
     };
 
+    // If editing an existing surface
     if (window.editingType === "lifting_surface" && window.editingObject) {
       Object.assign(window.editingObject, newData);
       window.editingObject = null;
       window.editingType = "";
     } else {
+      // Otherwise, push as new
       aircraftData.lifting_surfaces.push(newData);
     }
 
+    // Hide modal
     lsModal.style.display = "none";
+
+    // Re-render
     renderAircraft();
+
+    // Clear selection if any
     if (window.selectedComponent) {
-      revertColor(window.selectedComponent);
+      clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
       window.selectedComponent = null;
     }
@@ -752,7 +930,7 @@ function parseAircraft(jsonText) {
     window.editingObject = null;
   });
 
-  // ========= Fuselage Modal ========= //
+  // ===== Fuselage Modal =====
   const fusModal = document.getElementById("fuselageModal");
   const fusSubmitBtn = document.getElementById("fus_submit");
   const fusCancelBtn = document.getElementById("fus_cancel");
@@ -765,21 +943,28 @@ function parseAircraft(jsonText) {
       nose_position: document.getElementById("fus_nose_position").value.split(",").map(Number)
     };
 
+    // If editing an existing fuselage
     if (window.editingType === "fuselage" && window.editingObject) {
       Object.assign(window.editingObject, newData);
       window.editingObject = null;
       window.editingType = "";
     } else {
+      // Otherwise, push as new
       if (!aircraftData.fuselages) {
         aircraftData.fuselages = [];
       }
       aircraftData.fuselages.push(newData);
     }
 
+    // Hide modal
     fusModal.style.display = "none";
+
+    // Re-render
     renderAircraft();
+
+    // Clear selection if any
     if (window.selectedComponent) {
-      revertColor(window.selectedComponent);
+      clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
       window.selectedComponent = null;
     }
@@ -792,7 +977,7 @@ function parseAircraft(jsonText) {
     window.editingObject = null;
   });
 
-  // ========= "Add" Buttons ========= //
+  // ===== "Add" Buttons =====
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
     window.editingType = "";
     window.editingObject = null;
@@ -804,10 +989,10 @@ function parseAircraft(jsonText) {
     document.getElementById("fuselageModal").style.display = "block";
   });
 
-  // ========= "Edit Selected" Button ========= //
+  // ===== "Edit Selected" Button =====
   const editBtn = document.getElementById("editComponentBtn");
   editBtn.addEventListener("pointerdown", function(e) {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent pointer logic from interfering
   });
   editBtn.addEventListener("click", function() {
     if (!window.selectedComponent) return;
@@ -822,12 +1007,12 @@ function parseAircraft(jsonText) {
         window.editingObject = info.metadata.data;
         fillFuselageModal(window.editingObject);
       } else if (info.metadata.type === "glb") {
-        console.log("GLB model selected");
+        console.log("GLB model selected (no editing modal).");
       }
     }
   });
 
-  // ========= JSON File Input ========= //
+  // ===== JSON File Input =====
   const fileInput = document.getElementById("fileInput");
   fileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
@@ -843,7 +1028,7 @@ function parseAircraft(jsonText) {
     reader.readAsText(file);
   });
 
-  // ========= Download JSON ========= //
+  // ===== Download JSON =====
   document.getElementById("downloadJsonBtn").addEventListener("click", function() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
       JSON.stringify(aircraftData, null, 2)
@@ -856,18 +1041,20 @@ function parseAircraft(jsonText) {
     document.body.removeChild(dlAnchor);
   });
 
-  // ========= Clear Aircraft ========= //
+  // ===== Clear Aircraft =====
   document.getElementById("clearAircraft").addEventListener("click", function() {
-    // Clear only JSON geometry; glbRoot remains intact.
+    // Clear only JSON geometry; glbRoot remains intact
     aircraftData.lifting_surfaces = [];
     aircraftData.fuselages = [];
     renderAircraft();
+    // Clear selection
     if (window.selectedComponent) {
-      revertColor(window.selectedComponent);
+      clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
       window.selectedComponent = null;
     }
     clearSelectedNameDisplay();
+    // Optionally reset camera
     const cam = scene.getCameraByName("Camera");
     if (cam) {
       cam.setTarget(BABYLON.Vector3.Zero());
@@ -875,12 +1062,12 @@ function parseAircraft(jsonText) {
     }
   });
 
-  // ========= Toggle Ground ========= //
+  // ===== Toggle Ground =====
   document.getElementById("toggleGround").addEventListener("click", function() {
     ground.isVisible = !ground.isVisible;
   });
 
-  // ========= GLB File Input ========= //
+  // ===== GLB File Input =====
   const glbFileInput = document.getElementById("glbFileInput");
   glbFileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
@@ -897,10 +1084,41 @@ function parseAircraft(jsonText) {
 // 7) Helper Functions //
 /////////////////////////
 
+/** Clears the selected name display */
 function clearSelectedNameDisplay() {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: None";
   document.getElementById("editComponentBtn").disabled = true;
+}
+
+/** Updates the selected name display & toggles Edit button */
+function updateSelectedNameDisplay(name) {
+  const span = document.getElementById("selectedComponentName");
+  span.innerText = "Selected: " + name;
+  const isNoneOrGround = (name === "None" || name === "Ground");
+  document.getElementById("editComponentBtn").disabled = isNoneOrGround;
+}
+
+
+function openEditModalForSelected() {
+  // If no selection, do nothing
+  if (!window.selectedComponent) return;
+  
+  // Reuse the same logic from your "Edit Selected" button:
+  const info = getMetadata(window.selectedComponent);
+  if (info && info.metadata && info.metadata.data) {
+    if (info.metadata.type === "lifting_surface") {
+      window.editingType = "lifting_surface";
+      window.editingObject = info.metadata.data;
+      fillLiftingSurfaceModal(window.editingObject);
+    } else if (info.metadata.type === "fuselage") {
+      window.editingType = "fuselage";
+      window.editingObject = info.metadata.data;
+      fillFuselageModal(window.editingObject);
+    } else if (info.metadata.type === "glb") {
+      console.log("GLB model selected (no editing modal).");
+    }
+  }
 }
 
 ###########################################

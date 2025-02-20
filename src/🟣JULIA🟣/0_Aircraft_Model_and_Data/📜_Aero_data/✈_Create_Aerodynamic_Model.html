@@ -275,15 +275,19 @@
 
   // --- Utility: climb up parents to find a node with metadata ---
   function getMetadata(mesh) {
-    let current = mesh;
-    while (current) {
-      if (current.metadata && current.metadata.data) {
-        return { mesh: current, metadata: current.metadata };
-      }
-      current = current.parent;
+  let current = mesh;
+  while (current) {
+    if (current.metadata && current.metadata.data) {
+      return { mesh: current, metadata: current.metadata };
     }
-    return null;
+    current = current.parent;
   }
+  // If none found, check if mesh is descendant of glbRoot.
+  if (window.glbRoot && isDescendantOf(mesh, window.glbRoot)) {
+    return { mesh: window.glbRoot, metadata: window.glbRoot.metadata };
+  }
+  return null;
+}
 
   // --- Update selected component name display ---
   function updateSelectedNameDisplay(name) {
@@ -300,20 +304,28 @@
   }
 
   // --- Color handling for selection highlight / revert using pink glow ---
-  function setColorLightPink(componentNode) {
-    const glowColor = new BABYLON.Color3(1, 0.4, 0.7); // pink glow color
-    const childMeshes = componentNode.getChildMeshes();
-    childMeshes.forEach(m => {
-      if (m.material) {
-        if (!m.metadata) { m.metadata = {}; }
-        if (!m.metadata.originalEmissive) {
-          m.metadata.originalEmissive = m.material.emissiveColor.clone();
-        }
-        m.material.emissiveColor = glowColor;
+// scene-utils.js (or wherever setColorLightPink is defined)
+function setColorLightPink(componentNode) {
+  // Example of a softer pink (you can adjust):
+  const glowColor = new BABYLON.Color3(1, 0.4, 0.7).scale(0.1);
+  // e.g. original was (1, 0.4, 0.7), we scale by 0.5 => (0.5, 0.2, 0.35)
+
+  componentNode.getChildMeshes().forEach(mesh => {
+    if (mesh.material) {
+      mesh.metadata = mesh.metadata || {};
+      // Store original emissive for revert
+      if (!mesh.metadata.originalEmissive) {
+        mesh.metadata.originalEmissive = mesh.material.emissiveColor.clone();
       }
-    });
-  }
-  function revertColor(componentNode) {
+      mesh.material.emissiveColor = glowColor;
+    }
+  });
+}
+
+
+
+
+  function clearHighlight(componentNode) {
     const childMeshes = componentNode.getChildMeshes();
     childMeshes.forEach(m => {
       if (m.material && m.metadata && m.metadata.originalEmissive) {
@@ -360,7 +372,7 @@
       // If no mesh was hit OR if the ground was hit, deselect.
       if (!pickInfo.hit || (pickInfo.hit && pickInfo.pickedMesh.name === "ground")) {
         if (selectedComponent) {
-          revertColor(selectedComponent);
+          clearHighlight(selectedComponent);
           gizmoManager.attachToMesh(null);
           selectedComponent = null;
         }
@@ -380,7 +392,7 @@
         }
         // If a different component was selected, revert its highlight.
         if (selectedComponent && selectedComponent !== info.mesh) {
-          revertColor(selectedComponent);
+          clearHighlight(selectedComponent);
         }
         // Select the new component.
         selectedComponent = info.mesh;
@@ -680,7 +692,7 @@
       lsModal.style.display = "none";
       renderAircraft();
       if (selectedComponent) {
-        revertColor(selectedComponent);
+        clearHighlight(selectedComponent);
         gizmoManager.attachToMesh(null);
         selectedComponent = null;
         clearSelectedNameDisplay();
@@ -705,7 +717,7 @@
       fusModal.style.display = "none";
       renderAircraft();
       if (selectedComponent) {
-        revertColor(selectedComponent);
+        clearHighlight(selectedComponent);
         gizmoManager.attachToMesh(null);
         selectedComponent = null;
         clearSelectedNameDisplay();
@@ -733,7 +745,7 @@
     aircraftData.fuselages = [];
     renderAircraft();
     if (selectedComponent) {
-      revertColor(selectedComponent);
+      clearHighlight(selectedComponent);
       gizmoManager.attachToMesh(null);
       selectedComponent = null;
     }
