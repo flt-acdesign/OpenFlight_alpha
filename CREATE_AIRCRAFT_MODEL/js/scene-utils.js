@@ -39,27 +39,32 @@ function clearHighlight(componentNode) {
 }
 
 
+
 function setTranslucencyMode(enabled) {
   const alphaValue = enabled ? 0.5 : 1.0;
 
-  // 1) Set alpha on all child meshes under aircraftRoot
+  // Set alpha on all child meshes under aircraftRoot, except those that are labels.
   if (window.aircraftRoot) {
     window.aircraftRoot.getChildMeshes().forEach(mesh => {
+      if (mesh.name.startsWith("label_")) return;  // Skip labels
       if (mesh.material && typeof mesh.material.alpha === "number") {
         mesh.material.alpha = alphaValue;
       }
     });
   }
 
-  // 2) Set alpha on all child meshes under glbRoot
+  // Set alpha on all child meshes under glbRoot, except those that are labels.
   if (window.glbRoot) {
     window.glbRoot.getChildMeshes().forEach(mesh => {
+      if (mesh.name.startsWith("label_")) return;  // Skip labels
       if (mesh.material && typeof mesh.material.alpha === "number") {
         mesh.material.alpha = alphaValue;
       }
     });
   }
 }
+
+
 
 
 /**

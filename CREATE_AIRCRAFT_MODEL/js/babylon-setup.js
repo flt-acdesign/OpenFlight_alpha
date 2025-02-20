@@ -119,8 +119,10 @@ function initBabylon() {
 
   // 5) Shadow generator with large orthographic bounds
   window.shadowGenerator = new BABYLON.ShadowGenerator(2048, dlight);
-  shadowGenerator.useBlurExponentialShadowMap = true;
-  shadowGenerator.blurKernel = 32;
+  // Enable transparent shadows:
+  shadowGenerator.useTransparentShadow = true;
+
+
 
   // Setup ortho shadow bounds
   dlight.autoCalcShadowZBounds = false;

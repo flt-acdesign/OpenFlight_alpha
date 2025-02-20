@@ -1,5 +1,10 @@
 // js/component-creation.js
 
+// Add deg2rad helper function at the very top so it is available everywhere.
+function deg2rad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
 function createQuadMesh(name, pts, color) {
   const customMesh = new BABYLON.Mesh(name, scene);
   const positions = pts.flatMap(p => [p[0], p[1], p[2]]);
@@ -27,32 +32,39 @@ function createQuadMesh(name, pts, color) {
   return customMesh;
 }
 
+
+
 function createFuselageNode(name, diameter, length, nosePosition) {
   const parent = new BABYLON.TransformNode(name + "_parent", scene);
   parent.name = name + "_transform";
   parent.position = new BABYLON.Vector3(...nosePosition);
   const color = new BABYLON.Color3(1.0, 0.7, 0.3);
 
+  // Create the cylinder
   const cylinder = BABYLON.MeshBuilder.CreateCylinder(name, {
     height: length,
     diameter: diameter,
     tessellation: 32
   }, scene);
 
-  window.shadowGenerator.addShadowCaster(cylinder, true);
-
+  // Set up the cylinder transform
   cylinder.rotation.z = Math.PI / 2;
-  cylinder.position = new BABYLON.Vector3(length/2, 0, 0);
+  cylinder.position = new BABYLON.Vector3(length / 2, 0, 0);
   cylinder.isPickable = true;
   cylinder.parent = parent;
 
+  // Create a material similar to the lifting surfaces
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.alpha = 0.8;
+  // Use ALPHABLEND so toggling transparency works consistently
   mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
   mat.needDepthPrePass = true;
-  mat.forceDepthWrite = true; // <-- added to ensure proper shadow casting
+  mat.forceDepthWrite = true;
   cylinder.material = mat;
+
+  // Ensure the fuselage casts shadows just like the lifting surfaces.
+  window.shadowGenerator.addShadowCaster(cylinder, true);
 
   parent.metadata = {
     type: "fuselage",
@@ -64,7 +76,12 @@ function createFuselageNode(name, diameter, length, nosePosition) {
   return parent;
 }
 
+
+
+
+
 function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSurfaceColors) {
+  // Create a parent transform node for the lifting surface.
   const parent = new BABYLON.TransformNode(surface.name + "_parent", scene);
   parent.position = new BABYLON.Vector3(...surface.root_LE);
   const index = aircraftData.lifting_surfaces.indexOf(surface);
@@ -77,6 +94,7 @@ function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSu
   parent.parent = aircraftRoot;
   parent.isPickable = false;
 
+  // Compute geometry parameters.
   const area = surface.surface_area_m2;
   const AR = surface.AR;
   const TR = surface.TR;
@@ -86,8 +104,9 @@ function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSu
   const semi_span = span / 2;
   const root_chord = (2 * area) / (span * (1 + TR));
   const tip_chord = root_chord * TR;
-  const root_LE = [0,0,0];
+  const root_LE = [0, 0, 0];
   let tip_le, root_te, tip_te;
+  
   if (surface.vertical) {
     tip_le = [
       root_LE[0] + semi_span * Math.tan(sweep),
@@ -105,10 +124,20 @@ function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSu
     root_te = [root_LE[0] + root_chord, root_LE[1], root_LE[2]];
     tip_te = [tip_le[0] + tip_chord, tip_le[1], tip_le[2]];
   }
+  
   const points = [root_LE, root_te, tip_te, tip_le];
+  
+  // Create the quad mesh for the lifting surface.
   const mesh = createQuadMesh(surface.name, points, baseColor);
   mesh.parent = parent;
-  // If the surface is symmetric (and not vertical), create a mirror.
+  
+  // Create a label for the lifting surface.
+  var label = createLabel(surface.name, 2, 0.5);
+  label.parent = parent;
+  // Position the label slightly above the origin of the lifting surface.
+  label.position = new BABYLON.Vector3(0, 0, 0);
+  
+  // If the lifting surface is symmetric (and not vertical), create the mirror.
   if (surface.symmetric && !surface.vertical) {
     const mirrorMesh = mesh.clone(surface.name + "_mirror");
     mirrorMesh.scaling.y *= -1;
@@ -121,11 +150,38 @@ function addLiftingSurfaceToScene(surface, aircraftData, aircraftRoot, liftingSu
 }
 
 function addFuselageToScene(fusData, aircraftRoot) {
+  // Create the fuselage node using the existing helper function.
   const fusNode = createFuselageNode(fusData.name, fusData.diameter, fusData.length, fusData.nose_position);
   fusNode.metadata.data = fusData;
   fusNode.parent = aircraftRoot;
+  
+  // Create a label for the fuselage using the helper function.
+  var label = createLabel(fusData.name, 2, 0.5);
+  // Parent the label to the fuselage node so that it moves with the fuselage.
+  label.parent = fusNode;
+  // Position the label near the fuselage's origin. Adjust the offset as needed.
+  label.position = new BABYLON.Vector3(0, 0, 0);
 }
 
-function deg2rad(deg) {
-  return (deg * Math.PI) / 180;
+// Helper function to create a billboard-style label with the given text.
+function createLabel(text, width, height) {
+  // Create a plane for the label.
+  var plane = BABYLON.MeshBuilder.CreatePlane("label_" + text, { width: width, height: height }, scene);
+  // Set the plane to always face the camera.
+  plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+
+  // Create a dynamic texture to draw the text.
+  var dt = new BABYLON.DynamicTexture("dt_" + text, { width: 256, height: 64 }, scene, false);
+  dt.hasAlpha = true;
+  dt.drawText(text, null, 40, "bold 36px Arial", "black", "transparent", true);
+
+  // Create a material for the label and assign the dynamic texture.
+  var mat = new BABYLON.StandardMaterial("labelMat_" + text, scene);
+  mat.diffuseTexture = dt;
+  // Use an emissive color so the label remains bright regardless of lighting.
+  mat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+  mat.backFaceCulling = false;
+  plane.material = mat;
+
+  return plane;
 }

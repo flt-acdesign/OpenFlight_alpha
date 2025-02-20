@@ -62,20 +62,25 @@ async function loadGLBFile(file) {
       -modelCenter.z * scaleFactor
     );
 
-// 8) [Optional] Adjust materials
-//    Example: set all non-ground, non-sky-sphere materials to OPAQUE & disable culling,
-//    but leave the origin box's transparency unchanged.
+
+    
+// 8) [Optional] Adjust materials for imported GLB meshes,
+//    but skip ground, sky sphere, origin box, and labels.
 scene.meshes.forEach(mesh => {
   if (
     mesh.material &&
     mesh.name !== "ground" &&
     mesh.name !== CAMERA_SPHERE_NAME &&
-    mesh.name !== "originBox"  // Exclude the origin box
+    mesh.name !== "originBox" &&
+    !mesh.name.startsWith("label_")  // Skip labels
   ) {
     mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
     mesh.material.backFaceCulling = false;
   }
 });
+
+
+
 
     // 9) Force all new meshes (except ground, sky sphere, axis) to cast shadows
     scene.meshes.forEach((mesh) => {
