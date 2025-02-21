@@ -3,17 +3,18 @@
 var pointerDownPos = null;
 window.ctrlIsPressed = false;
 
-// Make sure the gizmo can actually show a position handle.
-gizmoManager.positionGizmoEnabled = true;   // <<--- IMPORTANT
-gizmoManager.rotationGizmoEnabled = false;  // (optional)
-gizmoManager.scaleGizmoEnabled = false;     // (optional)
+// IMPORTANT: Ensure the gizmo is actually enabled for positions.
+gizmoManager.positionGizmoEnabled = true;   // so we can move objects
+gizmoManager.rotationGizmoEnabled = false;  // optional
+gizmoManager.scaleGizmoEnabled = false;     // optional
 
 // Track the Ctrl key to decide when to attach or detach the gizmo.
 window.addEventListener("keydown", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = true;
-    // If a component is currently selected, attach the gizmo now.
-    if (window.selectedComponent) {
+
+    // Only attach the gizmo if a valid component is selected (not ground).
+    if (window.selectedComponent && window.selectedComponent.name !== "ground") {
       gizmoManager.attachToMesh(window.selectedComponent);
     }
   }
@@ -22,13 +23,13 @@ window.addEventListener("keydown", function (evt) {
 window.addEventListener("keyup", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = false;
-    // Detach the gizmo so we don’t accidentally move further.
+    // Detach the gizmo to avoid accidental moves.
     gizmoManager.attachToMesh(null);
   }
 });
 
 /**
- * Main pointer logic for selection and camera pivot.
+ * Main pointer logic for selecting a component or ground.
  */
 scene.onPointerObservable.add(function (pointerInfo) {
   switch (pointerInfo.type) {
@@ -40,7 +41,6 @@ scene.onPointerObservable.add(function (pointerInfo) {
       break;
 
     case BABYLON.PointerEventTypes.POINTERUP:
-      // Distinguish "click" vs. drag.
       if (!pointerDownPos) return;
       const dx = pointerInfo.event.clientX - pointerDownPos.x;
       const dy = pointerInfo.event.clientY - pointerDownPos.y;
@@ -55,7 +55,7 @@ scene.onPointerObservable.add(function (pointerInfo) {
           if (pickedMesh && pickedMesh.name !== "ground") {
             camera.target = pointerInfo.pickInfo.pickedPoint;
           } else {
-            // If user right-clicked ground, just show "Ground" as selected name.
+            // If user right-clicked ground, just display "Ground."
             clearSelectedNameDisplay();
             updateSelectedNameDisplay("Ground");
           }
@@ -66,25 +66,28 @@ scene.onPointerObservable.add(function (pointerInfo) {
       if (!isClick) return;
 
       const pickInfo = pointerInfo.pickInfo;
-      // If click missed or clicked ground => unselect
+      // If click missed or clicked ground => unselect any current component
       if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
-          // If we had a gizmo attached, detach it.
+          // Also detach any gizmo if it was attached
           gizmoManager.attachToMesh(null);
           window.selectedComponent = null;
         }
         clearSelectedNameDisplay();
         if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
           updateSelectedNameDisplay("Ground");
+          // Optionally set the ground as "selected" if you prefer
+          // but it won't have a gizmo because it has name === "ground".
+          window.selectedComponent = pickInfo.pickedMesh; 
         }
         return;
       }
 
-      // Otherwise, we clicked a mesh
+      // Otherwise, we clicked on a valid mesh (component).
       const info = getMetadata(pickInfo.pickedMesh);
       if (info) {
-        // Unhighlight old selection
+        // Unhighlight old selection if needed
         if (window.selectedComponent && window.selectedComponent !== info.mesh) {
           clearHighlight(window.selectedComponent);
         }
@@ -92,11 +95,11 @@ scene.onPointerObservable.add(function (pointerInfo) {
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
 
-        // NOTE: We do NOT attach the gizmo here.
-        // The gizmo is attached only when Ctrl is pressed.
+        // NOTE: We do NOT attach the gizmo here!
+        // It only attaches when Ctrl is pressed.
 
-        const compName = info.metadata.data?.name 
-          || (info.metadata.type === "glb" ? "GLB Model" : "Unnamed");
+        const compName = info.metadata?.data?.name 
+          || (info.metadata?.type === "glb" ? "GLB Model" : "Unnamed");
         updateSelectedNameDisplay(compName);
       }
       break;
@@ -104,32 +107,30 @@ scene.onPointerObservable.add(function (pointerInfo) {
 });
 
 /**
- * After releasing the pointer, if we dragged something, update the position
- * in the metadata (the JSON data).
+ * After releasing the pointer, if the user dragged an object,
+ * update the object's position in your JSON data structure.
  */
 scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
 
-    // If the component has metadata with 'type' and 'data'
+    // If the component has metadata, update the relevant position in the JSON.
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
       if (md.type === "lifting_surface") {
-        // Save new position into root_LE
         md.data.root_LE = [
           window.selectedComponent.position.x,
           window.selectedComponent.position.y,
           window.selectedComponent.position.z
         ];
       } else if (md.type === "fuselage") {
-        // Save new position into nose_position
         md.data.nose_position = [
           window.selectedComponent.position.x,
           window.selectedComponent.position.y,
           window.selectedComponent.position.z
         ];
       }
-      // If it's a GLB or something else, store the position if needed.
+      // For GLB or others, if needed, store position similarly.
     }
   }
 });
