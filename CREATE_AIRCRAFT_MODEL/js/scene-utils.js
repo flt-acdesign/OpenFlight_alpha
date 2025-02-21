@@ -41,30 +41,33 @@ function clearHighlight(componentNode) {
 
 
 function setTranslucencyMode(enabled) {
-  const alphaValue = enabled ? 0.5 : 1.0;
-  // When enabled, use ALPHABLEND; when disabled, use OPAQUE.
-  const transparencyMode = enabled ? BABYLON.Material.MATERIAL_ALPHABLEND : BABYLON.Material.MATERIAL_OPAQUE;
+  const alphaValue = enabled ? 0.7 : 1.0;
 
-  // Update materials for all child meshes under aircraftRoot.
-  if (window.aircraftRoot) {
-    window.aircraftRoot.getChildMeshes().forEach(mesh => {
-      if (mesh.name.startsWith("label_")) return;  // Skip labels
-      if (mesh.material) {
-        mesh.material.alpha = alphaValue;
-        mesh.material.transparencyMode = transparencyMode;
+  function updateMeshTransparency(mesh) {
+    // Skip labels or anything special
+    if (mesh.name.startsWith("label_")) return;
+
+    if (mesh.material) {
+      mesh.material.alpha = alphaValue;
+      if (enabled) {
+        // translucent mode
+        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+        mesh.material.needDepthPrePass = true; // optional
+      } else {
+        // fully opaque
+        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
+        mesh.material.needDepthPrePass = false;
       }
-    });
+    }
   }
 
-  // Update materials for all child meshes under glbRoot.
+  // Update everything under aircraftRoot
+  if (window.aircraftRoot) {
+    window.aircraftRoot.getChildMeshes().forEach(updateMeshTransparency);
+  }
+  // Update everything under glbRoot
   if (window.glbRoot) {
-    window.glbRoot.getChildMeshes().forEach(mesh => {
-      if (mesh.name.startsWith("label_")) return;  // Skip labels
-      if (mesh.material) {
-        mesh.material.alpha = alphaValue;
-        mesh.material.transparencyMode = transparencyMode;
-      }
-    });
+    window.glbRoot.getChildMeshes().forEach(updateMeshTransparency);
   }
 }
 

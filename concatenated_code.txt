@@ -91,7 +91,12 @@
   </div>
 
   <!-- Scripts (order is important) -->
-  <script src="js/babylon-setup.js"></script>
+
+  <script src="js/⛺_scene_setup/set_up_camera.js"></script>
+  <script src="js/⛺_scene_setup/lights_and_shadows.js"></script>
+  <script src="js/⛺_scene_setup/ground_axis_sphere.js"></script>
+  <script src="js/⛺_scene_setup/babylon-setup.js"></script>
+  
   <script src="js/render_aircraft.js"></script>
   <script src="js/load_glb_file.js"></script>
   <script src="js/component-creation.js"></script>
@@ -101,326 +106,7 @@
 </body>
 </html>
 
-###########################################
-# FILE: babylon-setup.js
-###########################################
 
-// js/babylon-setup.js
-
-window.canvas = document.getElementById("renderCanvas");
-window.engine = null;
-window.scene = null;
-window.camera = null;
-window.ground = null;
-window.gizmoManager = null;
-window.aircraftRoot = null;
-window.glbRoot = null;
-
-// We'll use a highlight layer for selection
-window.hl = null;
-// Shadow generator for casting shadows
-window.shadowGenerator = null;
-
-// --------------- CONSTANTS ---------------
-const CAMERA_SPHERE_NAME = "cameraSphere"; // name for the big "sky" sphere
-
-function initBabylon() {
-  // 1) Create Engine & Scene
-  engine = new BABYLON.Engine(canvas, true, { stencil: true });
-  scene = new BABYLON.Scene(engine);
-
-  // 2) Scene background color (light sky blue)
-  scene.clearColor = new BABYLON.Color4(153 / 255, 204 / 255, 1, 1);
-
-  // 3) Fog: linear mode, from 200 to 300
-  scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR
-  scene.fogStart  = 40.0;
-  scene.fogEnd    = 340.0;
-  scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
-  scene.fogDensity = 0.01258; // not used in FOGMODE_LINEAR but can stay for reference
-
-  // 4) Create ArcRotateCamera
-  camera = new BABYLON.ArcRotateCamera(
-    "Camera",
-    -2.21, // alpha
-    1.088, // beta
-    100,   // radius
-    new BABYLON.Vector3(19, 11, 6), // target
-    scene
-  );
-  camera.fov = 0.647;
-  camera.rotation.z = Math.PI / 2;    // tilt your camera if needed
-  camera.attachControl(canvas, true);
-  camera.upperBetaLimit = Math.PI;    // can look overhead
-  camera.lowerBetaLimit = 0;         // can't go below ground if you prefer
-  camera.inertia = 0.9;              // camera smoothing
-  camera.lowerRadiusLimit = 0.2;     // zoom in limit
-  camera.upperRadiusLimit = 1500;    // zoom out limit
-
-  // Dynamically adjust wheel & panning with distance
-  camera.onViewMatrixChangedObservable.add(() => {
-    const distance = BABYLON.Vector3.Distance(camera.position, camera.target);
-    camera.wheelPrecision = 200 / distance;
-    camera.panningSensibility = 5000 / distance;
-  });
-
-  // Middle-click => pivot camera to clicked point
-  let originalTarget = camera.target.clone();
-  let lastTarget = camera.target.clone();
-  canvas.addEventListener("pointerdown", function (evt) {
-    if (evt.button === 1) {
-      evt.preventDefault();
-      const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-      if (pickResult.hit) {
-        lastTarget = camera.target.clone();
-        smoothTransitionToTarget(pickResult.pickedPoint, camera, scene, 0.3);
-      }
-    }
-  });
-
-  // Double-click => either open edit or revert to last pivot
-  canvas.addEventListener("dblclick", function () {
-    const pickResult = scene.pick(scene.pointerX, scene.pointerY);
-    if (pickResult.hit) {
-      const info = getMetadata(pickResult.pickedMesh);
-      if (info && window.selectedComponent === info.mesh) {
-        openEditModalForSelected(); // from ui-logic.js
-        return;
-      }
-    }
-    if (!pickResult.hit) {
-      smoothTransitionToTarget(lastTarget, camera, scene, 0.3);
-    }
-  });
-
-  // Keyboard shortcuts
-  window.addEventListener("keydown", function (evt) {
-    if (evt.key === "h" || evt.key === "H") {
-      smoothTransitionToTarget(lastTarget, camera, scene, 0.3);
-    } else if (evt.key === "o" || evt.key === "O") {
-      smoothTransitionToTarget(originalTarget, camera, scene, 0.3);
-    }
-  });
-
-  // Lights
-  const hemi_light_from_above = new BABYLON.HemisphericLight(
-    "hemiLight_above",
-    new BABYLON.Vector3(0, 1, 0),
-    scene
-  );
-  hemi_light_from_above.intensity = 0.5;
-  hemi_light_from_above.diffuse = new BABYLON.Color3(1, 1, 1);
-
-  const hemi_light_from_below = new BABYLON.HemisphericLight(
-    "hemiLight_below",
-    new BABYLON.Vector3(0, -1, 0),
-    scene
-  );
-  hemi_light_from_below.intensity = 0.4;
-  hemi_light_from_below.groundColor = new BABYLON.Color3(0, 0, 1);
-
-  // Directional Light from above
-  const dlight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(0, -1, 0), scene);
-  dlight.position = new BABYLON.Vector3(0, 50, 0);
-  dlight.intensity = 1.0;
-
-  // 5) Shadow generator with large orthographic bounds
-  window.shadowGenerator = new BABYLON.ShadowGenerator(2048, dlight);
-  // Enable transparent shadows:
-  shadowGenerator.useTransparentShadow = true;
-
-
-
-  // Setup ortho shadow bounds
-  dlight.autoCalcShadowZBounds = false;
-  dlight.shadowMinZ = -100;
-  dlight.shadowMaxZ = 1000;
-  dlight.orthoTop = 200;
-  dlight.orthoBottom = -200;
-  dlight.orthoLeft = -200;
-  dlight.orthoRight = 200;
-
-  // -----------------------------------------------------------
-  // We no longer use onNewMeshAddedObservable or the initial
-  // mesh-forEach here; we add shadow casters explicitly after
-  // JSON/GLB loading in other files (render_aircraft.js, load_glb_file.js).
-  // -----------------------------------------------------------
-
-// 6) Build ground: 500 x 500
-ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 500, height: 500 }, scene);
-const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-groundMat.alpha = 0.5;
-
-// Checkerboard dynamic texture with higher resolution
-const textureSize = 2048; // Increase texture resolution for crispness
-const dt = new BABYLON.DynamicTexture("groundDT", { width: textureSize, height: textureSize }, scene, false);
-const ctx = dt.getContext();
-
-// Number of tiles along one side
-const squaresCount = 10 // Each tile will be 10x10 units (500 / 50 = 10)
-const tileSize = textureSize / squaresCount; // Calculate tile size based on texture resolution
-
-// Draw checkerboard pattern
-for (let i = 0; i < squaresCount; i++) {
-  for (let j = 0; j < squaresCount; j++) {
-    ctx.fillStyle = (i + j) % 2 === 0 ? "#99ccff" : "#66b3ff";
-    ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
-  }
-}
-dt.update();
-
-// Apply texture to ground material
-groundMat.diffuseTexture = dt;
-groundMat.diffuseTexture.uScale = squaresCount; // Tile the texture horizontally
-groundMat.diffuseTexture.vScale = squaresCount; // Tile the texture vertically
-groundMat.diffuseTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE; // Enable wrapping
-groundMat.diffuseTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE; // Enable wrapping
-groundMat.diffuseTexture.anisotropicFilteringLevel = 16; // Improve texture quality
-groundMat.diffuseTexture.samplingMode = BABYLON.Texture.NEAREST_SAMPLINGMODE; // Prevent blurring
-
-// Assign material to ground
-ground.material = groundMat;
-ground.isPickable = true;
-ground.receiveShadows = true;
-
-
-
-
-// --- Add Coordinate Axes and Origin Box ---
-  // Red line for X-axis
-  var axisX = BABYLON.MeshBuilder.CreateLines("axisX", {
-    points: [new BABYLON.Vector3(-40, 0, 0), new BABYLON.Vector3(40, 0, 0)]
-}, scene);
-axisX.color = new BABYLON.Color3(1, 0, 0);
-
-// Green line for Y-axis
-var axisY = BABYLON.MeshBuilder.CreateLines("axisY", {
-    points: [new BABYLON.Vector3(0, -40, 0), new BABYLON.Vector3(0, 40, 0)]
-}, scene);
-axisY.color = new BABYLON.Color3(0, 1, 0);
-
-// Blue line for Z-axis
-var axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", {
-    points: [new BABYLON.Vector3(0, 0, -40), new BABYLON.Vector3(0, 0, 40)]
-}, scene);
-axisZ.color = new BABYLON.Color3(0, 0, 1);
-
-
-// Reference box at origin
-// Store it as a global so it can be updated later.
-window.originBox = BABYLON.MeshBuilder.CreateBox("originBox", { size: 1 }, scene);
-
-// Create a material for the box
-var originBoxMat = new BABYLON.StandardMaterial("originBoxMat", scene);
-
-// Set the diffuse color to pink (RGB: 1, 0.4, 0.7)
-originBoxMat.diffuseColor = new BABYLON.Color3(1, 0.4, 0.7);
-
-// Set the alpha (transparency) to 0.4
-originBoxMat.alpha = 0.4;
-
-// Enable transparency in the material using alpha blending
-originBoxMat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
-
-// Enable a depth pre-pass to ensure proper blending of the transparent surfaces
-originBoxMat.needDepthPrePass = true;
-
-// Disable backface culling so the box is visible from all angles
-originBoxMat.backFaceCulling = false;
-
-// Assign the material to the box
-window.originBox.material = originBoxMat;
-
-// Optionally, if you need to adjust how transparency is rendered, you can tweak engine settings.
-// For example, the following settings help with blending but are not always required:
- scene.autoClear = false;
- scene.autoClearDepthAndStencil = false;
-
-
-
-
-
-  // 7) Highlight layer for selection
-  window.hl = new BABYLON.HighlightLayer("hl1", scene);
-
-  // 8) Gizmo manager (used for drag/rotate with Ctrl, etc.)
-  gizmoManager = new BABYLON.GizmoManager(scene);
-  gizmoManager.positionGizmoEnabled = true;
-  gizmoManager.rotationGizmoEnabled = false;
-  gizmoManager.scaleGizmoEnabled = false;
-
-
-
-
-  // 9) Large sphere that won't be disposed or shadowed (Sky Sphere)
-  const sphere = BABYLON.MeshBuilder.CreateSphere(CAMERA_SPHERE_NAME, { diameter: 600 }, scene);
-  sphere.receiveShadows = false;
-  sphere.isPickable = false;
-
-  // Create a dynamic texture for a vertical gradient:
-  const skyDt = new BABYLON.DynamicTexture("skyTexture", { width: 512, height: 256 }, scene, false);
-  const skyCtx = skyDt.getContext();
-  // Create a vertical gradient (top to bottom)
-  const grd = skyCtx.createLinearGradient(0, 0, 0, 256);
-
-  grd.addColorStop(0, "#003366");     // Top: marine blue
-  grd.addColorStop(0.5, "#ffffff");   // Equator: white (cloud-like)
-  grd.addColorStop(1, "#ffff66");   // Bottom: light sky blue
-  skyCtx.fillStyle = grd;
-  skyCtx.fillRect(0, 0, 512, 256);
-  skyDt.update();
-
-  // Create and assign a material with the custom texture:
-  const sphereMat = new BABYLON.StandardMaterial("cameraSphereMat", scene);
-  // Use emissiveTexture so the sphere is self-illuminated
-  sphereMat.emissiveTexture = skyDt;
-  sphereMat.specularColor = new BABYLON.Color3(0, 0, 0);
-  sphereMat.backFaceCulling = false;   // Allows seeing inside the sphere
-  sphereMat.disableLighting = true;    // Ensures the texture shows as-is
-  sphere.material = sphereMat;
-
-  // Move sphere with camera each frame
-  scene.onBeforeRenderObservable.add(() => {
-    sphere.position.copyFrom(camera.position);
-  });
-
-  // Create the main aircraft root transform
-  createAircraftRoot();
-
-  // Create or reuse glbRoot
-  if (!window.glbRoot) {
-    window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
-    window.glbRoot.isPickable = false;
-    window.glbRoot.metadata = { type: "glb", data: {} };
-  }
-
-  // 10) Render loop
-  engine.runRenderLoop(function () {
-    scene.render();
-  });
-
-  // 11) Handle window resize
-  window.addEventListener("resize", function () {
-    engine.resize();
-  });
-}
-
-/**
- * Create or recreate the aircraftRoot transform node.
- */
-function createAircraftRoot() {
-  if (window.aircraftRoot) {
-    window.aircraftRoot.dispose();
-  }
-  window.aircraftRoot = new BABYLON.TransformNode("aircraftRoot", scene);
-  // Rotate so that our geometry aligns with the typical x-forward, z-up, etc. as you wish
-  window.aircraftRoot.rotation.x = -Math.PI / 2;
-  // If you want them all in a particular rendering group, do so:
-  window.aircraftRoot.renderingGroupId = 2;
-}
-
-// Finally, initialize everything
-initBabylon();
 
 ###########################################
 # FILE: component-creation.js
@@ -454,6 +140,10 @@ function createQuadMesh(name, pts, color) {
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.backFaceCulling = false;
+  // Set the properties for better transparency sorting
+  //mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+//mat.needDepthPrePass = window.isTranslucent;
+//mat.separateCullingPass = window.isTranslucent;
   customMesh.material = mat;
   customMesh.position = pivot;
   customMesh.isPickable = true;
@@ -475,23 +165,20 @@ function createFuselageNode(name, diameter, length, nosePosition) {
     tessellation: 32
   }, scene);
 
-  // Set up the cylinder transform
   cylinder.rotation.z = Math.PI / 2;
   cylinder.position = new BABYLON.Vector3(length / 2, 0, 0);
   cylinder.isPickable = true;
   cylinder.parent = parent;
 
-  // Create a material similar to the lifting surfaces
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.alpha = 0.8;
-  // Use ALPHABLEND so toggling transparency works consistently
   mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
   mat.needDepthPrePass = true;
-  mat.forceDepthWrite = true;
+  // Remove or comment out the forceDepthWrite line:
+  // mat.forceDepthWrite = true;
   cylinder.material = mat;
 
-  // Ensure the fuselage casts shadows just like the lifting surfaces.
   window.shadowGenerator.addShadowCaster(cylinder, true);
 
   parent.metadata = {
@@ -623,11 +310,11 @@ function createLabel(text, width, height) {
 var pointerDownPos = null;
 window.ctrlIsPressed = false;
 
-// Here we track Ctrl so that we only allow dragging while it’s pressed
+// Track the Ctrl key to control gizmo attachment.
 window.addEventListener("keydown", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = true;
-    // If we already have something selected, attach the gizmo
+    // When Control is pressed, if a component is already selected, attach the gizmo.
     if (window.selectedComponent) {
       gizmoManager.attachToMesh(window.selectedComponent);
     }
@@ -637,11 +324,12 @@ window.addEventListener("keydown", function (evt) {
 window.addEventListener("keyup", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = false;
-    // If we had a gizmo, detach it now
+    // Detach the gizmo when Control is released.
     gizmoManager.attachToMesh(null);
   }
 });
 
+// Main pointer observable for selection.
 scene.onPointerObservable.add(function (pointerInfo) {
   switch (pointerInfo.type) {
     case BABYLON.PointerEventTypes.POINTERDOWN:
@@ -652,7 +340,7 @@ scene.onPointerObservable.add(function (pointerInfo) {
       break;
 
     case BABYLON.PointerEventTypes.POINTERUP:
-      // Distinguish "click" vs. "drag"
+      // Determine if this was a click vs. a drag.
       if (!pointerDownPos) return;
       const dx = pointerInfo.event.clientX - pointerDownPos.x;
       const dy = pointerInfo.event.clientY - pointerDownPos.y;
@@ -660,30 +348,28 @@ scene.onPointerObservable.add(function (pointerInfo) {
       const isClick = dist < 5;
       pointerDownPos = null;
 
-    
-// Right-click => pivot camera only
-if (pointerInfo.event.button === 2) {
-  if (pointerInfo.pickInfo.hit) {
-    const pickedMesh = pointerInfo.pickInfo.pickedMesh;
-    // Only re-center if it's not the ground
-   if (pickedMesh && pickedMesh.name !== "ground") {
-     camera.target = pointerInfo.pickInfo.pickedPoint;
-   } else {
-     // If user right-clicked ground, do nothing
-     clearSelectedNameDisplay();
-     updateSelectedNameDisplay("Ground");
-   }
-  }
-  return;
-}
+      // Right-click: re-center camera only.
+      if (pointerInfo.event.button === 2) {
+        if (pointerInfo.pickInfo.hit) {
+          const pickedMesh = pointerInfo.pickInfo.pickedMesh;
+          if (pickedMesh && pickedMesh.name !== "ground") {
+            camera.target = pointerInfo.pickInfo.pickedPoint;
+          } else {
+            clearSelectedNameDisplay();
+            updateSelectedNameDisplay("Ground");
+          }
+        }
+        return;
+      }
 
       if (!isClick) return;
 
       const pickInfo = pointerInfo.pickInfo;
-      // If click missed or clicked ground => unselect
+      // If click missed or clicked on ground, unselect any component.
       if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
+          // Detach gizmo when unselecting.
           gizmoManager.attachToMesh(null);
           window.selectedComponent = null;
         }
@@ -694,22 +380,18 @@ if (pointerInfo.event.button === 2) {
         return;
       }
 
-      // Otherwise, we clicked a mesh
+      // Otherwise, a mesh was clicked.
       const info = getMetadata(pickInfo.pickedMesh);
       if (info) {
-        // If something else was selected, revert highlight
+        // If a different component was previously selected, clear its highlight.
         if (window.selectedComponent && window.selectedComponent !== info.mesh) {
           clearHighlight(window.selectedComponent);
         }
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
 
-        // Only attach gizmo if Ctrl is pressed
-        if (window.ctrlIsPressed) {
-          gizmoManager.attachToMesh(window.selectedComponent);
-        } else {
-          gizmoManager.attachToMesh(null);
-        }
+        // Do not attach the gizmo here.
+        // The gizmo will be attached only when the Control key is held down.
 
         const compName = info.metadata.data.name ||
                          (info.metadata.type === "glb" ? "GLB Model" : "Unnamed");
@@ -719,13 +401,13 @@ if (pointerInfo.event.button === 2) {
   }
 });
 
-// If pointer is released, we may update JSON data
+// Pointer observable to update JSON data after a pointer up event.
 scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
-      // Store new position
+      // Update positions for lifting surfaces and fuselages.
       if (md.type === "lifting_surface") {
         md.data.root_LE = [
           window.selectedComponent.position.x,
@@ -739,7 +421,7 @@ scene.onPointerObservable.add(function (pointerInfo) {
           window.selectedComponent.position.z
         ];
       }
-      // if glb => store position in md.data if needed
+      // If it is a GLB model, store position if needed.
     }
   }
 });
@@ -960,26 +642,33 @@ function clearHighlight(componentNode) {
 
 
 function setTranslucencyMode(enabled) {
-  const alphaValue = enabled ? 0.5 : 1.0;
+  const alphaValue = enabled ? 0.7 : 1.0;
 
-  // Set alpha on all child meshes under aircraftRoot, except those that are labels.
-  if (window.aircraftRoot) {
-    window.aircraftRoot.getChildMeshes().forEach(mesh => {
-      if (mesh.name.startsWith("label_")) return;  // Skip labels
-      if (mesh.material && typeof mesh.material.alpha === "number") {
-        mesh.material.alpha = alphaValue;
+  function updateMeshTransparency(mesh) {
+    // Skip labels or anything special
+    if (mesh.name.startsWith("label_")) return;
+
+    if (mesh.material) {
+      mesh.material.alpha = alphaValue;
+      if (enabled) {
+        // translucent mode
+        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+        mesh.material.needDepthPrePass = true; // optional
+      } else {
+        // fully opaque
+        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
+        mesh.material.needDepthPrePass = false;
       }
-    });
+    }
   }
 
-  // Set alpha on all child meshes under glbRoot, except those that are labels.
+  // Update everything under aircraftRoot
+  if (window.aircraftRoot) {
+    window.aircraftRoot.getChildMeshes().forEach(updateMeshTransparency);
+  }
+  // Update everything under glbRoot
   if (window.glbRoot) {
-    window.glbRoot.getChildMeshes().forEach(mesh => {
-      if (mesh.name.startsWith("label_")) return;  // Skip labels
-      if (mesh.material && typeof mesh.material.alpha === "number") {
-        mesh.material.alpha = alphaValue;
-      }
-    });
+    window.glbRoot.getChildMeshes().forEach(updateMeshTransparency);
   }
 }
 
@@ -1379,6 +1068,401 @@ function openEditModalForSelected() {
          window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
     }
   });
+
+###########################################
+# FILE: babylon-setup.js
+###########################################
+
+/********************************************
+ * FILE: babylon-setup.js
+ * 
+ * Here we store everything in window.scene,
+ * and references to "scene" inside the functions
+ * just point to that same global object.
+ ********************************************/
+
+// --------------------------------------------------------
+// Global references
+// --------------------------------------------------------
+window.canvas = document.getElementById("renderCanvas");
+window.engine = null;
+window.scene = null;
+window.camera = null;
+window.ground = null;
+window.gizmoManager = null;
+window.aircraftRoot = null;
+window.glbRoot = null;
+
+// We'll use a highlight layer for selection
+window.hl = null;
+// Shadow generator for casting shadows
+window.shadowGenerator = null;
+
+// Some constants we use
+const CAMERA_SPHERE_NAME = "cameraSphere"; // name for the big "sky" sphere
+
+/********************************************
+ * START of createEngineAndScene()
+ ********************************************/
+function createEngineAndScene() {
+  // 1) Create engine
+  window.engine = new BABYLON.Engine(canvas, true, { stencil: true });
+
+  // 2) Create scene
+  window.scene = new BABYLON.Scene(engine);
+
+  // For multiple transparent objects:
+  window.scene.useOrderIndependentTransparency = true;
+
+  // Scene background color
+  window.scene.clearColor = new BABYLON.Color4(153 / 255, 204 / 255, 1, 1);
+
+  // Optional: Fog
+  window.scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
+  window.scene.fogStart = 40.0;
+  window.scene.fogEnd = 340.0;
+  window.scene.fogColor = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
+
+  // Make sure we clear the depth/stencil buffers each frame
+  window.scene.autoClear = true;
+  window.scene.autoClearDepthAndStencil = true;
+}
+/********************************************
+ * END of createEngineAndScene()
+ ********************************************/
+
+
+/********************************************
+ * START of createAircraftRoot()
+ ********************************************/
+function createAircraftRoot() {
+  if (window.aircraftRoot) {
+    window.aircraftRoot.dispose();
+  }
+  window.aircraftRoot = new BABYLON.TransformNode("aircraftRoot", window.scene);
+  // Rotate so that geometry aligns with typical x-forward, z-up
+  window.aircraftRoot.rotation.x = -Math.PI / 2;
+  // If you want them all in a particular renderingGroupId
+  window.aircraftRoot.renderingGroupId = 2;
+}
+/********************************************
+ * END of createAircraftRoot()
+ ********************************************/
+
+
+/********************************************
+ * START of initBabylon()
+ ********************************************/
+function initBabylon() {
+  // 1) engine + scene
+  createEngineAndScene(); // creates window.scene
+
+  // 2) camera
+  setupCamera(); 
+
+  // 3) lights + shadows
+  setupLightsAndShadows(); 
+
+  // 4) create ground
+  createGround(); 
+
+  // 5) axes + origin box
+  addAxesAndOriginBox(); 
+
+  // 6) sky sphere
+  createSkySphere(); 
+
+  // 7) create or reuse the highlight layer
+  window.hl = new BABYLON.HighlightLayer("hl1", window.scene);
+
+    // create the gizmo manager
+    window.gizmoManager = new BABYLON.GizmoManager(window.scene);
+
+  // 8) create main aircraft root
+  createAircraftRoot();
+
+  // 9) create or reuse glbRoot
+  if (!window.glbRoot) {
+    window.glbRoot = new BABYLON.TransformNode("glbRoot", window.scene);
+    window.glbRoot.isPickable = false;
+    window.glbRoot.metadata = { type: "glb", data: {} };
+  }
+
+  // 10) run the render loop
+  window.engine.runRenderLoop(function () {
+    window.scene.render();
+  });
+
+  // 11) handle window resize
+  window.addEventListener("resize", function () {
+    window.engine.resize();
+  });
+}
+
+
+
+/********************************************
+ * END of initBabylon()
+ ********************************************/
+
+// Optionally, you can call initBabylon() directly here
+initBabylon();
+
+###########################################
+# FILE: ground_axis_sphere.js
+###########################################
+
+/********************************************
+ * FILE: ground_axis_sphere.js
+ ********************************************/
+
+/********************************************
+ * START of createGround()
+ ********************************************/
+function createGround() {
+    window.ground = BABYLON.MeshBuilder.CreateGround(
+      "ground", 
+      { width: 500, height: 500 },
+      window.scene
+    );
+  
+    const groundMat = new BABYLON.StandardMaterial("groundMat", window.scene);
+  
+    // Checkerboard dynamic texture
+    const textureSize = 2048;
+    const dt = new BABYLON.DynamicTexture("groundDT", { width: textureSize, height: textureSize }, window.scene, false);
+    const ctx = dt.getContext();
+  
+    const squaresCount = 10; 
+    const tileSize = textureSize / squaresCount;
+  
+    for (let i = 0; i < squaresCount; i++) {
+      for (let j = 0; j < squaresCount; j++) {
+        ctx.fillStyle = (i + j) % 2 === 0 ? "#99ccff" : "#66b3ff";
+        ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+      }
+    }
+    dt.update();
+  
+    groundMat.diffuseTexture = dt;
+    groundMat.diffuseTexture.uScale = squaresCount;
+    groundMat.diffuseTexture.vScale = squaresCount;
+    groundMat.diffuseTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
+    groundMat.diffuseTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
+    groundMat.diffuseTexture.anisotropicFilteringLevel = 16;
+    groundMat.diffuseTexture.samplingMode = BABYLON.Texture.NEAREST_SAMPLINGMODE;
+  
+    window.ground.material = groundMat;
+    window.ground.isPickable = true;
+    window.ground.receiveShadows = true;
+  }
+  /********************************************
+   * END of createGround()
+   ********************************************/
+  
+  
+  /********************************************
+   * START of addAxesAndOriginBox()
+   ********************************************/
+  function addAxesAndOriginBox() {
+    // X axis
+    const axisX = BABYLON.MeshBuilder.CreateLines("axisX", {
+      points: [ new BABYLON.Vector3(-40, 0, 0), new BABYLON.Vector3(40, 0, 0) ]
+    }, window.scene);
+    axisX.color = new BABYLON.Color3(1, 0, 0);
+  
+    // Y axis
+    const axisY = BABYLON.MeshBuilder.CreateLines("axisY", {
+      points: [ new BABYLON.Vector3(0, -40, 0), new BABYLON.Vector3(0, 40, 0) ]
+    }, window.scene);
+    axisY.color = new BABYLON.Color3(0, 1, 0);
+  
+    // Z axis
+    const axisZ = BABYLON.MeshBuilder.CreateLines("axisZ", {
+      points: [ new BABYLON.Vector3(0, 0, -40), new BABYLON.Vector3(0, 0, 40) ]
+    }, window.scene);
+    axisZ.color = new BABYLON.Color3(0, 0, 1);
+  
+    // Origin box
+    window.originBox = BABYLON.MeshBuilder.CreateBox("originBox", { size: 1 }, window.scene);
+    const originBoxMat = new BABYLON.StandardMaterial("originBoxMat", window.scene);
+    originBoxMat.diffuseColor = new BABYLON.Color3(1, 0.4, 0.7);
+    originBoxMat.alpha = 0.4;
+    originBoxMat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+    originBoxMat.needDepthPrePass = true;
+    originBoxMat.backFaceCulling = false;
+    window.originBox.material = originBoxMat;
+  }
+  /********************************************
+   * END of addAxesAndOriginBox()
+   ********************************************/
+  
+  
+  /********************************************
+   * START of createSkySphere()
+   ********************************************/
+  function createSkySphere() {
+    const sphere = BABYLON.MeshBuilder.CreateSphere(
+      CAMERA_SPHERE_NAME, 
+      { diameter: 600 }, 
+      window.scene
+    );
+    sphere.receiveShadows = false;
+    sphere.isPickable = false;
+  
+    // Dynamic texture for vertical gradient
+    const skyDt = new BABYLON.DynamicTexture("skyTexture", { width: 512, height: 256 }, window.scene, false);
+    const skyCtx = skyDt.getContext();
+    const grd = skyCtx.createLinearGradient(0, 0, 0, 256);
+    grd.addColorStop(0, "#003366");
+    grd.addColorStop(0.5, "#ffffff");
+    grd.addColorStop(1, "#ffff66");
+    skyCtx.fillStyle = grd;
+    skyCtx.fillRect(0, 0, 512, 256);
+    skyDt.update();
+  
+    const sphereMat = new BABYLON.StandardMaterial("cameraSphereMat", window.scene);
+    sphereMat.emissiveTexture = skyDt;
+    sphereMat.specularColor = new BABYLON.Color3(0, 0, 0);
+    sphereMat.backFaceCulling = false;
+    sphereMat.disableLighting = true;
+    sphere.material = sphereMat;
+  
+    // Move sphere with camera each frame
+    window.scene.onBeforeRenderObservable.add(() => {
+      sphere.position.copyFrom(window.camera.position);
+    });
+  }
+  /********************************************
+   * END of createSkySphere()
+   ********************************************/
+  
+
+###########################################
+# FILE: lights_and_shadows.js
+###########################################
+
+/********************************************
+ * FILE: lights_and_shadows.js
+ ********************************************/
+
+function setupLightsAndShadows() {
+    // 1) Hemispheric Light from above
+    const hemiLightAbove = new BABYLON.HemisphericLight(
+      "hemiLight_above",
+      new BABYLON.Vector3(0, 1, 0),
+      window.scene
+    );
+    hemiLightAbove.intensity = 0.5;
+  
+    // 2) Hemispheric Light from below
+    const hemiLightBelow = new BABYLON.HemisphericLight(
+      "hemiLight_below",
+      new BABYLON.Vector3(0, -1, 0),
+      window.scene
+    );
+    hemiLightBelow.intensity = 0.4;
+    hemiLightBelow.groundColor = new BABYLON.Color3(0, 0, 1);
+  
+    // 3) Directional Light
+    const dlight = new BABYLON.DirectionalLight(
+      "dirLight",
+      new BABYLON.Vector3(0, -1, 0),
+      window.scene
+    );
+    dlight.position = new BABYLON.Vector3(0, 50, 0);
+    dlight.intensity = 1.0;
+  
+    // 4) Shadow generator
+    window.shadowGenerator = new BABYLON.ShadowGenerator(2048, dlight);
+    shadowGenerator.useTransparentShadow = true;
+  
+    // Large ortho bounds
+    dlight.autoCalcShadowZBounds = false;
+    dlight.shadowMinZ = -100;
+    dlight.shadowMaxZ = 1000;
+    dlight.orthoTop = 200;
+    dlight.orthoBottom = -200;
+    dlight.orthoLeft = -200;
+    dlight.orthoRight = 200;
+  }
+  
+
+###########################################
+# FILE: set_up_camera.js
+###########################################
+
+/********************************************
+ * FILE: set_up_camera.js
+ ********************************************/
+
+function setupCamera() {
+    // Create ArcRotateCamera
+    window.camera = new BABYLON.ArcRotateCamera(
+      "Camera",
+      -2.0,  // alpha
+      1.2,   // beta
+      40,    // radius
+      new BABYLON.Vector3(7, 0, 0), // target
+      window.scene
+    );
+  
+    camera.fov = 0.647;
+    camera.rotation.z = Math.PI / 2;
+    camera.attachControl(window.canvas, true);
+    camera.upperBetaLimit = Math.PI;
+    camera.lowerBetaLimit = 0;
+    camera.inertia = 0.9;
+    camera.lowerRadiusLimit = 0.2;
+    camera.upperRadiusLimit = 1500;
+  
+    // Dynamically adjust wheel & panning with distance
+    camera.onViewMatrixChangedObservable.add(() => {
+      const distance = BABYLON.Vector3.Distance(camera.position, camera.target);
+      camera.wheelPrecision = 200 / distance;
+      camera.panningSensibility = 5000 / distance;
+    });
+  
+    // Middle-click => pivot camera to clicked point
+    let originalTarget = camera.target.clone();
+    let lastTarget = camera.target.clone();
+  
+    window.canvas.addEventListener("pointerdown", function (evt) {
+      if (evt.button === 1) {
+        evt.preventDefault();
+        const pickResult = window.scene.pick(window.scene.pointerX, window.scene.pointerY);
+        if (pickResult.hit) {
+          lastTarget = camera.target.clone();
+          smoothTransitionToTarget(pickResult.pickedPoint, camera, window.scene, 0.3);
+        }
+      }
+    });
+  
+    // Double-click => open edit or revert
+    window.canvas.addEventListener("dblclick", function () {
+      const pickResult = window.scene.pick(window.scene.pointerX, window.scene.pointerY);
+      if (pickResult.hit) {
+        const info = getMetadata(pickResult.pickedMesh);
+        if (info && window.selectedComponent === info.mesh) {
+          openEditModalForSelected();
+          return;
+        }
+      }
+      if (!pickResult.hit) {
+        smoothTransitionToTarget(lastTarget, camera, window.scene, 0.3);
+      }
+    });
+  
+    // Keyboard shortcuts
+    window.addEventListener("keydown", function (evt) {
+      if (evt.key === "h" || evt.key === "H") {
+        smoothTransitionToTarget(lastTarget, camera, window.scene, 0.3);
+      } else if (evt.key === "o" || evt.key === "O") {
+        smoothTransitionToTarget(originalTarget, camera, window.scene, 0.3);
+      }
+    });
+  }
+  
 
 ###########################################
 # FILE: fuselage-modal.html

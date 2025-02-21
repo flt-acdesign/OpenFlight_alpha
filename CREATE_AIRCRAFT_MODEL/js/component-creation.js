@@ -26,6 +26,10 @@ function createQuadMesh(name, pts, color) {
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.backFaceCulling = false;
+  // Set the properties for better transparency sorting
+  //mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+//mat.needDepthPrePass = window.isTranslucent;
+//mat.separateCullingPass = window.isTranslucent;
   customMesh.material = mat;
   customMesh.position = pivot;
   customMesh.isPickable = true;
@@ -47,23 +51,20 @@ function createFuselageNode(name, diameter, length, nosePosition) {
     tessellation: 32
   }, scene);
 
-  // Set up the cylinder transform
   cylinder.rotation.z = Math.PI / 2;
   cylinder.position = new BABYLON.Vector3(length / 2, 0, 0);
   cylinder.isPickable = true;
   cylinder.parent = parent;
 
-  // Create a material similar to the lifting surfaces
   const mat = new BABYLON.StandardMaterial(name + "Mat", scene);
   mat.diffuseColor = color;
   mat.alpha = 0.8;
-  // Use ALPHABLEND so toggling transparency works consistently
   mat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
   mat.needDepthPrePass = true;
-  mat.forceDepthWrite = true;
+  // Remove or comment out the forceDepthWrite line:
+  // mat.forceDepthWrite = true;
   cylinder.material = mat;
 
-  // Ensure the fuselage casts shadows just like the lifting surfaces.
   window.shadowGenerator.addShadowCaster(cylinder, true);
 
   parent.metadata = {
