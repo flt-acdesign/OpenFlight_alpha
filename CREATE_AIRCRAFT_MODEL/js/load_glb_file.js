@@ -40,9 +40,19 @@ async function loadGLBFile(file) {
     // 5) Create or reuse a glbRoot TransformNode to hold them
     if (!window.glbRoot) {
       window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
-      window.glbRoot.metadata = { type: "glb", data: {} };
-      window.glbRoot.isPickable = false;
     }
+    
+    // Update metadata with proper structure for editing
+    window.glbRoot.metadata = { 
+      type: "glb", 
+      data: {
+        scale: 1.0,
+        rotationDeg: [0, 0, 0],
+        position: [0, 0, 0]
+      } 
+    };
+    window.glbRoot.isPickable = true;
+    window.lastLoadedGLBName = file.name;
 
     // 6) Parent all imported meshes under glbRoot & make pickable
     result.meshes.forEach(mesh => {
@@ -62,25 +72,23 @@ async function loadGLBFile(file) {
       -modelCenter.z * scaleFactor
     );
 
+    // Store the scale factor in the metadata
+    window.glbRoot.metadata.data.scale = scaleFactor;
 
-    
-// 8) [Optional] Adjust materials for imported GLB meshes,
-//    but skip ground, sky sphere, origin box, and labels.
-scene.meshes.forEach(mesh => {
-  if (
-    mesh.material &&
-    mesh.name !== "ground" &&
-    mesh.name !== CAMERA_SPHERE_NAME &&
-    mesh.name !== "originBox" &&
-    !mesh.name.startsWith("label_")  // Skip labels
-  ) {
-    mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
-    mesh.material.backFaceCulling = false;
-  }
-});
-
-
-
+    // 8) [Optional] Adjust materials for imported GLB meshes,
+    //    but skip ground, sky sphere, origin box, and labels.
+    scene.meshes.forEach(mesh => {
+      if (
+        mesh.material &&
+        mesh.name !== "ground" &&
+        mesh.name !== CAMERA_SPHERE_NAME &&
+        mesh.name !== "originBox" &&
+        !mesh.name.startsWith("label_")  // Skip labels
+      ) {
+        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
+        mesh.material.backFaceCulling = false;
+      }
+    });
 
     // 9) Force all new meshes (except ground, sky sphere, axis) to cast shadows
     scene.meshes.forEach((mesh) => {
@@ -92,6 +100,16 @@ scene.meshes.forEach(mesh => {
         shadowGenerator.addShadowCaster(mesh, true);
       }
     });
+
+    // Select the GLB model
+    window.selectedComponent = window.glbRoot;
+    setColorLightPink(window.selectedComponent);
+    updateSelectedNameDisplay("GLB: " + window.lastLoadedGLBName);
+    document.getElementById("editComponentBtn").disabled = false;
+    document.getElementById("deleteComponentBtn").disabled = false;
+    
+    // Update the transform snippet
+    updateGLBTransformSnippet();
 
   } catch (error) {
     console.error("Error loading GLB file:", error);

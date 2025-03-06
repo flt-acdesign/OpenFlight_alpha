@@ -2,11 +2,34 @@
 
 var pointerDownPos = null;
 window.ctrlIsPressed = false;
+window.isDraggingGizmo = false;
 
 // IMPORTANT: Ensure the gizmo is actually enabled for positions.
 gizmoManager.positionGizmoEnabled = true;   // so we can move objects
 gizmoManager.rotationGizmoEnabled = false;  // optional
 gizmoManager.scaleGizmoEnabled = false;     // optional
+
+// Set up observers for gizmo events
+if (gizmoManager.gizmos.positionGizmo) {
+  // Track when gizmo drag starts
+  gizmoManager.gizmos.positionGizmo.onDragStartObservable.add(function() {
+    window.isDraggingGizmo = true;
+  });
+  
+  // Track when gizmo drag ends
+  gizmoManager.gizmos.positionGizmo.onDragEndObservable.add(function() {
+    window.isDraggingGizmo = false;
+    
+    // Update metadata and snippet at the end of drag
+    if (window.selectedComponent && window.selectedComponent.metadata && 
+        window.selectedComponent.metadata.type === "glb") {
+      updateGLBMetadataFromTransform();
+      if (typeof updateGLBTransformSnippet === 'function') {
+        updateGLBTransformSnippet();
+      }
+    }
+  });
+}
 
 // Track the Ctrl key to decide when to attach or detach the gizmo.
 window.addEventListener("keydown", function (evt) {
@@ -25,8 +48,46 @@ window.addEventListener("keyup", function (evt) {
     window.ctrlIsPressed = false;
     // Detach the gizmo to avoid accidental moves.
     gizmoManager.attachToMesh(null);
+    
+    // Final update when control is released
+    if (window.selectedComponent && window.selectedComponent.metadata && 
+        window.selectedComponent.metadata.type === "glb") {
+      updateGLBMetadataFromTransform();
+      if (typeof updateGLBTransformSnippet === 'function') {
+        updateGLBTransformSnippet();
+      }
+    }
   }
 });
+
+/**
+ * Helper function to update GLB metadata from current transform
+ */
+function updateGLBMetadataFromTransform() {
+  if (!window.selectedComponent || !window.selectedComponent.metadata) return;
+  
+  const md = window.selectedComponent.metadata;
+  if (md.type === "glb") {
+    if (!md.data) md.data = {};
+    
+    // Update position in metadata
+    md.data.position = [
+      window.selectedComponent.position.x,
+      window.selectedComponent.position.y,
+      window.selectedComponent.position.z
+    ];
+    
+    // Update rotation (degrees) in metadata
+    md.data.rotationDeg = [
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.x),
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.y),
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.z)
+    ];
+    
+    // Update scale in metadata
+    md.data.scale = window.selectedComponent.scaling.x;
+  }
+}
 
 /**
  * Main pointer logic for selecting a component or ground.
@@ -99,8 +160,13 @@ scene.onPointerObservable.add(function (pointerInfo) {
         // It only attaches when Ctrl is pressed.
 
         const compName = info.metadata?.data?.name 
-          || (info.metadata?.type === "glb" ? "GLB Model" : "Unnamed");
+          || (info.metadata?.type === "glb" ? "GLB: " + window.lastLoadedGLBName : "Unnamed");
         updateSelectedNameDisplay(compName);
+        
+        // If it's a GLB model, make sure to update the transform snippet
+        if (info.metadata?.type === "glb" && typeof updateGLBTransformSnippet === 'function') {
+          updateGLBTransformSnippet();
+        }
       }
       break;
   }
@@ -129,8 +195,30 @@ scene.onPointerObservable.add(function (pointerInfo) {
           window.selectedComponent.position.y,
           window.selectedComponent.position.z
         ];
+      } else if (md.type === "glb") {
+        // Update GLB metadata position
+        updateGLBMetadataFromTransform();
+        
+        // Update the GLB transform snippet if it exists
+        if (typeof updateGLBTransformSnippet === 'function') {
+          updateGLBTransformSnippet();
+        }
       }
-      // For GLB or others, if needed, store position similarly.
+    }
+  }
+});
+
+// Add real-time updates during scene rendering
+scene.onBeforeRenderObservable.add(() => {
+  // Check if we're currently dragging a GLB model with the gizmo
+  if (window.isDraggingGizmo && 
+      window.selectedComponent && 
+      window.selectedComponent.metadata && 
+      window.selectedComponent.metadata.type === "glb") {
+    
+    // Update in real-time while dragging
+    if (typeof updateGLBTransformSnippet === 'function') {
+      updateGLBTransformSnippet();
     }
   }
 });

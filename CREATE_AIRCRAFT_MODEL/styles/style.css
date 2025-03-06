@@ -44,12 +44,19 @@ html, body {
   margin-left: 20px;
 }
 
-/* Toggle ground button at bottom center */
-#toggleGround {
+/* Container for toggle ground + toggle translucency at bottom center */
+#bottomButtons {
   position: fixed;
-  bottom: 20px; 
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 100;
+  display: flex;        /* so buttons line up side-by-side */
+  gap: 120px;           /* space between them = 3x their diameter */
+}
+
+/* A common style for circular buttons in that container */
+#bottomButtons button {
   width: 40px; 
   height: 40px;
   border-radius: 50%;
@@ -59,9 +66,8 @@ html, body {
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   font-size: 20px;
-  z-index: 100;
 }
-#toggleGround:hover { 
+#bottomButtons button:hover { 
   background-color: #254EDB; 
 }
 
@@ -153,4 +159,26 @@ html, body {
   padding: 20px;
   border-radius: 10px;
   z-index: 200;  /* on top of everything else */
+}
+
+/* Style for the GLB transform snippet display */
+#glbTransformSnippet {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 600px;
+  white-space: pre;
+  background: #f5f5f5;
+  color: #000;
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin: 5px;
+  font-family: monospace;
+  font-size: 14px;
+  display: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 90;
 }

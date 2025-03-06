@@ -1,6 +1,6 @@
-
-
-// js/ui-logic.js
+/********************************************
+ * FILE: ui-logic.js
+ ********************************************/
 
 //////////////////////
 // 1) Global Setup  //
@@ -30,38 +30,51 @@ window.editingObject = null;
 window.selectedComponent = null;
 window.currentGLBModel = null; // will store the root mesh of any imported GLB
 
+// Track the last loaded GLB filename
+window.lastLoadedGLBName = "";
 
 
 (function setupGLBControls() {
+  // Rotation buttons
   document.getElementById("rotateXBtn").addEventListener("click", function() {
-    window.glbRoot.rotation.x += Math.PI / 2;
+    if (window.glbRoot) {
+      window.glbRoot.rotation.x += Math.PI / 2;
+      updateGLBTransformSnippet();
+    }
   });
   document.getElementById("rotateYBtn").addEventListener("click", function() {
-    window.glbRoot.rotation.y += Math.PI / 2;
+    if (window.glbRoot) {
+      window.glbRoot.rotation.y += Math.PI / 2;
+      updateGLBTransformSnippet();
+    }
   });
   document.getElementById("rotateZBtn").addEventListener("click", function() {
-    window.glbRoot.rotation.z += Math.PI / 2;
+    if (window.glbRoot) {
+      window.glbRoot.rotation.z += Math.PI / 2;
+      updateGLBTransformSnippet();
+    }
   });
+
+  // Scale input/button
   document.getElementById("applyGlbScaleBtn").addEventListener("click", function() {
+    if (!window.glbRoot) return;
     const scaleValue = parseFloat(document.getElementById("glbScaleInput").value);
     if (!isNaN(scaleValue)) {
       window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
+      updateGLBTransformSnippet();
     }
   });
-// 1) A global or local flag to track current translucency mode
-window.isTranslucent = false;
 
-document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
-  // Toggle the global flag
-  window.isTranslucent = !window.isTranslucent;
-  // Apply new mode
-  setTranslucencyMode(window.isTranslucent);
-});
-
+  // Toggle translucency
+  window.isTranslucent = false;
+  document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
+    window.isTranslucent = !window.isTranslucent;
+    setTranslucencyMode(window.isTranslucent);
+  });
 })();
 
 ///////////////////////////////
-// 4) Modal Fill & Show Fns  //
+// 2) Modal Fill & Show Fns  //
 ///////////////////////////////
 
 function fillLiftingSurfaceModal(data) {
@@ -85,6 +98,7 @@ function fillLiftingSurfaceModal(data) {
   document.getElementById("ls_principal_axis_pitch_up_DEG").value = data.principal_axis_pitch_up_DEG ?? -2;
   document.getElementById("ls_CoG_pos_xyz_m").value = (data.CoG_pos_xyz_m || [0,0,0]).join(",");
   document.getElementById("ls_aerodynamic_center_pos_xyz_m").value = (data.aerodynamic_center_pos_xyz_m || [2.9,0,0]).join(",");
+
   document.getElementById("liftingSurfaceModal").style.display = "block";
 }
 
@@ -97,19 +111,8 @@ function fillFuselageModal(data) {
 }
 
 /////////////////////
-// 5) Rendering    //
+// 3) Rendering    //
 /////////////////////
-
-function isDescendantOf(child, parent) {
-  let curr = child.parent;
-  while (curr) {
-    if (curr === parent) return true;
-    curr = curr.parent;
-  }
-  return false;
-}
-
-
 
 function parseAircraft(jsonText) {
   aircraftData = JSON.parse(jsonText);
@@ -117,16 +120,13 @@ function parseAircraft(jsonText) {
 }
 
 /////////////////////////////
-// 6) Event Listener Setup //
+// 4) Event Listener Setup //
 /////////////////////////////
 
 (function setupUI() {
   // Lifting Surface Modal
   const lsModal = document.getElementById("liftingSurfaceModal");
-  const lsSubmitBtn = document.getElementById("ls_submit");
-  const lsCancelBtn = document.getElementById("ls_cancel");
-
-  lsSubmitBtn.addEventListener("click", function() {
+  document.getElementById("ls_submit").addEventListener("click", function() {
     const newData = {
       name: document.getElementById("ls_name").value,
       mass_kg: parseFloat(document.getElementById("ls_mass_kg").value),
@@ -160,7 +160,6 @@ function parseAircraft(jsonText) {
 
     lsModal.style.display = "none";
     renderAircraft();
-
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
@@ -168,8 +167,7 @@ function parseAircraft(jsonText) {
     }
     clearSelectedNameDisplay();
   });
-
-  lsCancelBtn.addEventListener("click", function() {
+  document.getElementById("ls_cancel").addEventListener("click", function() {
     lsModal.style.display = "none";
     window.editingType = "";
     window.editingObject = null;
@@ -177,10 +175,7 @@ function parseAircraft(jsonText) {
 
   // Fuselage Modal
   const fusModal = document.getElementById("fuselageModal");
-  const fusSubmitBtn = document.getElementById("fus_submit");
-  const fusCancelBtn = document.getElementById("fus_cancel");
-
-  fusSubmitBtn.addEventListener("click", function() {
+  document.getElementById("fus_submit").addEventListener("click", function() {
     const newData = {
       name: document.getElementById("fus_name").value,
       diameter: parseFloat(document.getElementById("fus_diameter").value),
@@ -201,7 +196,6 @@ function parseAircraft(jsonText) {
 
     fusModal.style.display = "none";
     renderAircraft();
-
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
@@ -209,34 +203,29 @@ function parseAircraft(jsonText) {
     }
     clearSelectedNameDisplay();
   });
-
-  fusCancelBtn.addEventListener("click", function() {
+  document.getElementById("fus_cancel").addEventListener("click", function() {
     fusModal.style.display = "none";
     window.editingType = "";
     window.editingObject = null;
   });
 
-  // "Add" Buttons
+  // "Add" buttons
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
     window.editingType = "";
     window.editingObject = null;
-    document.getElementById("liftingSurfaceModal").style.display = "block";
+    lsModal.style.display = "block";
   });
   document.getElementById("addFuselageBtn").addEventListener("click", function() {
     window.editingType = "";
     window.editingObject = null;
-    document.getElementById("fuselageModal").style.display = "block";
+    fusModal.style.display = "block";
   });
 
-  // "Edit Selected" Button
-  const editBtn = document.getElementById("editComponentBtn");
-  editBtn.addEventListener("pointerdown", function(e) {
-    e.stopPropagation();
-  });
-  editBtn.addEventListener("click", function() {
+  // Edit Selected
+  document.getElementById("editComponentBtn").addEventListener("click", function() {
     if (!window.selectedComponent) return;
     const info = getMetadata(window.selectedComponent);
-    if (info && info.metadata && info.metadata.data) {
+    if (info && info.metadata) {
       if (info.metadata.type === "lifting_surface") {
         window.editingType = "lifting_surface";
         window.editingObject = info.metadata.data;
@@ -246,14 +235,63 @@ function parseAircraft(jsonText) {
         window.editingObject = info.metadata.data;
         fillFuselageModal(window.editingObject);
       } else if (info.metadata.type === "glb") {
-        console.log("GLB model selected (no editing modal).");
+        window.editingType = "glb";
+        window.editingObject = info.metadata.data;
+        fillGLBModal();
       }
     }
   });
 
-  // JSON File Input
-  const fileInput = document.getElementById("fileInput");
-  fileInput.addEventListener("change", function(event) {
+  // Delete Selected
+  document.getElementById("deleteComponentBtn").addEventListener("click", function() {
+    if (!window.selectedComponent) return;
+    const info = getMetadata(window.selectedComponent);
+    if (!info || !info.metadata) return;
+
+    const type = info.metadata.type;
+    const dataRef = info.metadata.data;
+
+    // Remove from JSON & Scene
+    if (type === "lifting_surface") {
+      const idx = aircraftData.lifting_surfaces.indexOf(dataRef);
+      if (idx >= 0) {
+        aircraftData.lifting_surfaces.splice(idx, 1);
+      }
+      renderAircraft();
+    }
+    else if (type === "fuselage") {
+      const idx = aircraftData.fuselages.indexOf(dataRef);
+      if (idx >= 0) {
+        aircraftData.fuselages.splice(idx, 1);
+      }
+      renderAircraft();
+    }
+    else if (type === "glb") {
+      // Dispose the GLB mesh and root
+      if (window.currentGLBModel) {
+        window.currentGLBModel.dispose();
+        window.currentGLBModel = null;
+      }
+      if (window.glbRoot) {
+        window.glbRoot.dispose();
+        window.glbRoot = null;
+      }
+      document.getElementById("glbTransformSnippet").style.display = "none";
+    }
+
+    // Clear selection
+    clearHighlight(window.selectedComponent);
+    gizmoManager.attachToMesh(null);
+    window.selectedComponent = null;
+    clearSelectedNameDisplay();
+  });
+
+  // JSON file input (hidden)
+  const jsonFileInput = document.getElementById("jsonFileInput");
+  document.getElementById("selectJsonBtn").addEventListener("click", function() {
+    jsonFileInput.click();
+  });
+  jsonFileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".json")) {
@@ -291,35 +329,67 @@ function parseAircraft(jsonText) {
       window.selectedComponent = null;
     }
     clearSelectedNameDisplay();
-    // (Removed camera reset code)
   });
 
   // Toggle Ground
   document.getElementById("toggleGround").addEventListener("click", function() {
-    ground.isVisible = !ground.isVisible;
+    if (window.ground) {
+      ground.isVisible = !ground.isVisible;
+    }
   });
 
-  // GLB File Input
-  const glbFileInput = document.getElementById("glbFileInput");
-  glbFileInput.addEventListener("change", function(event) {
+  // GLB file input (hidden)
+  const glbRealInput = document.getElementById("glbFileInput");
+  document.getElementById("selectGlbBtn").addEventListener("click", function() {
+    glbRealInput.click();
+  });
+  glbRealInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".glb")) {
       alert("Please select a valid '.glb' file.");
       return;
     }
+    window.lastLoadedGLBName = file.name;
     loadGLBFile(file);
   });
+  
+  // GLB Modal event handlers
+  const glbModal = document.getElementById("glbModal");
+  if (document.getElementById("glb_submit")) {
+    document.getElementById("glb_submit").addEventListener("click", function() {
+      if (typeof applyGLBChanges === 'function') {
+        applyGLBChanges();
+      }
+    });
+  }
+  
+  if (document.getElementById("glb_generate_snippet")) {
+    document.getElementById("glb_generate_snippet").addEventListener("click", function() {
+      if (typeof generateGLBSnippet === 'function') {
+        generateGLBSnippet();
+      }
+    });
+  }
+  
+  if (document.getElementById("glb_cancel")) {
+    document.getElementById("glb_cancel").addEventListener("click", function() {
+      glbModal.style.display = "none";
+      window.editingType = "";
+      window.editingObject = null;
+    });
+  }
 })();
 
-/////////////////////////
-// 7) Helper Functions //
-/////////////////////////
+/////////////////////////////
+// 5) Helper Functions     //
+/////////////////////////////
 
 function clearSelectedNameDisplay() {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: None";
   document.getElementById("editComponentBtn").disabled = true;
+  document.getElementById("deleteComponentBtn").disabled = true;
 }
 
 function updateSelectedNameDisplay(name) {
@@ -327,9 +397,9 @@ function updateSelectedNameDisplay(name) {
   span.innerText = "Selected: " + name;
   const isNoneOrGround = (name === "None" || name === "Ground");
   document.getElementById("editComponentBtn").disabled = isNoneOrGround;
+  document.getElementById("deleteComponentBtn").disabled = isNoneOrGround;
 }
 
-// Optional: same openEditModalForSelected if you needed
 function openEditModalForSelected() {
   if (!window.selectedComponent) return;
   const info = getMetadata(window.selectedComponent);
@@ -343,24 +413,21 @@ function openEditModalForSelected() {
       window.editingObject = info.metadata.data;
       fillFuselageModal(window.editingObject);
     } else if (info.metadata.type === "glb") {
-      console.log("GLB model selected (no editing modal).");
+      window.editingType = "glb";
+      window.editingObject = info.metadata.data;
+      fillGLBModal();
     }
   }
 }
 
-
-
-
-  // Update Origin Box Size
-  document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
-    var newSize = parseFloat(document.getElementById("boxSizeInput").value);
-    if (isNaN(newSize) || newSize <= 0) {
-         alert("Please enter a positive number for box size.");
-         return;
-    }
-    if(window.originBox) {
-         // Since the box was originally created with size 1,
-         // setting the scaling to (newSize, newSize, newSize) updates its effective size.
-         window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
-    }
-  });
+// Update Origin Box Size
+document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
+  var newSize = parseFloat(document.getElementById("boxSizeInput").value);
+  if (isNaN(newSize) || newSize <= 0) {
+       alert("Please enter a positive number for box size.");
+       return;
+  }
+  if(window.originBox) {
+    window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
+  }
+});

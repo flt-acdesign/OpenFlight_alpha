@@ -2,7 +2,6 @@
 # FILE: create_aircraft_model.html
 ###########################################
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,15 +15,25 @@
 <body>
   <!-- The top bar with all controls -->
   <div id="controls">
-    <input type="file" id="fileInput" accept=".json">
-    <button id="toggleTranslucencyBtn">Toggle Translucency</button>
+    <!-- Hide the real JSON file input, use a custom button -->
+    <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+    <button id="selectJsonBtn">Open .json</button>
+
+    <!-- REMOVED ToggleTranslucencyBtn from here -->
+
     <button id="addLiftingSurfaceBtn">Add Lifting Surface</button>
     <button id="addFuselageBtn">Add Fuselage</button>
-    <button id="downloadJsonBtn">Download JSON</button>
-    <button id="clearAircraft">Clear Aircraft</button>
     <span id="selectedComponentName">Selected: None</span>
     <button id="editComponentBtn" disabled>Edit Selected</button>
-    <input type="file" id="glbFileInput" accept=".glb" title="Load .glb model" style="margin-left:20px;">
+
+    <button id="deleteComponentBtn" disabled>Delete Selected</button>
+    <button id="clearAircraft">Clear Aircraft</button>
+    <button id="downloadJsonBtn">Download JSON</button>
+
+    <!-- Hide the real GLB file input, use a custom button -->
+    <input type="file" id="glbFileInput" accept=".glb" style="display:none;">
+    <button id="selectGlbBtn">Open .glb</button>
+
     <!-- GLB Manipulation Controls -->
     <button id="rotateXBtn">Rotate X 90°</button>
     <button id="rotateYBtn">Rotate Y 90°</button>
@@ -32,20 +41,30 @@
     <label>GLB Scale:</label>
     <input type="number" id="glbScaleInput" value="1" step="0.1">
     <button id="applyGlbScaleBtn">Apply Scale</button>
-      <!-- Box Size Controls -->
-<label>Box Size:</label>
-<input type="number" id="boxSizeInput" value="1" step="0.1" min="0.1">
-<button id="updateBoxSizeBtn">Update Box Size</button>
+
+    <!-- Box Size Controls -->
+    <label>Box Size:</label>
+    <input type="number" id="boxSizeInput" value="1" step="0.1" min="0.1">
+    <button id="updateBoxSizeBtn">Update Box Size</button>
   </div>
   
   <!-- Canvas for BabylonJS -->
   <canvas id="renderCanvas"></canvas>
 
-  <!-- Toggle ground button -->
-  <button id="toggleGround" title="Show/Hide Ground">☀</button>
+  <!-- NEW: Bottom buttons container -->
+  <div id="bottomButtons">
+    <button id="toggleGround" title="Show/Hide Ground">☀</button>
+    <button id="toggleTranslucencyBtn" title="Toggle Translucency">&#128065;</button>
+  </div>
 
   <!-- "Loading 3D Model..." overlay (used for GLB loading feedback) -->
   <div id="loadingText">Loading 3D Model...</div>
+
+  <!-- Show GLB transform info here -->
+  <div id="glbTransformSnippet" style="white-space: pre; background: #eee; color: #000;
+       padding: 10px; margin: 5px; font-family: monospace; display:none;">
+  </div>
+  <!-- end snippet container -->
 
   <!-- Inline modals for Lifting Surfaces & Fuselages -->
   <div id="liftingSurfaceModal" class="modal">
@@ -76,8 +95,6 @@
     </div>
   </div>
 
-
-
   <div id="fuselageModal" class="modal">
     <div class="modal-content">
       <h3>Add / Edit Fuselage</h3>
@@ -91,7 +108,6 @@
   </div>
 
   <!-- Scripts (order is important) -->
-
   <script src="js/⛺_scene_setup/set_up_camera.js"></script>
   <script src="js/⛺_scene_setup/lights_and_shadows.js"></script>
   <script src="js/⛺_scene_setup/ground_axis_sphere.js"></script>
@@ -105,8 +121,6 @@
   <script src="js/ui-logic.js"></script>
 </body>
 </html>
-
-
 
 ###########################################
 # FILE: component-creation.js
@@ -310,12 +324,18 @@ function createLabel(text, width, height) {
 var pointerDownPos = null;
 window.ctrlIsPressed = false;
 
-// Track the Ctrl key to control gizmo attachment.
+// IMPORTANT: Ensure the gizmo is actually enabled for positions.
+gizmoManager.positionGizmoEnabled = true;   // so we can move objects
+gizmoManager.rotationGizmoEnabled = false;  // optional
+gizmoManager.scaleGizmoEnabled = false;     // optional
+
+// Track the Ctrl key to decide when to attach or detach the gizmo.
 window.addEventListener("keydown", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = true;
-    // When Control is pressed, if a component is already selected, attach the gizmo.
-    if (window.selectedComponent) {
+
+    // Only attach the gizmo if a valid component is selected (not ground).
+    if (window.selectedComponent && window.selectedComponent.name !== "ground") {
       gizmoManager.attachToMesh(window.selectedComponent);
     }
   }
@@ -324,12 +344,14 @@ window.addEventListener("keydown", function (evt) {
 window.addEventListener("keyup", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = false;
-    // Detach the gizmo when Control is released.
+    // Detach the gizmo to avoid accidental moves.
     gizmoManager.attachToMesh(null);
   }
 });
 
-// Main pointer observable for selection.
+/**
+ * Main pointer logic for selecting a component or ground.
+ */
 scene.onPointerObservable.add(function (pointerInfo) {
   switch (pointerInfo.type) {
     case BABYLON.PointerEventTypes.POINTERDOWN:
@@ -340,7 +362,6 @@ scene.onPointerObservable.add(function (pointerInfo) {
       break;
 
     case BABYLON.PointerEventTypes.POINTERUP:
-      // Determine if this was a click vs. a drag.
       if (!pointerDownPos) return;
       const dx = pointerInfo.event.clientX - pointerDownPos.x;
       const dy = pointerInfo.event.clientY - pointerDownPos.y;
@@ -348,13 +369,14 @@ scene.onPointerObservable.add(function (pointerInfo) {
       const isClick = dist < 5;
       pointerDownPos = null;
 
-      // Right-click: re-center camera only.
+      // Right-click => pivot camera only.
       if (pointerInfo.event.button === 2) {
         if (pointerInfo.pickInfo.hit) {
           const pickedMesh = pointerInfo.pickInfo.pickedMesh;
           if (pickedMesh && pickedMesh.name !== "ground") {
             camera.target = pointerInfo.pickInfo.pickedPoint;
           } else {
+            // If user right-clicked ground, just display "Ground."
             clearSelectedNameDisplay();
             updateSelectedNameDisplay("Ground");
           }
@@ -365,49 +387,57 @@ scene.onPointerObservable.add(function (pointerInfo) {
       if (!isClick) return;
 
       const pickInfo = pointerInfo.pickInfo;
-      // If click missed or clicked on ground, unselect any component.
+      // If click missed or clicked ground => unselect any current component
       if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
-          // Detach gizmo when unselecting.
+          // Also detach any gizmo if it was attached
           gizmoManager.attachToMesh(null);
           window.selectedComponent = null;
         }
         clearSelectedNameDisplay();
         if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
           updateSelectedNameDisplay("Ground");
+          // Optionally set the ground as "selected" if you prefer
+          // but it won't have a gizmo because it has name === "ground".
+          window.selectedComponent = pickInfo.pickedMesh; 
         }
         return;
       }
 
-      // Otherwise, a mesh was clicked.
+      // Otherwise, we clicked on a valid mesh (component).
       const info = getMetadata(pickInfo.pickedMesh);
       if (info) {
-        // If a different component was previously selected, clear its highlight.
+        // Unhighlight old selection if needed
         if (window.selectedComponent && window.selectedComponent !== info.mesh) {
           clearHighlight(window.selectedComponent);
         }
+        // Select the new component
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
 
-        // Do not attach the gizmo here.
-        // The gizmo will be attached only when the Control key is held down.
+        // NOTE: We do NOT attach the gizmo here!
+        // It only attaches when Ctrl is pressed.
 
-        const compName = info.metadata.data.name ||
-                         (info.metadata.type === "glb" ? "GLB Model" : "Unnamed");
+        const compName = info.metadata?.data?.name 
+          || (info.metadata?.type === "glb" ? "GLB Model" : "Unnamed");
         updateSelectedNameDisplay(compName);
       }
       break;
   }
 });
 
-// Pointer observable to update JSON data after a pointer up event.
+/**
+ * After releasing the pointer, if the user dragged an object,
+ * update the object's position in your JSON data structure.
+ */
 scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
+
+    // If the component has metadata, update the relevant position in the JSON.
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
-      // Update positions for lifting surfaces and fuselages.
       if (md.type === "lifting_surface") {
         md.data.root_LE = [
           window.selectedComponent.position.x,
@@ -421,7 +451,7 @@ scene.onPointerObservable.add(function (pointerInfo) {
           window.selectedComponent.position.z
         ];
       }
-      // If it is a GLB model, store position if needed.
+      // For GLB or others, if needed, store position similarly.
     }
   }
 });
@@ -702,9 +732,9 @@ function smoothTransitionToTarget(newTarget, camera, scene, durationInSeconds) {
 # FILE: ui-logic.js
 ###########################################
 
-
-
-// js/ui-logic.js
+/********************************************
+ * FILE: ui-logic.js
+ ********************************************/
 
 //////////////////////
 // 1) Global Setup  //
@@ -734,38 +764,47 @@ window.editingObject = null;
 window.selectedComponent = null;
 window.currentGLBModel = null; // will store the root mesh of any imported GLB
 
+// Track the last loaded GLB filename
+window.lastLoadedGLBName = "";
 
 
 (function setupGLBControls() {
+  // Rotation buttons
   document.getElementById("rotateXBtn").addEventListener("click", function() {
-    window.glbRoot.rotation.x += Math.PI / 2;
+    if (window.glbRoot) {
+      window.glbRoot.rotation.x += Math.PI / 2;
+    }
   });
   document.getElementById("rotateYBtn").addEventListener("click", function() {
-    window.glbRoot.rotation.y += Math.PI / 2;
+    if (window.glbRoot) {
+      window.glbRoot.rotation.y += Math.PI / 2;
+    }
   });
   document.getElementById("rotateZBtn").addEventListener("click", function() {
-    window.glbRoot.rotation.z += Math.PI / 2;
+    if (window.glbRoot) {
+      window.glbRoot.rotation.z += Math.PI / 2;
+    }
   });
+
+  // Scale input/button
   document.getElementById("applyGlbScaleBtn").addEventListener("click", function() {
+    if (!window.glbRoot) return;
     const scaleValue = parseFloat(document.getElementById("glbScaleInput").value);
     if (!isNaN(scaleValue)) {
       window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
     }
   });
-// 1) A global or local flag to track current translucency mode
-window.isTranslucent = false;
 
-document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
-  // Toggle the global flag
-  window.isTranslucent = !window.isTranslucent;
-  // Apply new mode
-  setTranslucencyMode(window.isTranslucent);
-});
-
+  // Toggle translucency
+  window.isTranslucent = false;
+  document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
+    window.isTranslucent = !window.isTranslucent;
+    setTranslucencyMode(window.isTranslucent);
+  });
 })();
 
 ///////////////////////////////
-// 4) Modal Fill & Show Fns  //
+// 2) Modal Fill & Show Fns  //
 ///////////////////////////////
 
 function fillLiftingSurfaceModal(data) {
@@ -789,6 +828,7 @@ function fillLiftingSurfaceModal(data) {
   document.getElementById("ls_principal_axis_pitch_up_DEG").value = data.principal_axis_pitch_up_DEG ?? -2;
   document.getElementById("ls_CoG_pos_xyz_m").value = (data.CoG_pos_xyz_m || [0,0,0]).join(",");
   document.getElementById("ls_aerodynamic_center_pos_xyz_m").value = (data.aerodynamic_center_pos_xyz_m || [2.9,0,0]).join(",");
+
   document.getElementById("liftingSurfaceModal").style.display = "block";
 }
 
@@ -801,19 +841,8 @@ function fillFuselageModal(data) {
 }
 
 /////////////////////
-// 5) Rendering    //
+// 3) Rendering    //
 /////////////////////
-
-function isDescendantOf(child, parent) {
-  let curr = child.parent;
-  while (curr) {
-    if (curr === parent) return true;
-    curr = curr.parent;
-  }
-  return false;
-}
-
-
 
 function parseAircraft(jsonText) {
   aircraftData = JSON.parse(jsonText);
@@ -821,16 +850,13 @@ function parseAircraft(jsonText) {
 }
 
 /////////////////////////////
-// 6) Event Listener Setup //
+// 4) Event Listener Setup //
 /////////////////////////////
 
 (function setupUI() {
   // Lifting Surface Modal
   const lsModal = document.getElementById("liftingSurfaceModal");
-  const lsSubmitBtn = document.getElementById("ls_submit");
-  const lsCancelBtn = document.getElementById("ls_cancel");
-
-  lsSubmitBtn.addEventListener("click", function() {
+  document.getElementById("ls_submit").addEventListener("click", function() {
     const newData = {
       name: document.getElementById("ls_name").value,
       mass_kg: parseFloat(document.getElementById("ls_mass_kg").value),
@@ -864,7 +890,6 @@ function parseAircraft(jsonText) {
 
     lsModal.style.display = "none";
     renderAircraft();
-
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
@@ -872,8 +897,7 @@ function parseAircraft(jsonText) {
     }
     clearSelectedNameDisplay();
   });
-
-  lsCancelBtn.addEventListener("click", function() {
+  document.getElementById("ls_cancel").addEventListener("click", function() {
     lsModal.style.display = "none";
     window.editingType = "";
     window.editingObject = null;
@@ -881,10 +905,7 @@ function parseAircraft(jsonText) {
 
   // Fuselage Modal
   const fusModal = document.getElementById("fuselageModal");
-  const fusSubmitBtn = document.getElementById("fus_submit");
-  const fusCancelBtn = document.getElementById("fus_cancel");
-
-  fusSubmitBtn.addEventListener("click", function() {
+  document.getElementById("fus_submit").addEventListener("click", function() {
     const newData = {
       name: document.getElementById("fus_name").value,
       diameter: parseFloat(document.getElementById("fus_diameter").value),
@@ -905,7 +926,6 @@ function parseAircraft(jsonText) {
 
     fusModal.style.display = "none";
     renderAircraft();
-
     if (window.selectedComponent) {
       clearHighlight(window.selectedComponent);
       gizmoManager.attachToMesh(null);
@@ -913,31 +933,26 @@ function parseAircraft(jsonText) {
     }
     clearSelectedNameDisplay();
   });
-
-  fusCancelBtn.addEventListener("click", function() {
+  document.getElementById("fus_cancel").addEventListener("click", function() {
     fusModal.style.display = "none";
     window.editingType = "";
     window.editingObject = null;
   });
 
-  // "Add" Buttons
+  // "Add" buttons
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
     window.editingType = "";
     window.editingObject = null;
-    document.getElementById("liftingSurfaceModal").style.display = "block";
+    lsModal.style.display = "block";
   });
   document.getElementById("addFuselageBtn").addEventListener("click", function() {
     window.editingType = "";
     window.editingObject = null;
-    document.getElementById("fuselageModal").style.display = "block";
+    fusModal.style.display = "block";
   });
 
-  // "Edit Selected" Button
-  const editBtn = document.getElementById("editComponentBtn");
-  editBtn.addEventListener("pointerdown", function(e) {
-    e.stopPropagation();
-  });
-  editBtn.addEventListener("click", function() {
+  // Edit Selected
+  document.getElementById("editComponentBtn").addEventListener("click", function() {
     if (!window.selectedComponent) return;
     const info = getMetadata(window.selectedComponent);
     if (info && info.metadata && info.metadata.data) {
@@ -955,9 +970,56 @@ function parseAircraft(jsonText) {
     }
   });
 
-  // JSON File Input
-  const fileInput = document.getElementById("fileInput");
-  fileInput.addEventListener("change", function(event) {
+  // Delete Selected
+  document.getElementById("deleteComponentBtn").addEventListener("click", function() {
+    if (!window.selectedComponent) return;
+    const info = getMetadata(window.selectedComponent);
+    if (!info || !info.metadata) return;
+
+    const type = info.metadata.type;
+    const dataRef = info.metadata.data;
+
+    // Remove from JSON & Scene
+    if (type === "lifting_surface") {
+      const idx = aircraftData.lifting_surfaces.indexOf(dataRef);
+      if (idx >= 0) {
+        aircraftData.lifting_surfaces.splice(idx, 1);
+      }
+      renderAircraft();
+    }
+    else if (type === "fuselage") {
+      const idx = aircraftData.fuselages.indexOf(dataRef);
+      if (idx >= 0) {
+        aircraftData.fuselages.splice(idx, 1);
+      }
+      renderAircraft();
+    }
+    else if (type === "glb") {
+      // Dispose the GLB mesh and root
+      if (window.currentGLBModel) {
+        window.currentGLBModel.dispose();
+        window.currentGLBModel = null;
+      }
+      if (window.glbRoot) {
+        window.glbRoot.dispose();
+        window.glbRoot = null;
+      }
+      document.getElementById("glbTransformSnippet").style.display = "none";
+    }
+
+    // Clear selection
+    clearHighlight(window.selectedComponent);
+    gizmoManager.attachToMesh(null);
+    window.selectedComponent = null;
+    clearSelectedNameDisplay();
+  });
+
+  // JSON file input (hidden)
+  const jsonFileInput = document.getElementById("jsonFileInput");
+  document.getElementById("selectJsonBtn").addEventListener("click", function() {
+    jsonFileInput.click();
+  });
+  jsonFileInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".json")) {
@@ -995,35 +1057,41 @@ function parseAircraft(jsonText) {
       window.selectedComponent = null;
     }
     clearSelectedNameDisplay();
-    // (Removed camera reset code)
   });
 
   // Toggle Ground
   document.getElementById("toggleGround").addEventListener("click", function() {
-    ground.isVisible = !ground.isVisible;
+    if (window.ground) {
+      ground.isVisible = !ground.isVisible;
+    }
   });
 
-  // GLB File Input
-  const glbFileInput = document.getElementById("glbFileInput");
-  glbFileInput.addEventListener("change", function(event) {
+  // GLB file input (hidden)
+  const glbRealInput = document.getElementById("glbFileInput");
+  document.getElementById("selectGlbBtn").addEventListener("click", function() {
+    glbRealInput.click();
+  });
+  glbRealInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".glb")) {
       alert("Please select a valid '.glb' file.");
       return;
     }
+    window.lastLoadedGLBName = file.name;
     loadGLBFile(file);
   });
 })();
 
-/////////////////////////
-// 7) Helper Functions //
-/////////////////////////
+/////////////////////////////
+// 5) Helper Functions     //
+/////////////////////////////
 
 function clearSelectedNameDisplay() {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: None";
   document.getElementById("editComponentBtn").disabled = true;
+  document.getElementById("deleteComponentBtn").disabled = true;
 }
 
 function updateSelectedNameDisplay(name) {
@@ -1031,9 +1099,9 @@ function updateSelectedNameDisplay(name) {
   span.innerText = "Selected: " + name;
   const isNoneOrGround = (name === "None" || name === "Ground");
   document.getElementById("editComponentBtn").disabled = isNoneOrGround;
+  document.getElementById("deleteComponentBtn").disabled = isNoneOrGround;
 }
 
-// Optional: same openEditModalForSelected if you needed
 function openEditModalForSelected() {
   if (!window.selectedComponent) return;
   const info = getMetadata(window.selectedComponent);
@@ -1052,22 +1120,98 @@ function openEditModalForSelected() {
   }
 }
 
+// Update Origin Box Size
+document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
+  var newSize = parseFloat(document.getElementById("boxSizeInput").value);
+  if (isNaN(newSize) || newSize <= 0) {
+       alert("Please enter a positive number for box size.");
+       return;
+  }
+  if(window.originBox) {
+    window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
+  }
+});
 
 
+////////////////////////////////////////////////////
+// 6) Real-Time GLB Transformation Snippet Updates //
+////////////////////////////////////////////////////
 
-  // Update Origin Box Size
-  document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
-    var newSize = parseFloat(document.getElementById("boxSizeInput").value);
-    if (isNaN(newSize) || newSize <= 0) {
-         alert("Please enter a positive number for box size.");
-         return;
+/**
+ * Creates or updates the snippet in #glbTransformSnippet
+ * to reflect the current position, rotation, scale of glbRoot.
+ */
+function updateGLBTransformSnippet() {
+  const snippetDiv = document.getElementById("glbTransformSnippet");
+  if (!window.glbRoot) {
+    snippetDiv.style.display = "none";
+    return;
+  }
+
+  // Convert rotations to degrees
+  const rotX = Math.round(BABYLON.Tools.ToDegrees(window.glbRoot.rotation.x));
+  const rotY = Math.round(BABYLON.Tools.ToDegrees(window.glbRoot.rotation.y));
+  const rotZ = Math.round(BABYLON.Tools.ToDegrees(window.glbRoot.rotation.z));
+
+  // Positions
+  const posX = window.glbRoot.position.x.toFixed(2);
+  const posY = window.glbRoot.position.y.toFixed(2);
+  const posZ = window.glbRoot.position.z.toFixed(2);
+
+  // Scale (assuming uniform scale)
+  const scaleFactor = window.glbRoot.scaling.x.toFixed(2);
+
+  // If no filename is known yet, fallback
+  const fileName = window.lastLoadedGLBName || "myModel.glb";
+
+  const snippet = 
+`case "${fileName}":
+    scaleFactor = ${scaleFactor};
+    rotationX   = ${rotX};
+    rotationY   = ${rotY};
+    rotationZ   = ${rotZ};
+    translationX = ${posX};
+    translationY = ${posY};
+    translationZ = ${posZ};
+    break;`;
+
+  snippetDiv.textContent = snippet;
+  snippetDiv.style.display = "block";
+}
+
+// Keep track of last known transforms to avoid needless re-updates
+let lastGlbValues = {
+  rx: 0, ry: 0, rz: 0,
+  px: 0, py: 0, pz: 0,
+  s: 1
+};
+
+// Every frame, if the currently selected component is glbRoot, check for changes
+scene.onBeforeRenderObservable.add(() => {
+  if (window.selectedComponent === window.glbRoot && window.glbRoot) {
+    const rx = window.glbRoot.rotation.x;
+    const ry = window.glbRoot.rotation.y;
+    const rz = window.glbRoot.rotation.z;
+    const px = window.glbRoot.position.x;
+    const py = window.glbRoot.position.y;
+    const pz = window.glbRoot.position.z;
+    const s  = window.glbRoot.scaling.x;
+
+    // If any transform changed, update snippet
+    if (
+      rx !== lastGlbValues.rx ||
+      ry !== lastGlbValues.ry ||
+      rz !== lastGlbValues.rz ||
+      px !== lastGlbValues.px ||
+      py !== lastGlbValues.py ||
+      pz !== lastGlbValues.pz ||
+      s  !== lastGlbValues.s
+    ) {
+      lastGlbValues = { rx, ry, rz, px, py, pz, s };
+      updateGLBTransformSnippet();
     }
-    if(window.originBox) {
-         // Since the box was originally created with size 1,
-         // setting the scaling to (newSize, newSize, newSize) updates its effective size.
-         window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
-    }
-  });
+  }
+});
 
 ###########################################
 # FILE: babylon-setup.js
@@ -1675,5 +1819,33 @@ html, body {
   padding: 20px;
   border-radius: 10px;
   z-index: 200;  /* on top of everything else */
+}
+
+
+/* Container for toggle ground + toggle translucency at bottom center */
+#bottomButtons {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;        /* so buttons line up side-by-side */
+  gap: 10px;            /* space between them */
+}
+
+/* A common style for circular buttons in that container */
+#bottomButtons button {
+  width: 40px; 
+  height: 40px;
+  border-radius: 50%;
+  background-color: #3366FF;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  font-size: 20px;
+}
+#bottomButtons button:hover { 
+  background-color: #254EDB; 
 }
 

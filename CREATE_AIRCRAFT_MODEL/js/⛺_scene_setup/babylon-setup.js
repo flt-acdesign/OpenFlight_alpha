@@ -26,6 +26,9 @@ window.shadowGenerator = null;
 // Some constants we use
 const CAMERA_SPHERE_NAME = "cameraSphere"; // name for the big "sky" sphere
 
+// Initialize global flags needed for real-time updates
+window.isDraggingGizmo = false;
+
 /********************************************
  * START of createEngineAndScene()
  ********************************************/
@@ -74,6 +77,26 @@ function createAircraftRoot() {
  * END of createAircraftRoot()
  ********************************************/
 
+// Set up observers for gizmo events
+function setupGizmoObservers() {
+  if (window.gizmoManager && window.gizmoManager.gizmos.positionGizmo) {
+    // Set up observers for real-time dragging
+    window.gizmoManager.gizmos.positionGizmo.onDragStartObservable.add(function() {
+      window.isDraggingGizmo = true;
+    });
+    
+    window.gizmoManager.gizmos.positionGizmo.onDragEndObservable.add(function() {
+      window.isDraggingGizmo = false;
+      // Final update when drag ends
+      if (window.selectedComponent && 
+          window.selectedComponent.metadata && 
+          window.selectedComponent.metadata.type === "glb" && 
+          typeof updateGLBTransformSnippet === 'function') {
+        updateGLBTransformSnippet();
+      }
+    });
+  }
+}
 
 /********************************************
  * START of initBabylon()
@@ -100,8 +123,11 @@ function initBabylon() {
   // 7) create or reuse the highlight layer
   window.hl = new BABYLON.HighlightLayer("hl1", window.scene);
 
-    // create the gizmo manager
-    window.gizmoManager = new BABYLON.GizmoManager(window.scene);
+  // create the gizmo manager
+  window.gizmoManager = new BABYLON.GizmoManager(window.scene);
+  
+  // Set up gizmo observers for real-time updating
+  setupGizmoObservers();
 
   // 8) create main aircraft root
   createAircraftRoot();
@@ -123,9 +149,6 @@ function initBabylon() {
     window.engine.resize();
   });
 }
-
-
-
 /********************************************
  * END of initBabylon()
  ********************************************/
