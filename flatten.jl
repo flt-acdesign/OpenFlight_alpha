@@ -8,7 +8,7 @@ using Base.Filesystem: walkdir, basename, joinpath, splitext
 # 2. Specify the file extensions to capture.
 # 3. Specify the output file.
 # -----------------------------------------------------------------------------
-folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\CREATE_AIRCRAFT_MODEL"
+folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL"
 extensions  = [".html", ".css", ".js"]
 output_file = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\concatenated_code.txt"
 
@@ -36,17 +36,17 @@ all_files = gather_files(folder, extensions)
 # -----------------------------------------------------------------------------
 open(output_file, "w") do io
     for file_path in all_files
-        # Write a clear header for the file
+        # Write a clear header with the complete file path
         println(io, "###########################################")
-        @printf(io, "# FILE: %s\n", basename(file_path))
+        @printf(io, "# FILE: %s\n", file_path)
         println(io, "###########################################")
         println(io)
-
+        
         # Read each line from the file and write to the output
         for line in eachline(file_path)
             println(io, line)
         end
-
+        
         # Separate files with a blank line
         println(io)
     end

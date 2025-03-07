@@ -1,15 +1,20 @@
-// js/interaction.js
+/********************************************
+ * FILE: interaction.js
+ ********************************************/
+
+/**
+ * We disable gizmos by default, so the translation arrows never
+ * appear when simply selecting an object.
+ */
+gizmoManager.positionGizmoEnabled = false;   // was `true`
+gizmoManager.rotationGizmoEnabled = false;
+gizmoManager.scaleGizmoEnabled    = false;
 
 var pointerDownPos = null;
 window.ctrlIsPressed = false;
 window.isDraggingGizmo = false;
 
-// IMPORTANT: Ensure the gizmo is actually enabled for positions.
-gizmoManager.positionGizmoEnabled = true;   // so we can move objects
-gizmoManager.rotationGizmoEnabled = false;  // optional
-gizmoManager.scaleGizmoEnabled = false;     // optional
-
-// Set up observers for gizmo events
+// Set up observers for gizmo drag events:
 if (gizmoManager.gizmos.positionGizmo) {
   // Track when gizmo drag starts
   gizmoManager.gizmos.positionGizmo.onDragStartObservable.add(function() {
@@ -20,51 +25,53 @@ if (gizmoManager.gizmos.positionGizmo) {
   gizmoManager.gizmos.positionGizmo.onDragEndObservable.add(function() {
     window.isDraggingGizmo = false;
     
-    // Update metadata and snippet at the end of drag
+    // If this is a GLB, update snippet after dragging:
     if (window.selectedComponent && window.selectedComponent.metadata && 
         window.selectedComponent.metadata.type === "glb") {
       updateGLBMetadataFromTransform();
       if (typeof updateGLBTransformSnippet === 'function') {
         updateGLBTransformSnippet();
-        // Make sure the snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
-    
-    // Enforce ground-only vertical movement
+
+    // Enforce ground-only vertical movement, if needed:
     if (window.selectedComponent && window.selectedComponent.name === "ground") {
       const groundPos = window.selectedComponent.position;
       window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
     }
-    
-    // Update JSON Editor if visible
-    if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+
+    // Update JSON Editor if visible:
+    if (window.appState?.jsonEditorVisible && window.jsonEditor) {
       updateJsonEditor();
     }
   });
 }
 
-// Track the Ctrl key to decide when to attach or detach the gizmo.
+/**
+ * Track Ctrl key down => enable the gizmo and attach to mesh
+ */
 window.addEventListener("keydown", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = true;
-
-    // Only attach the gizmo if a valid component is selected
+    
+    // Enable & attach the position gizmo ONLY if something is selected
+    gizmoManager.positionGizmoEnabled = true;
     if (window.selectedComponent) {
       gizmoManager.attachToMesh(window.selectedComponent);
-      
-      // Special handling for ground - restrict to Y-axis only
-      if (window.selectedComponent.name === "ground" && gizmoManager.gizmos.positionGizmo) {
+
+      // Special case: restrict movement axes if ground is selected
+      if (window.selectedComponent.name === "ground") {
         const groundGizmo = gizmoManager.gizmos.positionGizmo;
-        groundGizmo.xGizmo.isEnabled = false; // Disable X movement
-        groundGizmo.zGizmo.isEnabled = false; // Disable Z movement
-        groundGizmo.yGizmo.isEnabled = true;  // Enable only Y movement
-      } else if (gizmoManager.gizmos.positionGizmo) {
-        // Ensure all axes are enabled for non-ground objects
-        const gizmo = gizmoManager.gizmos.positionGizmo;
-        gizmo.xGizmo.isEnabled = true;
-        gizmo.yGizmo.isEnabled = true;
-        gizmo.zGizmo.isEnabled = true;
+        groundGizmo.xGizmo.isEnabled = false; 
+        groundGizmo.zGizmo.isEnabled = false;
+        groundGizmo.yGizmo.isEnabled = true; 
+      } else {
+        // For non-ground objects, allow all axes
+        const pg = gizmoManager.gizmos.positionGizmo;
+        pg.xGizmo.isEnabled = true;
+        pg.yGizmo.isEnabled = true;
+        pg.zGizmo.isEnabled = true;
       }
     }
   }
@@ -73,22 +80,22 @@ window.addEventListener("keydown", function (evt) {
 window.addEventListener("keyup", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = false;
-    // Detach the gizmo to avoid accidental moves.
+
+    // Detach gizmo (so it disappears)
     gizmoManager.attachToMesh(null);
+
+    // Also disable the position gizmo so it won't show automatically
+    gizmoManager.positionGizmoEnabled = false;
     
-    // Final update when control is released
-    if (window.selectedComponent && window.selectedComponent.metadata && 
-        window.selectedComponent.metadata.type === "glb") {
+    // Final updates if selected is GLB or ground
+    if (window.selectedComponent && window.selectedComponent.metadata?.type === "glb") {
       updateGLBMetadataFromTransform();
       if (typeof updateGLBTransformSnippet === 'function') {
         updateGLBTransformSnippet();
-        // Make sure the snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
-    
-    // Enforce ground-only vertical movement
-    if (window.selectedComponent && window.selectedComponent.name === "ground") {
+    if (window.selectedComponent?.name === "ground") {
       const groundPos = window.selectedComponent.position;
       window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
     }
@@ -96,60 +103,13 @@ window.addEventListener("keyup", function (evt) {
 });
 
 /**
- * Helper function to update GLB metadata from current transform
- */
-function updateGLBMetadataFromTransform() {
-  if (!window.selectedComponent || !window.selectedComponent.metadata) return;
-  
-  const md = window.selectedComponent.metadata;
-  if (md.type === "glb") {
-    if (!md.data) md.data = {};
-    
-    // Update position in metadata
-    md.data.position = [
-      window.selectedComponent.position.x,
-      window.selectedComponent.position.y,
-      window.selectedComponent.position.z
-    ];
-    
-    // Update rotation (degrees) in metadata
-    md.data.rotationDeg = [
-      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.x),
-      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.y),
-      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.z)
-    ];
-    
-    // Update scale in metadata
-    md.data.scale = window.selectedComponent.scaling.x;
-  }
-}
-
-/**
- * Helper function to ensure ground is restricted to vertical movement only
- */
-function enforceGroundMovementRestrictions() {
-  if (window.selectedComponent && window.selectedComponent.name === "ground") {
-    // Configure the gizmo for ground to allow only Y-axis movement
-    if (gizmoManager.gizmos.positionGizmo) {
-      const groundGizmo = gizmoManager.gizmos.positionGizmo;
-      groundGizmo.xGizmo.isEnabled = false; // Disable X movement
-      groundGizmo.zGizmo.isEnabled = false; // Disable Z movement
-      groundGizmo.yGizmo.isEnabled = true;  // Enable only Y movement
-    }
-    
-    // Force ground position to stay at (0,y,0)
-    const groundPos = window.selectedComponent.position;
-    window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
-  }
-}
-
-/**
- * Main pointer logic for selecting a component or ground.
+ * When we click (pointer down/up), figure out which object we picked.
+ * If we pick "ground" or pick nothing, we clear selection. Otherwise,
+ * we highlight the chosen component but do NOT attach the gizmo yet.
  */
 scene.onPointerObservable.add(function (pointerInfo) {
   switch (pointerInfo.type) {
     case BABYLON.PointerEventTypes.POINTERDOWN:
-      // Only track position for left-button events (button 0)
       if (pointerInfo.event.button === 0) {
         pointerDownPos = {
           x: pointerInfo.event.clientX,
@@ -159,99 +119,86 @@ scene.onPointerObservable.add(function (pointerInfo) {
       break;
 
     case BABYLON.PointerEventTypes.POINTERUP:
-      // Only handle selection for left mouse button (button 0)
-      if (pointerInfo.event.button !== 0) {
-        // Not a left-click, ignore for selection purposes
-        return;
-      }
-
+      if (pointerInfo.event.button !== 0) return; // only left-click
       if (!pointerDownPos) return;
+
       const dx = pointerInfo.event.clientX - pointerDownPos.x;
       const dy = pointerInfo.event.clientY - pointerDownPos.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const dist = Math.sqrt(dx*dx + dy*dy);
       const isClick = dist < 5;
       pointerDownPos = null;
-
-      // Middle-button is ignored for selection
-      if (pointerInfo.event.button === 1) {
-        return;
-      }
-
-      // Right-click is ignored for selection (previously handled for camera)
-      if (pointerInfo.event.button === 2) {
-        return;
-      }
-
       if (!isClick) return;
 
       const pickInfo = pointerInfo.pickInfo;
-      // If click missed or clicked ground => unselect any current component
       if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
+        // Unselect any current component
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
-          // Also detach any gizmo if it was attached
+          // Detach gizmo if it was active
           gizmoManager.attachToMesh(null);
           window.selectedComponent = null;
         }
         clearSelectedNameDisplay();
+
+        // If we actually clicked ground, treat "Ground" as selected
         if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
           updateSelectedNameDisplay("Ground");
-          // Set the ground as "selected" specifically for vertical-only movement
           window.selectedComponent = pickInfo.pickedMesh;
-          
-          // Configure the gizmo for ground to allow only Y-axis movement
-          enforceGroundMovementRestrictions();
+          // (But do NOT attach gizmo unless user holds Ctrl => done above)
         }
-        
-        // Hide GLB transform snippet when deselecting
+
+        // Hide GLB snippet if we are not on a GLB
         if (document.getElementById("glbTransformSnippet")) {
           document.getElementById("glbTransformSnippet").style.display = "none";
         }
-        
+
         // Update JSON editor selection
-        if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+        if (window.appState?.jsonEditorVisible && window.jsonEditor) {
           updateJsonEditorSelection(null);
         }
-        
         return;
       }
 
-      // Otherwise, we clicked on a valid mesh (component).
+      // We clicked a valid mesh with metadata
       const info = getMetadata(pickInfo.pickedMesh);
       if (info) {
-        // Unhighlight old selection if needed
+        // Unhighlight old selection
         if (window.selectedComponent && window.selectedComponent !== info.mesh) {
           clearHighlight(window.selectedComponent);
         }
-        // Select the new component
+        // Select the new component (highlight only)
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
 
-        // Reset gizmo to full movement capabilities for non-ground objects
-        if (gizmoManager.gizmos.positionGizmo) {
-          // Always reset to full movement for non-ground objects
+        // If not ground, re-enable all axes if/when Ctrl is pressed
+        if (window.selectedComponent.name !== "ground" && gizmoManager.gizmos.positionGizmo) {
           gizmoManager.gizmos.positionGizmo.xGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.yGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.zGizmo.isEnabled = true;
         }
 
-        const compName = info.metadata?.data?.name 
-          || (info.metadata?.type === "glb" ? "GLB: " + window.lastLoadedGLBName : "Unnamed");
+        const compName = info.metadata?.data?.name
+          || (info.metadata?.type === "glb"
+              ? "GLB: " + window.lastLoadedGLBName
+              : "Unnamed");
         updateSelectedNameDisplay(compName);
-        
-        // If it's a GLB model, make sure to update and show the transform snippet
-        if (info.metadata?.type === "glb" && typeof updateGLBTransformSnippet === 'function') {
-          updateGLBTransformSnippet();
-          document.getElementById("glbTransformSnippet").style.display = "block";
+
+        // If it's GLB, show the snippet (only if Ctrl is pressed + attached)
+        if (info.metadata?.type === "glb") {
+          // We won't attach the gizmo here. We only update snippet display
+          if (typeof updateGLBTransformSnippet === 'function') {
+            updateGLBTransformSnippet();
+            document.getElementById("glbTransformSnippet").style.display = "block";
+          }
         } else {
-          // Hide GLB transform snippet when selecting non-GLB component
+          // Hide snippet for non-GLB
           if (document.getElementById("glbTransformSnippet")) {
             document.getElementById("glbTransformSnippet").style.display = "none";
           }
         }
-        
-        // Update JSON editor selection
-        if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+
+        // Update JSON editor selection:
+        if (window.appState?.jsonEditorVisible && window.jsonEditor) {
           updateJsonEditorSelection(info);
         }
       }
@@ -260,14 +207,12 @@ scene.onPointerObservable.add(function (pointerInfo) {
 });
 
 /**
- * After releasing the pointer, if the user dragged an object,
- * update the object's position in your JSON data structure.
+ * After releasing the pointer, if we dragged something,
+ * update the relevant position in JSON data.
  */
 scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
-
-    // If the component has metadata, update the relevant position in the JSON.
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
       if (md.type === "lifting_surface") {
@@ -283,70 +228,67 @@ scene.onPointerObservable.add(function (pointerInfo) {
           window.selectedComponent.position.z
         ];
       } else if (md.type === "glb") {
-        // Update GLB metadata position
+        // Update GLB's stored metadata
         updateGLBMetadataFromTransform();
-        
-        // Update the GLB transform snippet if it exists
         if (typeof updateGLBTransformSnippet === 'function') {
           updateGLBTransformSnippet();
-          // Make sure snippet is visible
           document.getElementById("glbTransformSnippet").style.display = "block";
         }
       }
     }
-    
-    // Special handling for ground movement
+    // If it's ground, force Y-only
     if (window.selectedComponent.name === "ground") {
-      // Ensure ground only moves in Y axis
-      let groundPos = window.selectedComponent.position;
-      window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
+      let gpos = window.selectedComponent.position;
+      window.selectedComponent.position = new BABYLON.Vector3(0, gpos.y, 0);
     }
-    
     // Update JSON Editor if visible
-    if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+    if (window.appState?.jsonEditorVisible && window.jsonEditor) {
       updateJsonEditor();
     }
   }
 });
 
-// Add double-click handler for editing components
+/**
+ * Double-click => open the edit modal for the selected object
+ * (still does NOT attach the gizmo unless Ctrl is held).
+ */
 window.canvas.addEventListener("dblclick", function (evt) {
-  // Only handle double-click for left mouse button
+  // Only handle left button double-click
   if (evt.button !== 0) return;
   
   const pickResult = scene.pick(scene.pointerX, scene.pointerY);
   if (pickResult.hit) {
     const info = getMetadata(pickResult.pickedMesh);
     if (info && info.metadata) {
-      // Set as selected if not already
+      // If not already selected, highlight it
       if (window.selectedComponent !== info.mesh) {
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
         }
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
-        
-        // Reset gizmo to full movement capabilities for non-ground objects
+
         if (window.selectedComponent.name !== "ground" && gizmoManager.gizmos.positionGizmo) {
+          // Just enabling axes (actual gizmo attach is only if Ctrl is pressed)
           gizmoManager.gizmos.positionGizmo.xGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.yGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.zGizmo.isEnabled = true;
         } else if (window.selectedComponent.name === "ground") {
-          // Apply ground restrictions
           enforceGroundMovementRestrictions();
         }
-        
-        const compName = info.metadata?.data?.name 
-          || (info.metadata?.type === "glb" ? "GLB: " + window.lastLoadedGLBName : "Unnamed");
+        const compName = info.metadata?.data?.name
+          || (info.metadata?.type === "glb"
+              ? "GLB: " + window.lastLoadedGLBName
+              : "Unnamed");
         updateSelectedNameDisplay(compName);
-        
-        // Update JSON editor selection
-        if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+
+        // If JSON editor is open, highlight the appropriate node
+        if (window.appState?.jsonEditorVisible && window.jsonEditor) {
           updateJsonEditorSelection(info);
         }
       }
-      
-      // Open edit modal based on component type
+
+      // Show the appropriate modal
       if (info.metadata.type === "lifting_surface") {
         window.editingType = "lifting_surface";
         window.editingObject = info.metadata.data;
@@ -359,41 +301,33 @@ window.canvas.addEventListener("dblclick", function (evt) {
         window.editingType = "glb";
         window.editingObject = info.metadata.data;
         fillGLBModal();
-        // Make sure snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
   }
 });
 
-// Add real-time updates during scene rendering
+/**
+ * Real-time updates while dragging the gizmo (if Ctrl is held)
+ */
 scene.onBeforeRenderObservable.add(() => {
-  // Check if we're currently dragging a GLB model with the gizmo
+  // If currently dragging a GLB, update snippet in real-time
   if (window.isDraggingGizmo && 
-      window.selectedComponent && 
-      window.selectedComponent.metadata && 
-      window.selectedComponent.metadata.type === "glb") {
-    
-    // Update in real-time while dragging
+      window.selectedComponent?.metadata?.type === "glb") {
     if (typeof updateGLBTransformSnippet === 'function') {
       updateGLBTransformSnippet();
-      // Make sure snippet is visible
       document.getElementById("glbTransformSnippet").style.display = "block";
     }
   }
-  
-  // If ground is selected and being dragged, ensure it only moves vertically
-  if (window.isDraggingGizmo && 
-      window.selectedComponent && 
-      window.selectedComponent.name === "ground") {
-    // Force ground position to stay at (0,y,0)
+  // If ground is selected & being dragged, keep it Y-only
+  if (window.isDraggingGizmo && window.selectedComponent?.name === "ground") {
     let groundPos = window.selectedComponent.position;
     window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
   }
 });
 
 /**
- * Helper function to update JSON editor with current aircraft data
+ * Update JSON editor data from `window.aircraftData`
  */
 function updateJsonEditor() {
   if (window.jsonEditor) {
@@ -402,31 +336,65 @@ function updateJsonEditor() {
 }
 
 /**
- * Helper function to update JSON editor selection based on component
+ * If a user selects something, focus that part of the JSON in the editor
  */
 function updateJsonEditorSelection(info) {
   if (!window.jsonEditor) return;
-  
   if (!info) {
-    // Deselection - reset to root
     window.jsonEditor.setSelection({});
     return;
   }
-  
   if (info.metadata.type === "lifting_surface") {
     const idx = window.aircraftData.lifting_surfaces.indexOf(info.metadata.data);
     if (idx >= 0) {
-      window.jsonEditor.setSelection({path: ['lifting_surfaces', idx]});
+      window.jsonEditor.setSelection({ path: ["lifting_surfaces", idx] });
       window.jsonEditor.expandAll();
     }
   } else if (info.metadata.type === "fuselage") {
     const idx = window.aircraftData.fuselages.indexOf(info.metadata.data);
     if (idx >= 0) {
-      window.jsonEditor.setSelection({path: ['fuselages', idx]});
+      window.jsonEditor.setSelection({ path: ["fuselages", idx] });
       window.jsonEditor.expandAll();
     }
   } else if (info.metadata.type === "glb") {
-    // GLB model doesn't have direct JSON representation
+    // GLB has no direct JSON array in `aircraftData`
     window.jsonEditor.setSelection({});
+  }
+}
+
+/**
+ * Sync GLB metadata with the transform of the selected mesh
+ */
+function updateGLBMetadataFromTransform() {
+  if (!window.selectedComponent?.metadata) return;
+  const md = window.selectedComponent.metadata;
+  if (md.type === "glb") {
+    if (!md.data) md.data = {};
+    md.data.position = [
+      window.selectedComponent.position.x,
+      window.selectedComponent.position.y,
+      window.selectedComponent.position.z
+    ];
+    md.data.rotationDeg = [
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.x),
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.y),
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.z)
+    ];
+    md.data.scale = window.selectedComponent.scaling.x;
+  }
+}
+
+/**
+ * Ground is restricted to Y-axis only
+ */
+function enforceGroundMovementRestrictions() {
+  if (window.selectedComponent && window.selectedComponent.name === "ground") {
+    if (gizmoManager.gizmos.positionGizmo) {
+      gizmoManager.gizmos.positionGizmo.xGizmo.isEnabled = false;
+      gizmoManager.gizmos.positionGizmo.zGizmo.isEnabled = false;
+      gizmoManager.gizmos.positionGizmo.yGizmo.isEnabled = true;
+    }
+    let pos = window.selectedComponent.position;
+    window.selectedComponent.position = new BABYLON.Vector3(0, pos.y, 0);
   }
 }

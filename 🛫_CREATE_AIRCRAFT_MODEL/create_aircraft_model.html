@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Aircraft Geometry Viewer & GLB Loader</title>
-  <link rel="stylesheet" href="styles/style.css">
+  <link rel="stylesheet" href="src/styles/style.css">
   <!-- BabylonJS CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
@@ -125,15 +125,27 @@
     <div class="control-group glb-ops">
       <span class="group-title">GLB Controls</span>
       <div class="button-container">
-        <button id="rotateXBtn" title="Rotate around X axis">
-          <i class="fas fa-sync"></i> X
+        <!-- 
+          We replace the old rotateXBtn/YBtn/ZBtn with
+          three numeric inputs + one "Apply Rotation" button
+        -->
+        <div class="input-group">
+          <label>Rotation X (°):</label>
+          <input type="number" id="glbRotateXInput" value="0" step="1">
+        </div>
+        <div class="input-group">
+          <label>Rotation Y (°):</label>
+          <input type="number" id="glbRotateYInput" value="0" step="1">
+        </div>
+        <div class="input-group">
+          <label>Rotation Z (°):</label>
+          <input type="number" id="glbRotateZInput" value="0" step="1">
+        </div>
+        <button id="applyGlbRotationBtn" title="Apply Rotation to GLB Model">
+          <i class="fas fa-check"></i>
         </button>
-        <button id="rotateYBtn" title="Rotate around Y axis">
-          <i class="fas fa-sync"></i> Y
-        </button>
-        <button id="rotateZBtn" title="Rotate around Z axis">
-          <i class="fas fa-sync"></i> Z
-        </button>
+
+        <!-- Scale controls remain the same -->
         <div class="input-group">
           <label>Scale:</label>
           <input type="number" id="glbScaleInput" value="1" step="0.1" min="0.1">
@@ -337,18 +349,19 @@
   </div>
 
   <!-- Scripts (order is important) -->
-  <script src="js/⛺_scene_setup/set_up_camera.js"></script>
-  <script src="js/⛺_scene_setup/lights_and_shadows.js"></script>
-  <script src="js/⛺_scene_setup/ground_axis_sphere.js"></script>
-  <script src="js/⛺_scene_setup/babylon-setup.js"></script>
-  
-  <script src="js/render_aircraft.js"></script>
-  <script src="js/load_glb_file.js"></script>
-  <script src="js/component-creation.js"></script>
-  <script src="js/interaction.js"></script>
-  <script src="js/scene-utils.js"></script>
-  <script src="js/ui-logic.js"></script>
-  <script src="js/glb-editing.js"></script>
-  <script src="js/json-editor.js"></script>
+  <script src="src/js/⛺_scene_setup/set_up_camera.js"></script>
+  <script src="src/js/⛺_scene_setup/lights_and_shadows.js"></script>
+  <script src="src/js/⛺_scene_setup/ground_axis_sphere.js"></script>
+  <script src="src/js/⛺_scene_setup/babylon-setup.js"></script>
+    
+  <script src="src/js/render_aircraft.js"></script>
+  <script src="src/js/load_glb_file.js"></script>
+  <script src="src/js/component-creation.js"></script>
+  <script src="src/js/interaction.js"></script>
+  <script src="src/js/scene-utils.js"></script>
+  <script src="src/js/ui-logic.js"></script>
+  <script src="src/js/glb-editing.js"></script>
+  <script src="src/js/json-editor.js"></script>
+
 </body>
 </html>

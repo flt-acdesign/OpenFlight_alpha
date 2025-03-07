@@ -1,5 +1,5 @@
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\create_aircraft_model.html
+# FILE: create_aircraft_model.html
 ###########################################
 
 <!DOCTYPE html>
@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Aircraft Geometry Viewer & GLB Loader</title>
-  <link rel="stylesheet" href="src/styles/style.css">
+  <link rel="stylesheet" href="styles/style.css">
   <!-- BabylonJS CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
@@ -341,25 +341,24 @@
   </div>
 
   <!-- Scripts (order is important) -->
-  <script src="src/js/⛺_scene_setup/set_up_camera.js"></script>
-  <script src="src/js/⛺_scene_setup/lights_and_shadows.js"></script>
-  <script src="src/js/⛺_scene_setup/ground_axis_sphere.js"></script>
-  <script src="src/js/⛺_scene_setup/babylon-setup.js"></script>
-    
-  <script src="src/js/render_aircraft.js"></script>
-  <script src="src/js/load_glb_file.js"></script>
-  <script src="src/js/component-creation.js"></script>
-  <script src="src/js/interaction.js"></script>
-  <script src="src/js/scene-utils.js"></script>
-  <script src="src/js/ui-logic.js"></script>
-  <script src="src/js/glb-editing.js"></script>
-  <script src="src/js/json-editor.js"></script>
-
+  <script src="js/⛺_scene_setup/set_up_camera.js"></script>
+  <script src="js/⛺_scene_setup/lights_and_shadows.js"></script>
+  <script src="js/⛺_scene_setup/ground_axis_sphere.js"></script>
+  <script src="js/⛺_scene_setup/babylon-setup.js"></script>
+  
+  <script src="js/render_aircraft.js"></script>
+  <script src="js/load_glb_file.js"></script>
+  <script src="js/component-creation.js"></script>
+  <script src="js/interaction.js"></script>
+  <script src="js/scene-utils.js"></script>
+  <script src="js/ui-logic.js"></script>
+  <script src="js/glb-editing.js"></script>
+  <script src="js/json-editor.js"></script>
 </body>
 </html>
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\component-creation.js
+# FILE: component-creation.js
 ###########################################
 
 // js/component-creation.js
@@ -540,7 +539,7 @@ function createLabel(text, width, height) {
 }
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\glb-editing.js
+# FILE: glb-editing.js
 ###########################################
 
 // js/glb-editing.js
@@ -749,7 +748,7 @@ window.generateGLBSnippet = generateGLBSnippet;
 window.updateGLBTransformSnippet = updateGLBTransformSnippet;
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\interaction.js
+# FILE: interaction.js
 ###########################################
 
 // js/interaction.js
@@ -1186,7 +1185,7 @@ function updateJsonEditorSelection(info) {
 }
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\json-editor.js
+# FILE: json-editor.js
 ###########################################
 
 // js/json-editor.js
@@ -1354,7 +1353,7 @@ function updateJsonEditor() {
 }
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\load_glb_file.js
+# FILE: load_glb_file.js
 ###########################################
 
 // js/load_glb_file.js
@@ -1484,7 +1483,7 @@ async function loadGLBFile(file) {
 }
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\render_aircraft.js
+# FILE: render_aircraft.js
 ###########################################
 
 // js/render_aircraft.js
@@ -1606,7 +1605,7 @@ function recreateAxisProjectionsIfNeeded() {
 }
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\scene-utils.js
+# FILE: scene-utils.js
 ###########################################
 
 // js/scene-utils.js
@@ -1724,7 +1723,7 @@ function smoothTransitionToTarget(newTarget, camera, scene, durationInSeconds) {
 }
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\ui-logic.js
+# FILE: ui-logic.js
 ###########################################
 
 /********************************************
@@ -2381,7 +2380,7 @@ document.addEventListener('click', function() {
 });
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\babylon-setup.js
+# FILE: babylon-setup.js
 ###########################################
 
 /********************************************
@@ -2548,7 +2547,7 @@ function initBabylon() {
 initBabylon();
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\ground_axis_sphere.js
+# FILE: ground_axis_sphere.js
 ###########################################
 
 /********************************************
@@ -2757,7 +2756,7 @@ function createSkySphere() {
  ********************************************/
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\lights_and_shadows.js
+# FILE: lights_and_shadows.js
 ###########################################
 
 /********************************************
@@ -2807,7 +2806,7 @@ function setupLightsAndShadows() {
   
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\set_up_camera.js
+# FILE: set_up_camera.js
 ###########################################
 
 /********************************************
@@ -2883,7 +2882,7 @@ function setupCamera() {
   
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\modals\fuselage-modal.html
+# FILE: fuselage-modal.html
 ###########################################
 
 <!-- modals/fuselage-modal.html -->
@@ -2901,7 +2900,7 @@ function setupCamera() {
   
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\modals\glb-modal.html
+# FILE: glb-modal.html
 ###########################################
 
 <!-- modals/glb-modal.html -->
@@ -2922,7 +2921,7 @@ function setupCamera() {
   </div>
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\modals\ls-modal.html
+# FILE: ls-modal.html
 ###########################################
 
 <!-- modals/ls-modal.html -->
@@ -2956,7 +2955,7 @@ function setupCamera() {
   
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\styles\style.css
+# FILE: style.css
 ###########################################
 
 /* Make the page fill the entire window and hide scrollbars */

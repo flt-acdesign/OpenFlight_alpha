@@ -1,8 +1,6 @@
-// js/load_glb_file.js
-
-///////////////////////////////
-//  GLB Loading Functions    //
-///////////////////////////////
+/********************************************
+ * FILE: load_glb_file.js
+ ********************************************/
 
 async function loadGLBFile(file) {
   // 1) Show "Loading 3D Model..." overlay
@@ -19,11 +17,10 @@ async function loadGLBFile(file) {
   try {
     // 3) Import the .glb file
     const result = await BABYLON.SceneLoader.ImportMeshAsync(
-      "",    // (rootUrl) - empty since we're passing a File object
-      "",    // (sceneFilename) - again empty for local files
-      file,  // (files) - actual File object from the <input> element
+      "",
+      "",
+      file,
       scene,
-      // Callback for progress
       (evt) => {
         if (evt.lengthComputable) {
           const progress = ((evt.loaded * 100) / evt.total).toFixed();
@@ -33,7 +30,6 @@ async function loadGLBFile(file) {
     );
 
     // 4) The result.meshes array contains all imported meshes
-    //    Let's just pick the first to do a bounding‐box calc
     const model = result.meshes[0];
     window.currentGLBModel = model;
 
@@ -42,7 +38,7 @@ async function loadGLBFile(file) {
       window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
     }
     
-    // Update metadata with proper structure for editing
+    // Update metadata for editing
     window.glbRoot.metadata = { 
       type: "glb", 
       data: {
@@ -60,7 +56,7 @@ async function loadGLBFile(file) {
       mesh.isPickable = true;
     });
 
-    // 7) [Optional] Auto-center & auto-scale the model
+    // 7) Auto-center & auto-scale (optional)
     const boundingBox = model.getHierarchyBoundingVectors();
     const modelSize = boundingBox.max.subtract(boundingBox.min);
     const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
@@ -71,19 +67,16 @@ async function loadGLBFile(file) {
       -modelCenter.y * scaleFactor,
       -modelCenter.z * scaleFactor
     );
-
-    // Store the scale factor in the metadata
     window.glbRoot.metadata.data.scale = scaleFactor;
 
-    // 8) [Optional] Adjust materials for imported GLB meshes,
-    //    but skip ground, sky sphere, origin box, and labels.
+    // 8) Adjust materials for imported GLB
     scene.meshes.forEach(mesh => {
       if (
         mesh.material &&
         mesh.name !== "ground" &&
         mesh.name !== CAMERA_SPHERE_NAME &&
         mesh.name !== "originBox" &&
-        !mesh.name.startsWith("label_")  // Skip labels
+        !mesh.name.startsWith("label_")
       ) {
         mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
         mesh.material.backFaceCulling = false;
@@ -101,20 +94,6 @@ async function loadGLBFile(file) {
       }
     });
 
-    // Select the GLB model
-    if (window.selectedComponent) {
-      clearHighlight(window.selectedComponent);
-    }
-    window.selectedComponent = window.glbRoot;
-    setColorLightPink(window.selectedComponent);
-    updateSelectedNameDisplay("GLB: " + window.lastLoadedGLBName);
-    document.getElementById("editComponentBtn").disabled = false;
-    document.getElementById("deleteComponentBtn").disabled = false;
-    
-    // Update and show the transform snippet
-    updateGLBTransformSnippet();
-    document.getElementById("glbTransformSnippet").style.display = "block";
-
   } catch (error) {
     console.error("Error loading GLB file:", error);
     alert("Error loading 3D model. Please try another file.");
@@ -122,4 +101,15 @@ async function loadGLBFile(file) {
 
   // 10) Hide loading overlay
   loadingText.style.display = "none";
+
+  // Ensure the newly loaded GLB is NOT selected
+  if (window.selectedComponent) {
+    clearHighlight(window.selectedComponent);
+    gizmoManager.attachToMesh(null);
+    window.selectedComponent = null;
+  }
+  clearSelectedNameDisplay();
+
+  // Also hide the snippet, so no transform info shows
+  document.getElementById("glbTransformSnippet").style.display = "none";
 }

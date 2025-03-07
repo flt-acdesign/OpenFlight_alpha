@@ -2,10 +2,6 @@
  * FILE: ui-logic.js
  ********************************************/
 
-//////////////////////
-// 1) Global Setup  //
-//////////////////////
-
 var liftingSurfaceColors = [
   new BABYLON.Color3(0.8, 1.0, 0.8),
   new BABYLON.Color3(0.9, 0.8, 1.0),
@@ -33,56 +29,70 @@ window.currentGLBModel = null; // will store the root mesh of any imported GLB
 // Track the last loaded GLB filename
 window.lastLoadedGLBName = "";
 
-
+/**
+ * Setup GLB controls
+ */
 (function setupGLBControls() {
-  // Rotation buttons
-  document.getElementById("rotateXBtn").addEventListener("click", function() {
-    if (window.glbRoot) {
-      window.glbRoot.rotation.x += Math.PI / 2;
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
-  document.getElementById("rotateYBtn").addEventListener("click", function() {
-    if (window.glbRoot) {
-      window.glbRoot.rotation.y += Math.PI / 2;
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
-  document.getElementById("rotateZBtn").addEventListener("click", function() {
-    if (window.glbRoot) {
-      window.glbRoot.rotation.z += Math.PI / 2;
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
+  // 1) Rotation input fields
+  const rotXInput = document.getElementById("glbRotateXInput");
+  const rotYInput = document.getElementById("glbRotateYInput");
+  const rotZInput = document.getElementById("glbRotateZInput");
 
-  // Scale input/button
-  document.getElementById("applyGlbScaleBtn").addEventListener("click", function() {
-    if (!window.glbRoot) return;
-    const scaleValue = parseFloat(document.getElementById("glbScaleInput").value);
-    if (!isNaN(scaleValue)) {
-      window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
+  // "Apply Rotation" button
+  const applyRotationBtn = document.getElementById("applyGlbRotationBtn");
+  if (applyRotationBtn) {
+    applyRotationBtn.addEventListener("click", function() {
+      if (!window.glbRoot) return;
 
-  // Toggle translucency
+      // Read the angles (degrees)
+      const xDeg = parseFloat(rotXInput.value) || 0;
+      const yDeg = parseFloat(rotYInput.value) || 0;
+      const zDeg = parseFloat(rotZInput.value) || 0;
+
+      // Convert to radians and set the rotation
+      window.glbRoot.rotation.x = BABYLON.Tools.ToRadians(xDeg);
+      window.glbRoot.rotation.y = BABYLON.Tools.ToRadians(yDeg);
+      window.glbRoot.rotation.z = BABYLON.Tools.ToRadians(zDeg);
+
+      // Update snippet if needed
+      if (typeof updateGLBTransformSnippet === 'function') {
+        updateGLBTransformSnippet();
+        document.getElementById("glbTransformSnippet").style.display = "block";
+      }
+    });
+  }
+
+  // 2) Scale input/button
+  const scaleInput = document.getElementById("glbScaleInput");
+  const applyScaleBtn = document.getElementById("applyGlbScaleBtn");
+  if (applyScaleBtn) {
+    applyScaleBtn.addEventListener("click", function() {
+      if (!window.glbRoot) return;
+      const sVal = parseFloat(scaleInput.value);
+      if (!isNaN(sVal)) {
+        window.glbRoot.scaling = new BABYLON.Vector3(sVal, sVal, sVal);
+        if (typeof updateGLBTransformSnippet === 'function') {
+          updateGLBTransformSnippet();
+          document.getElementById("glbTransformSnippet").style.display = "block";
+        }
+      }
+    });
+  }
+
+  // 3) Toggle translucency
   window.isTranslucent = false;
-  document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
-    window.isTranslucent = !window.isTranslucent;
-    setTranslucencyMode(window.isTranslucent);
-  });
-  
-  // Reset view button
-  if (document.getElementById("resetViewBtn")) {
-    document.getElementById("resetViewBtn").addEventListener("click", function() {
+  const translucencyBtn = document.getElementById("toggleTranslucencyBtn");
+  if (translucencyBtn) {
+    translucencyBtn.addEventListener("click", function() {
+      window.isTranslucent = !window.isTranslucent;
+      setTranslucencyMode(window.isTranslucent);
+    });
+  }
+
+  // 4) Reset view button
+  const resetViewBtn = document.getElementById("resetViewBtn");
+  if (resetViewBtn) {
+    resetViewBtn.addEventListener("click", function() {
       if (camera) {
         camera.setTarget(new BABYLON.Vector3(7, 0, 0));
         camera.radius = 40;
@@ -93,10 +103,9 @@ window.lastLoadedGLBName = "";
   }
 })();
 
-///////////////////////////////
-// 2) Modal Fill & Show Fns  //
-///////////////////////////////
-
+/**
+ * Fill the Lifting Surface modal
+ */
 function fillLiftingSurfaceModal(data) {
   document.getElementById("ls_name").value = data.name || "";
   document.getElementById("ls_mass_kg").value = data.mass_kg ?? 600;
@@ -122,6 +131,9 @@ function fillLiftingSurfaceModal(data) {
   document.getElementById("liftingSurfaceModal").style.display = "block";
 }
 
+/**
+ * Fill the Fuselage modal
+ */
 function fillFuselageModal(data) {
   document.getElementById("fus_name").value = data.name || "fus1";
   document.getElementById("fus_diameter").value = data.diameter ?? 2.5;
@@ -130,24 +142,21 @@ function fillFuselageModal(data) {
   document.getElementById("fuselageModal").style.display = "block";
 }
 
-/////////////////////
-// 3) Rendering    //
-/////////////////////
-
+/**
+ * Parse aircraft JSON
+ */
 function parseAircraft(jsonText) {
   aircraftData = JSON.parse(jsonText);
   renderAircraft();
 }
 
-/////////////////////////////
-// 4) Event Listener Setup //
-/////////////////////////////
-
+/**
+ * Event Listener Setup
+ */
 (function setupUI() {
   // Lifting Surface Modal
   const lsModal = document.getElementById("liftingSurfaceModal");
   document.getElementById("ls_submit").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     const newData = {
@@ -191,7 +200,6 @@ function parseAircraft(jsonText) {
     clearSelectedNameDisplay();
   });
   document.getElementById("ls_cancel").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     lsModal.style.display = "none";
@@ -202,7 +210,6 @@ function parseAircraft(jsonText) {
   // Fuselage Modal
   const fusModal = document.getElementById("fuselageModal");
   document.getElementById("fus_submit").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     const newData = {
@@ -233,7 +240,6 @@ function parseAircraft(jsonText) {
     clearSelectedNameDisplay();
   });
   document.getElementById("fus_cancel").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     fusModal.style.display = "none";
@@ -243,17 +249,13 @@ function parseAircraft(jsonText) {
 
   // "Add" buttons
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
     window.editingType = "";
     window.editingObject = null;
     fillLiftingSurfaceModal({});
   });
   document.getElementById("addFuselageBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
     window.editingType = "";
     window.editingObject = null;
     fillFuselageModal({});
@@ -261,7 +263,6 @@ function parseAircraft(jsonText) {
 
   // Edit Selected
   document.getElementById("editComponentBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     if (!window.selectedComponent) return;
@@ -279,7 +280,6 @@ function parseAircraft(jsonText) {
         window.editingType = "glb";
         window.editingObject = info.metadata.data;
         fillGLBModal();
-        // Make sure the snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
@@ -287,7 +287,6 @@ function parseAircraft(jsonText) {
 
   // Delete Selected
   document.getElementById("deleteComponentBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     if (!window.selectedComponent) return;
@@ -339,24 +338,15 @@ function parseAircraft(jsonText) {
   // JSON file input (hidden)
   const jsonFileInput = document.getElementById("jsonFileInput");
   document.getElementById("selectJsonBtn").addEventListener("click", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent default navigation behavior
     event.preventDefault();
     event.stopPropagation();
-    
-    // Manually trigger file input dialog
     jsonFileInput.click();
-    
     return false;
   });
   
   jsonFileInput.addEventListener("change", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent event bubbling
     event.stopPropagation();
     
     const file = event.target.files[0];
@@ -383,12 +373,10 @@ function parseAircraft(jsonText) {
         // Hide GLB transform snippet
         document.getElementById("glbTransformSnippet").style.display = "none";
         
-        // Ensure axis projections stay visible
         if (typeof recreateAxisProjectionsIfNeeded === 'function') {
           recreateAxisProjectionsIfNeeded();
         }
         
-        // Reset file input to allow loading the same file again if needed
         jsonFileInput.value = '';
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -405,29 +393,22 @@ function parseAircraft(jsonText) {
 
   // Download JSON
   document.getElementById("downloadJsonBtn").addEventListener("click", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent default behavior
     event.preventDefault();
     event.stopPropagation();
     
-    // Create a Blob instead of a data URI to prevent browser navigation
     const jsonString = JSON.stringify(aircraftData, null, 2);
     const blob = new Blob([jsonString], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     
-    // Create a link element and trigger download without page navigation
     const dlAnchor = document.createElement("a");
     dlAnchor.href = url;
     dlAnchor.download = "aircraft.json";
     dlAnchor.style.display = "none";
     document.body.appendChild(dlAnchor);
     
-    // Use setTimeout to ensure proper download behavior
     setTimeout(() => {
       dlAnchor.click();
-      // Clean up
       document.body.removeChild(dlAnchor);
       URL.revokeObjectURL(url);
     }, 0);
@@ -437,7 +418,6 @@ function parseAircraft(jsonText) {
 
   // Clear Aircraft
   document.getElementById("clearAircraft").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     aircraftData.lifting_surfaces = [];
@@ -450,7 +430,6 @@ function parseAircraft(jsonText) {
     }
     clearSelectedNameDisplay();
     
-    // Ensure axis projections stay visible
     if (typeof recreateAxisProjectionsIfNeeded === 'function') {
       recreateAxisProjectionsIfNeeded();
     }
@@ -458,18 +437,13 @@ function parseAircraft(jsonText) {
 
   // Toggle Ground
   document.getElementById("toggleGround").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     if (window.ground) {
       ground.isVisible = !ground.isVisible;
-      
-      // Even when ground is hidden, we still want to see the projections
       if (window.groundProjections) {
         window.groundProjections.setEnabled(true);
       }
-      
-      // If projection lines were accidentally lost, recreate them
       if (typeof recreateAxisProjectionsIfNeeded === 'function') {
         recreateAxisProjectionsIfNeeded();
       }
@@ -479,24 +453,15 @@ function parseAircraft(jsonText) {
   // GLB file input (hidden)
   const glbRealInput = document.getElementById("glbFileInput");
   document.getElementById("selectGlbBtn").addEventListener("click", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent default navigation behavior
     event.preventDefault();
     event.stopPropagation();
-    
-    // Manually trigger file input dialog
     glbRealInput.click();
-    
     return false;
   });
   
   glbRealInput.addEventListener("change", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent event bubbling
     event.stopPropagation();
     
     const file = event.target.files[0];
@@ -509,12 +474,9 @@ function parseAircraft(jsonText) {
     window.lastLoadedGLBName = file.name;
     loadGLBFile(file);
     
-    // Ensure axis projections stay visible
     if (typeof recreateAxisProjectionsIfNeeded === 'function') {
       recreateAxisProjectionsIfNeeded();
     }
-    
-    // Reset file input to allow loading the same file again if needed
     glbRealInput.value = '';
   });
   
@@ -522,7 +484,6 @@ function parseAircraft(jsonText) {
   const glbModal = document.getElementById("glbModal");
   if (document.getElementById("glb_submit")) {
     document.getElementById("glb_submit").addEventListener("click", function() {
-      // This is internal interaction, not navigation
       window.userNavigating = false;
       
       if (typeof applyGLBChanges === 'function') {
@@ -533,7 +494,6 @@ function parseAircraft(jsonText) {
   
   if (document.getElementById("glb_generate_snippet")) {
     document.getElementById("glb_generate_snippet").addEventListener("click", function() {
-      // This is internal interaction, not navigation
       window.userNavigating = false;
       
       if (typeof generateGLBSnippet === 'function') {
@@ -544,7 +504,6 @@ function parseAircraft(jsonText) {
   
   if (document.getElementById("glb_cancel")) {
     document.getElementById("glb_cancel").addEventListener("click", function() {
-      // This is internal interaction, not navigation
       window.userNavigating = false;
       
       glbModal.style.display = "none";
@@ -555,13 +514,12 @@ function parseAircraft(jsonText) {
   
   // Update Origin Box Size
   document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     var newSize = parseFloat(document.getElementById("boxSizeInput").value);
     if (isNaN(newSize) || newSize <= 0) {
-        alert("Please enter a positive number for box size.");
-        return;
+      alert("Please enter a positive number for box size.");
+      return;
     }
     if(window.originBox) {
       window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
@@ -569,10 +527,9 @@ function parseAircraft(jsonText) {
   });
 })();
 
-/////////////////////////////
-// 5) Helper Functions     //
-/////////////////////////////
-
+/**
+ * Clear selected name display
+ */
 function clearSelectedNameDisplay() {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: None";
@@ -580,6 +537,9 @@ function clearSelectedNameDisplay() {
   document.getElementById("deleteComponentBtn").disabled = true;
 }
 
+/**
+ * Update selected name display
+ */
 function updateSelectedNameDisplay(name) {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: " + name;
@@ -588,6 +548,9 @@ function updateSelectedNameDisplay(name) {
   document.getElementById("deleteComponentBtn").disabled = isNoneOrGround;
 }
 
+/**
+ * Open edit modal for selected
+ */
 function openEditModalForSelected() {
   if (!window.selectedComponent) return;
   const info = getMetadata(window.selectedComponent);
@@ -604,49 +567,42 @@ function openEditModalForSelected() {
       window.editingType = "glb";
       window.editingObject = info.metadata.data;
       fillGLBModal();
-      // Make sure snippet is visible
       document.getElementById("glbTransformSnippet").style.display = "block";
     }
   }
 }
 
-// Handle focus/blur events to prevent reload prompts when switching applications
+// Handle focus/blur events
 window.addEventListener('blur', function() {
-  // User is switching to another application, not navigating away
   window.userNavigating = false;
 });
-
 window.addEventListener('focus', function() {
-  // User returned to the application
   window.userNavigating = false;
 });
 
-// Also apply this to all links in the application
+// Also apply to all buttons
 document.addEventListener('DOMContentLoaded', function() {
-  // For download buttons and other actions that might trigger navigation
   const buttons = document.querySelectorAll('button');
   buttons.forEach(button => {
     button.addEventListener('click', function(e) {
-      // This is an internal button click, not navigation
       window.userNavigating = false;
     });
   });
 });
 
-// For special keys that might cause navigation in combination with Alt
+// Prevent Alt+Left from navigating
 window.addEventListener('keydown', function(e) {
-  // Alt+Left Arrow for browser back
   if (e.altKey && e.key === 'ArrowLeft') {
-    e.preventDefault(); // Prevent browser back navigation
+    e.preventDefault();
   }
 });
 
-// For click events on the canvas (to avoid any accidental reload)
+// For clicks on the canvas
 window.canvas.addEventListener('click', function() {
   window.userNavigating = false;
 });
 
-// For click events on the document (to avoid any accidental reload)
+// For any clicks on document
 document.addEventListener('click', function() {
   window.userNavigating = false;
 });
