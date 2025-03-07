@@ -7,50 +7,185 @@
   <!-- BabylonJS CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- JSON tree editor -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.0/jsoneditor.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.0/jsoneditor.min.js"></script>
+  
+  <script>
+    // Prevent auto-reloading and reset
+    window.addEventListener('beforeunload', function(e) {
+      const hasContent = window.aircraftData && 
+                        ((window.aircraftData.lifting_surfaces && window.aircraftData.lifting_surfaces.length > 0) || 
+                        (window.aircraftData.fuselages && window.aircraftData.fuselages.length > 0) ||
+                        window.glbRoot);
+      
+      if (window.userInitiatedAction === 'reload' || window.userInitiatedAction === 'navigate') {
+        if (hasContent) {
+          e.preventDefault();
+          e.returnValue = 'Your changes may be lost. Are you sure you want to leave?';
+          return e.returnValue;
+        }
+      } else {
+        // For unintended reloads, always prevent
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        return false;
+      }
+    });
+
+    // Global variable to track state
+    window.appState = {
+      jsonEditorVisible: false
+    };
+    
+    // Initialize user action state
+    window.userInitiatedAction = null;
+    
+    // Override reload functions
+    window.originalReload = window.location.reload;
+    window.location.reload = function() {
+      window.userInitiatedAction = 'reload';
+      window.originalReload.apply(window.location, arguments);
+    };
+    
+    // Prevent accidental refreshes with F5 or Ctrl+R
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm('Do you want to reload the page? Your unsaved changes will be lost.')) {
+          window.userInitiatedAction = 'reload';
+          window.location.href = window.location.href;
+        }
+        return false;
+      }
+    });
+  </script>
 </head>
 <body>
-  <!-- The top bar with all controls -->
+  <!-- The top bar with all controls organized in logical groups -->
   <div id="controls">
-    <!-- Hide the real JSON file input, use a custom button -->
-    <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
-    <button id="selectJsonBtn">Open .json</button>
+    <!-- File Operations Group -->
+    <div class="control-group file-ops">
+      <span class="group-title">File Operations</span>
+      <div class="button-container">
+        <!-- Hidden file inputs -->
+        <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+        <input type="file" id="glbFileInput" accept=".glb" style="display:none;">
+        
+        <button id="selectJsonBtn" class="primary-btn" title="Open JSON Aircraft Definition">
+          <i class="fas fa-file-import"></i> Open JSON
+        </button>
+        <button id="downloadJsonBtn" class="primary-btn" title="Download Current Aircraft as JSON">
+          <i class="fas fa-download"></i> Save JSON
+        </button>
+        <button id="selectGlbBtn" class="primary-btn" title="Import 3D Model in GLB Format">
+          <i class="fas fa-cube"></i> Import GLB
+        </button>
+        <button id="toggleJsonEditorBtn" class="primary-btn" title="Show/Hide JSON Editor">
+          <i class="fas fa-code"></i> Toggle JSON Editor
+        </button>
+      </div>
+    </div>
 
-    <!-- REMOVED ToggleTranslucencyBtn from here -->
+    <!-- Aircraft Component Group -->
+    <div class="control-group component-ops">
+      <span class="group-title">Aircraft Components</span>
+      <div class="button-container">
+        <button id="addLiftingSurfaceBtn" title="Add Wing, Tail, or other Lifting Surface">
+          <i class="fas fa-wind"></i> Add Surface
+        </button>
+        <button id="addFuselageBtn" title="Add Fuselage">
+          <i class="fas fa-capsule"></i> Add Fuselage
+        </button>
+        <button id="clearAircraft" title="Remove All Components" class="danger-btn">
+          <i class="fas fa-trash-alt"></i> Clear All
+        </button>
+      </div>
+    </div>
 
-    <button id="addLiftingSurfaceBtn">Add Lifting Surface</button>
-    <button id="addFuselageBtn">Add Fuselage</button>
-    <span id="selectedComponentName">Selected: None</span>
-    <button id="editComponentBtn" disabled>Edit Selected</button>
+    <!-- Selection Controls Group -->
+    <div class="control-group selection-ops">
+      <span class="group-title">Selection</span>
+      <div class="button-container">
+        <span id="selectedComponentName">Selected: None</span>
+        <button id="editComponentBtn" disabled title="Edit Selected Component">
+          <i class="fas fa-edit"></i> Edit
+        </button>
+        <button id="deleteComponentBtn" disabled title="Delete Selected Component">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+      </div>
+    </div>
 
-    <button id="deleteComponentBtn" disabled>Delete Selected</button>
-    <button id="clearAircraft">Clear Aircraft</button>
-    <button id="downloadJsonBtn">Download JSON</button>
+    <!-- GLB Controls Group -->
+    <div class="control-group glb-ops">
+      <span class="group-title">GLB Controls</span>
+      <div class="button-container">
+        <button id="rotateXBtn" title="Rotate around X axis">
+          <i class="fas fa-sync"></i> X
+        </button>
+        <button id="rotateYBtn" title="Rotate around Y axis">
+          <i class="fas fa-sync"></i> Y
+        </button>
+        <button id="rotateZBtn" title="Rotate around Z axis">
+          <i class="fas fa-sync"></i> Z
+        </button>
+        <div class="input-group">
+          <label>Scale:</label>
+          <input type="number" id="glbScaleInput" value="1" step="0.1" min="0.1">
+          <button id="applyGlbScaleBtn" title="Apply Scale to GLB Model">
+            <i class="fas fa-check"></i>
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Hide the real GLB file input, use a custom button -->
-    <input type="file" id="glbFileInput" accept=".glb" style="display:none;">
-    <button id="selectGlbBtn">Open .glb</button>
-
-    <!-- GLB Manipulation Controls -->
-    <button id="rotateXBtn">Rotate X 90°</button>
-    <button id="rotateYBtn">Rotate Y 90°</button>
-    <button id="rotateZBtn">Rotate Z 90°</button>
-    <label>GLB Scale:</label>
-    <input type="number" id="glbScaleInput" value="1" step="0.1">
-    <button id="applyGlbScaleBtn">Apply Scale</button>
-
-    <!-- Box Size Controls -->
-    <label>Box Size:</label>
-    <input type="number" id="boxSizeInput" value="1" step="0.1" min="0.1">
-    <button id="updateBoxSizeBtn">Update Box Size</button>
+    <!-- View Settings Group -->
+    <div class="control-group view-ops">
+      <span class="group-title">View Settings</span>
+      <div class="button-container">
+        <div class="input-group">
+          <label>Box Size:</label>
+          <input type="number" id="boxSizeInput" value="1" step="0.1" min="0.1">
+          <button id="updateBoxSizeBtn" title="Update Origin Box Size">
+            <i class="fas fa-expand"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- JSON Editor Panel (on the LEFT) -->
+  <div id="jsonEditorPanel" class="json-editor-panel">
+    <div class="editor-header">
+      <h3>JSON Editor</h3>
+      <button id="closeJsonEditorBtn" class="close-btn">&times;</button>
+    </div>
+    <div id="jsonEditor"></div>
+    <div class="editor-footer">
+      <!-- "Apply Changes" button is optional; onChangeJSON triggers re-render automatically -->
+      <button id="applyJsonChangesBtn" class="primary-btn">Apply Changes</button>
+    </div>
   </div>
   
   <!-- Canvas for BabylonJS -->
   <canvas id="renderCanvas"></canvas>
 
-  <!-- NEW: Bottom buttons container -->
+  <!-- Bottom floating buttons with tooltips -->
   <div id="bottomButtons">
-    <button id="toggleGround" title="Show/Hide Ground">☀</button>
-    <button id="toggleTranslucencyBtn" title="Toggle Translucency">👁</button>
+    <button id="toggleGround" class="floating-btn" title="Show/Hide Ground">
+      <i class="fas fa-road"></i>
+    </button>
+    <button id="toggleTranslucencyBtn" class="floating-btn" title="Toggle Translucency">
+      <i class="fas fa-eye"></i>
+    </button>
+    <button id="resetViewBtn" class="floating-btn" title="Reset Camera View">
+      <i class="fas fa-home"></i>
+    </button>
   </div>
 
   <!-- "Loading 3D Model..." overlay (used for GLB loading feedback) -->
@@ -63,58 +198,141 @@
   <!-- Inline modals for Lifting Surfaces & Fuselages -->
   <div id="liftingSurfaceModal" class="modal">
     <div class="modal-content">
-      <h3>Add / Edit Lifting Surface</h3>
-      <label>Name:</label> <input type="text" id="ls_name" value="wing"><br>
-      <label>Mass (kg):</label> <input type="number" id="ls_mass_kg" value="600"><br>
-      <label>Root LE (x,y,z):</label> <input type="text" id="ls_root_LE" value="0,0,0"><br>
-      <label>AR:</label> <input type="number" step="0.01" id="ls_AR" value="8.33"><br>
-      <label>TR:</label> <input type="number" step="0.01" id="ls_TR" value="0.6"><br>
-      <label>Mirror:</label> <input type="checkbox" id="ls_mirror"><br>
-      <label>Symmetric:</label> <input type="checkbox" id="ls_symmetric" checked><br>
-      <label>Dihedral (°):</label> <input type="number" step="0.1" id="ls_dihedral_DEG" value="3"><br>
-      <label>Vertical:</label> <input type="checkbox" id="ls_vertical"><br>
-      <label>Sweep (°):</label> <input type="number" step="0.1" id="ls_sweep_quarter_chord_DEG" value="15"><br>
-      <label>Area (m²):</label> <input type="number" step="0.1" id="ls_surface_area_m2" value="48"><br>
-      <label>Oswald:</label> <input type="number" step="0.01" id="ls_Oswald_factor" value="0.7"><br>
-      <label>MAC (m):</label> <input type="number" step="0.01" id="ls_mean_aerodynamic_chord_m" value="1.35"><br>
-      <label>Stations (η):</label> <input type="text" id="ls_stations_eta" value="0,0.5,1"><br>
-      <label>Gyration Pitch:</label> <input type="number" step="0.1" id="ls_radius_of_giration_pitch_m" value="3.5"><br>
-      <label>Gyration Yaw:</label> <input type="number" step="0.1" id="ls_radius_of_giration_yaw_m" value="4.0"><br>
-      <label>Gyration Roll:</label> <input type="number" step="0.1" id="ls_radius_of_giration_roll_m" value="4.0"><br>
-      <label>Pitch Up (°):</label> <input type="number" step="0.1" id="ls_principal_axis_pitch_up_DEG" value="-2"><br>
-      <label>CoG (x,y,z):</label> <input type="text" id="ls_CoG_pos_xyz_m" value="0,0,0"><br>
-      <label>AC (x,y,z):</label> <input type="text" id="ls_aerodynamic_center_pos_xyz_m" value="2.9,0,0"><br>
-      <button id="ls_submit">Submit</button>
-      <button id="ls_cancel">Cancel</button>
+      <div class="modal-header">
+        <h3>Add / Edit Lifting Surface</h3>
+        <button id="ls_cancel" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!--  Lifting surface form fields  -->
+        <div class="form-group">
+          <label>Name:</label> <input type="text" id="ls_name" value="wing">
+        </div>
+        <div class="form-group">
+          <label>Mass (kg):</label> <input type="number" id="ls_mass_kg" value="600">
+        </div>
+        <div class="form-group">
+          <label>Root LE (x,y,z):</label> <input type="text" id="ls_root_LE" value="0,0,0">
+        </div>
+        <div class="form-group">
+          <label>AR:</label> <input type="number" step="0.01" id="ls_AR" value="8.33">
+        </div>
+        <div class="form-group">
+          <label>TR:</label> <input type="number" step="0.01" id="ls_TR" value="0.6">
+        </div>
+        <div class="form-group checkbox-group">
+          <label>Mirror:</label> <input type="checkbox" id="ls_mirror">
+        </div>
+        <div class="form-group checkbox-group">
+          <label>Symmetric:</label> <input type="checkbox" id="ls_symmetric" checked>
+        </div>
+        <div class="form-group">
+          <label>Dihedral (°):</label> <input type="number" step="0.1" id="ls_dihedral_DEG" value="3">
+        </div>
+        <div class="form-group checkbox-group">
+          <label>Vertical:</label> <input type="checkbox" id="ls_vertical">
+        </div>
+        <div class="form-group">
+          <label>Sweep (°):</label> <input type="number" step="0.1" id="ls_sweep_quarter_chord_DEG" value="15">
+        </div>
+        <div class="form-group">
+          <label>Area (m²):</label> <input type="number" step="0.1" id="ls_surface_area_m2" value="48">
+        </div>
+        <div class="form-group">
+          <label>Oswald:</label> <input type="number" step="0.01" id="ls_Oswald_factor" value="0.7">
+        </div>
+        <div class="form-group">
+          <label>MAC (m):</label> <input type="number" step="0.01" id="ls_mean_aerodynamic_chord_m" value="1.35">
+        </div>
+        <div class="form-group">
+          <label>Stations (η):</label> <input type="text" id="ls_stations_eta" value="0,0.5,1">
+        </div>
+        <div class="form-group">
+          <label>Gyration Pitch:</label> <input type="number" step="0.1" id="ls_radius_of_giration_pitch_m" value="3.5">
+        </div>
+        <div class="form-group">
+          <label>Gyration Yaw:</label> <input type="number" step="0.1" id="ls_radius_of_giration_yaw_m" value="4.0">
+        </div>
+        <div class="form-group">
+          <label>Gyration Roll:</label> <input type="number" step="0.1" id="ls_radius_of_giration_roll_m" value="4.0">
+        </div>
+        <div class="form-group">
+          <label>Pitch Up (°):</label> <input type="number" step="0.1" id="ls_principal_axis_pitch_up_DEG" value="-2">
+        </div>
+        <div class="form-group">
+          <label>CoG (x,y,z):</label> <input type="text" id="ls_CoG_pos_xyz_m" value="0,0,0">
+        </div>
+        <div class="form-group">
+          <label>AC (x,y,z):</label> <input type="text" id="ls_aerodynamic_center_pos_xyz_m" value="2.9,0,0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="ls_submit" class="primary-btn">Submit</button>
+      </div>
     </div>
   </div>
 
   <div id="fuselageModal" class="modal">
     <div class="modal-content">
-      <h3>Add / Edit Fuselage</h3>
-      <label>Name:</label> <input type="text" id="fus_name" value="fus1"><br>
-      <label>Diameter:</label> <input type="number" step="0.1" id="fus_diameter" value="2.5"><br>
-      <label>Length:</label> <input type="number" step="0.1" id="fus_length" value="15.0"><br>
-      <label>Nose (x,y,z):</label> <input type="text" id="fus_nose_position" value="0,0,0"><br>
-      <button id="fus_submit">Submit</button>
-      <button id="fus_cancel">Cancel</button>
+      <div class="modal-header">
+        <h3>Add / Edit Fuselage</h3>
+        <button id="fus_cancel" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!--  Fuselage form fields  -->
+        <div class="form-group">
+          <label>Name:</label> <input type="text" id="fus_name" value="fus1">
+        </div>
+        <div class="form-group">
+          <label>Diameter:</label> <input type="number" step="0.1" id="fus_diameter" value="2.5">
+        </div>
+        <div class="form-group">
+          <label>Length:</label> <input type="number" step="0.1" id="fus_length" value="15.0">
+        </div>
+        <div class="form-group">
+          <label>Nose (x,y,z):</label> <input type="text" id="fus_nose_position" value="0,0,0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="fus_submit" class="primary-btn">Submit</button>
+      </div>
     </div>
   </div>
 
-  <!-- NEW: GLB Model Edit Modal -->
+  <!-- GLB Model Edit Modal -->
   <div id="glbModal" class="modal">
     <div class="modal-content">
-      <h3>Edit GLB Model Properties</h3>
-      <label>Scale Factor:</label> <input type="number" step="0.1" id="glb_scale" value="1.0"><br>
-      <label>Rotation X (°):</label> <input type="number" step="1" id="glb_rotation_x" value="0"><br>
-      <label>Rotation Y (°):</label> <input type="number" step="1" id="glb_rotation_y" value="0"><br>
-      <label>Rotation Z (°):</label> <input type="number" step="1" id="glb_rotation_z" value="0"><br>
-      <label>Position X:</label> <input type="number" step="0.1" id="glb_position_x" value="0.0"><br>
-      <label>Position Y:</label> <input type="number" step="0.1" id="glb_position_y" value="0.0"><br>
-      <label>Position Z:</label> <input type="number" step="0.1" id="glb_position_z" value="0.0"><br>
-      <button id="glb_submit">Apply Changes</button>
-      <button id="glb_generate_snippet">Generate Code Snippet</button>
-      <button id="glb_cancel">Cancel</button>
+      <div class="modal-header">
+        <h3>Edit GLB Model Properties</h3>
+        <button id="glb_cancel" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!--  GLB transform fields  -->
+        <div class="form-group">
+          <label>Scale Factor:</label> <input type="number" step="0.1" id="glb_scale" value="1.0">
+        </div>
+        <div class="form-group">
+          <label>Rotation X (°):</label> <input type="number" step="1" id="glb_rotation_x" value="0">
+        </div>
+        <div class="form-group">
+          <label>Rotation Y (°):</label> <input type="number" step="1" id="glb_rotation_y" value="0">
+        </div>
+        <div class="form-group">
+          <label>Rotation Z (°):</label> <input type="number" step="1" id="glb_rotation_z" value="0">
+        </div>
+        <div class="form-group">
+          <label>Position X:</label> <input type="number" step="0.1" id="glb_position_x" value="0.0">
+        </div>
+        <div class="form-group">
+          <label>Position Y:</label> <input type="number" step="0.1" id="glb_position_y" value="0.0">
+        </div>
+        <div class="form-group">
+          <label>Position Z:</label> <input type="number" step="0.1" id="glb_position_z" value="0.0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="glb_submit" class="primary-btn">Apply Changes</button>
+        <button id="glb_generate_snippet" class="secondary-btn">Generate Code Snippet</button>
+      </div>
     </div>
   </div>
 
@@ -131,5 +349,6 @@
   <script src="js/scene-utils.js"></script>
   <script src="js/ui-logic.js"></script>
   <script src="js/glb-editing.js"></script>
+  <script src="js/json-editor.js"></script>
 </body>
 </html>

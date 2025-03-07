@@ -30,6 +30,10 @@ function fillGLBModal() {
   
   // Show the modal
   document.getElementById("glbModal").style.display = "block";
+  
+  // Update and show the transform snippet
+  updateGLBTransformSnippet();
+  document.getElementById("glbTransformSnippet").style.display = "block";
 }
 
 /**
@@ -72,6 +76,8 @@ function applyGLBChanges() {
   
   // Update the transform snippet display
   updateGLBTransformSnippet();
+  // Make sure the snippet is visible
+  document.getElementById("glbTransformSnippet").style.display = "block";
 }
 
 /**
@@ -83,6 +89,9 @@ function generateGLBSnippet() {
   
   // First make sure we have the latest values
   updateGLBTransformSnippet();
+  
+  // Show the snippet
+  document.getElementById("glbTransformSnippet").style.display = "block";
   
   // Select the text
   const snippetDiv = document.getElementById("glbTransformSnippet");

@@ -33,6 +33,7 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
               translationY = -5;
               translationZ = 2;
               break;
+
           case "piper_pa18.glb":
               scaleFactor = 1;
               rotationX = 90;

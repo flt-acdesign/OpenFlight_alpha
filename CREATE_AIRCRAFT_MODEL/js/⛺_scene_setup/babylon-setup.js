@@ -18,10 +18,11 @@ window.gizmoManager = null;
 window.aircraftRoot = null;
 window.glbRoot = null;
 
-// We'll use a highlight layer for selection
-window.hl = null;
 // Shadow generator for casting shadows
 window.shadowGenerator = null;
+
+// Highlight layer for selection
+window.hl = null;
 
 // Some constants we use
 const CAMERA_SPHERE_NAME = "cameraSphere"; // name for the big "sky" sphere
@@ -120,8 +121,12 @@ function initBabylon() {
   // 6) sky sphere
   createSkySphere(); 
 
-  // 7) create or reuse the highlight layer
+  // 7) create highlight layer for selection
   window.hl = new BABYLON.HighlightLayer("hl1", window.scene);
+  window.hl.innerGlow = false;
+  window.hl.outerGlow = true;
+  window.hl.blurHorizontalSize = 0.5;
+  window.hl.blurVerticalSize = 0.5;
 
   // create the gizmo manager
   window.gizmoManager = new BABYLON.GizmoManager(window.scene);

@@ -102,14 +102,18 @@ async function loadGLBFile(file) {
     });
 
     // Select the GLB model
+    if (window.selectedComponent) {
+      clearHighlight(window.selectedComponent);
+    }
     window.selectedComponent = window.glbRoot;
     setColorLightPink(window.selectedComponent);
     updateSelectedNameDisplay("GLB: " + window.lastLoadedGLBName);
     document.getElementById("editComponentBtn").disabled = false;
     document.getElementById("deleteComponentBtn").disabled = false;
     
-    // Update the transform snippet
+    // Update and show the transform snippet
     updateGLBTransformSnippet();
+    document.getElementById("glbTransformSnippet").style.display = "block";
 
   } catch (error) {
     console.error("Error loading GLB file:", error);

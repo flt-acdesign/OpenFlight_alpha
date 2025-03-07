@@ -24,21 +24,39 @@ function isDescendantOf(child, parent) {
   return false;
 }
 
-// Add highlight
+// Add highlight using highlight layer with contour-only glow
 function setColorLightPink(componentNode) {
+  // Ensure the highlight layer exists
+  if (!window.hl) {
+    window.hl = new BABYLON.HighlightLayer("hl1", window.scene);
+    window.hl.innerGlow = false;  // Disable inner glow for a more discrete highlight
+    window.hl.outerGlow = true;   // Keep only outer glow (contour)
+    
+    // Adjust glow intensity and blur radius for a more subtle effect
+    window.hl.blurHorizontalSize = 0.5;
+    window.hl.blurVerticalSize = 0.5;
+  }
+  
+  // Add all meshes to the highlight layer
   componentNode.getChildMeshes().forEach(mesh => {
-    window.hl.addMesh(mesh, new BABYLON.Color3(1.0, 0.4, 0.7));
+    if (mesh.name !== "ground" && 
+        mesh.name !== CAMERA_SPHERE_NAME && 
+        !mesh.name.startsWith("axis") &&
+        !mesh.name.startsWith("axisProj") &&
+        !mesh.name.startsWith("label_")) {
+      window.hl.addMesh(mesh, new BABYLON.Color3(1.0, 0.4, 0.7));
+    }
   });
 }
 
 // Remove highlight
 function clearHighlight(componentNode) {
+  if (!window.hl) return;
+  
   componentNode.getChildMeshes().forEach(mesh => {
     window.hl.removeMesh(mesh);
   });
 }
-
-
 
 function setTranslucencyMode(enabled) {
   const alphaValue = enabled ? 0.7 : 1.0;
@@ -70,9 +88,6 @@ function setTranslucencyMode(enabled) {
     window.glbRoot.getChildMeshes().forEach(updateMeshTransparency);
   }
 }
-
-
-
 
 /**
  * Smoothly transition camera.target to newTarget over 'durationInSeconds'.

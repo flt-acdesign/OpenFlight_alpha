@@ -40,18 +40,24 @@ window.lastLoadedGLBName = "";
     if (window.glbRoot) {
       window.glbRoot.rotation.x += Math.PI / 2;
       updateGLBTransformSnippet();
+      // Make sure the snippet is visible
+      document.getElementById("glbTransformSnippet").style.display = "block";
     }
   });
   document.getElementById("rotateYBtn").addEventListener("click", function() {
     if (window.glbRoot) {
       window.glbRoot.rotation.y += Math.PI / 2;
       updateGLBTransformSnippet();
+      // Make sure the snippet is visible
+      document.getElementById("glbTransformSnippet").style.display = "block";
     }
   });
   document.getElementById("rotateZBtn").addEventListener("click", function() {
     if (window.glbRoot) {
       window.glbRoot.rotation.z += Math.PI / 2;
       updateGLBTransformSnippet();
+      // Make sure the snippet is visible
+      document.getElementById("glbTransformSnippet").style.display = "block";
     }
   });
 
@@ -62,6 +68,8 @@ window.lastLoadedGLBName = "";
     if (!isNaN(scaleValue)) {
       window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
       updateGLBTransformSnippet();
+      // Make sure the snippet is visible
+      document.getElementById("glbTransformSnippet").style.display = "block";
     }
   });
 
@@ -71,6 +79,18 @@ window.lastLoadedGLBName = "";
     window.isTranslucent = !window.isTranslucent;
     setTranslucencyMode(window.isTranslucent);
   });
+  
+  // Reset view button
+  if (document.getElementById("resetViewBtn")) {
+    document.getElementById("resetViewBtn").addEventListener("click", function() {
+      if (camera) {
+        camera.setTarget(new BABYLON.Vector3(7, 0, 0));
+        camera.radius = 40;
+        camera.alpha = -2.0;
+        camera.beta = 1.2;
+      }
+    });
+  }
 })();
 
 ///////////////////////////////
@@ -127,6 +147,9 @@ function parseAircraft(jsonText) {
   // Lifting Surface Modal
   const lsModal = document.getElementById("liftingSurfaceModal");
   document.getElementById("ls_submit").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     const newData = {
       name: document.getElementById("ls_name").value,
       mass_kg: parseFloat(document.getElementById("ls_mass_kg").value),
@@ -168,6 +191,9 @@ function parseAircraft(jsonText) {
     clearSelectedNameDisplay();
   });
   document.getElementById("ls_cancel").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     lsModal.style.display = "none";
     window.editingType = "";
     window.editingObject = null;
@@ -176,6 +202,9 @@ function parseAircraft(jsonText) {
   // Fuselage Modal
   const fusModal = document.getElementById("fuselageModal");
   document.getElementById("fus_submit").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     const newData = {
       name: document.getElementById("fus_name").value,
       diameter: parseFloat(document.getElementById("fus_diameter").value),
@@ -204,6 +233,9 @@ function parseAircraft(jsonText) {
     clearSelectedNameDisplay();
   });
   document.getElementById("fus_cancel").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     fusModal.style.display = "none";
     window.editingType = "";
     window.editingObject = null;
@@ -211,18 +243,27 @@ function parseAircraft(jsonText) {
 
   // "Add" buttons
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     window.editingType = "";
     window.editingObject = null;
-    lsModal.style.display = "block";
+    fillLiftingSurfaceModal({});
   });
   document.getElementById("addFuselageBtn").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     window.editingType = "";
     window.editingObject = null;
-    fusModal.style.display = "block";
+    fillFuselageModal({});
   });
 
   // Edit Selected
   document.getElementById("editComponentBtn").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     if (!window.selectedComponent) return;
     const info = getMetadata(window.selectedComponent);
     if (info && info.metadata) {
@@ -238,12 +279,17 @@ function parseAircraft(jsonText) {
         window.editingType = "glb";
         window.editingObject = info.metadata.data;
         fillGLBModal();
+        // Make sure the snippet is visible
+        document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
   });
 
   // Delete Selected
   document.getElementById("deleteComponentBtn").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     if (!window.selectedComponent) return;
     const info = getMetadata(window.selectedComponent);
     if (!info || !info.metadata) return;
@@ -278,48 +324,122 @@ function parseAircraft(jsonText) {
       }
       document.getElementById("glbTransformSnippet").style.display = "none";
     }
-
+    
     // Clear selection
-    clearHighlight(window.selectedComponent);
-    gizmoManager.attachToMesh(null);
-    window.selectedComponent = null;
+    if (window.selectedComponent) {
+      if (window.hl) {
+        clearHighlight(window.selectedComponent);
+      }
+      gizmoManager.attachToMesh(null);
+      window.selectedComponent = null;
+    }
     clearSelectedNameDisplay();
   });
 
   // JSON file input (hidden)
   const jsonFileInput = document.getElementById("jsonFileInput");
-  document.getElementById("selectJsonBtn").addEventListener("click", function() {
+  document.getElementById("selectJsonBtn").addEventListener("click", function(event) {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
+    // Prevent default navigation behavior
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Manually trigger file input dialog
     jsonFileInput.click();
+    
+    return false;
   });
+  
   jsonFileInput.addEventListener("change", function(event) {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
+    // Prevent event bubbling
+    event.stopPropagation();
+    
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".json")) {
       alert("Please select a valid '.json' file.");
       return;
     }
+    
     const reader = new FileReader();
     reader.onload = function(e) {
-      parseAircraft(e.target.result);
+      try {
+        parseAircraft(e.target.result);
+        
+        // Clear any selected component
+        if (window.selectedComponent) {
+          if (window.hl) {
+            clearHighlight(window.selectedComponent);
+          }
+          window.selectedComponent = null;
+        }
+        clearSelectedNameDisplay();
+        
+        // Hide GLB transform snippet
+        document.getElementById("glbTransformSnippet").style.display = "none";
+        
+        // Ensure axis projections stay visible
+        if (typeof recreateAxisProjectionsIfNeeded === 'function') {
+          recreateAxisProjectionsIfNeeded();
+        }
+        
+        // Reset file input to allow loading the same file again if needed
+        jsonFileInput.value = '';
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+        alert("Error loading JSON file: " + error.message);
+      }
     };
+    
+    reader.onerror = function() {
+      alert("Error reading the file. Please try again.");
+    };
+    
     reader.readAsText(file);
   });
 
   // Download JSON
-  document.getElementById("downloadJsonBtn").addEventListener("click", function() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
-      JSON.stringify(aircraftData, null, 2)
-    );
+  document.getElementById("downloadJsonBtn").addEventListener("click", function(event) {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
+    // Prevent default behavior
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Create a Blob instead of a data URI to prevent browser navigation
+    const jsonString = JSON.stringify(aircraftData, null, 2);
+    const blob = new Blob([jsonString], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    
+    // Create a link element and trigger download without page navigation
     const dlAnchor = document.createElement("a");
-    dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", "aircraft.json");
+    dlAnchor.href = url;
+    dlAnchor.download = "aircraft.json";
+    dlAnchor.style.display = "none";
     document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    document.body.removeChild(dlAnchor);
+    
+    // Use setTimeout to ensure proper download behavior
+    setTimeout(() => {
+      dlAnchor.click();
+      // Clean up
+      document.body.removeChild(dlAnchor);
+      URL.revokeObjectURL(url);
+    }, 0);
+    
+    return false;
   });
 
   // Clear Aircraft
   document.getElementById("clearAircraft").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     aircraftData.lifting_surfaces = [];
     aircraftData.fuselages = [];
     renderAircraft();
@@ -329,35 +449,82 @@ function parseAircraft(jsonText) {
       window.selectedComponent = null;
     }
     clearSelectedNameDisplay();
+    
+    // Ensure axis projections stay visible
+    if (typeof recreateAxisProjectionsIfNeeded === 'function') {
+      recreateAxisProjectionsIfNeeded();
+    }
   });
 
   // Toggle Ground
   document.getElementById("toggleGround").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
     if (window.ground) {
       ground.isVisible = !ground.isVisible;
+      
+      // Even when ground is hidden, we still want to see the projections
+      if (window.groundProjections) {
+        window.groundProjections.setEnabled(true);
+      }
+      
+      // If projection lines were accidentally lost, recreate them
+      if (typeof recreateAxisProjectionsIfNeeded === 'function') {
+        recreateAxisProjectionsIfNeeded();
+      }
     }
   });
 
   // GLB file input (hidden)
   const glbRealInput = document.getElementById("glbFileInput");
-  document.getElementById("selectGlbBtn").addEventListener("click", function() {
+  document.getElementById("selectGlbBtn").addEventListener("click", function(event) {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
+    // Prevent default navigation behavior
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Manually trigger file input dialog
     glbRealInput.click();
+    
+    return false;
   });
+  
   glbRealInput.addEventListener("change", function(event) {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
+    // Prevent event bubbling
+    event.stopPropagation();
+    
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".glb")) {
       alert("Please select a valid '.glb' file.");
       return;
     }
+    
     window.lastLoadedGLBName = file.name;
     loadGLBFile(file);
+    
+    // Ensure axis projections stay visible
+    if (typeof recreateAxisProjectionsIfNeeded === 'function') {
+      recreateAxisProjectionsIfNeeded();
+    }
+    
+    // Reset file input to allow loading the same file again if needed
+    glbRealInput.value = '';
   });
   
   // GLB Modal event handlers
   const glbModal = document.getElementById("glbModal");
   if (document.getElementById("glb_submit")) {
     document.getElementById("glb_submit").addEventListener("click", function() {
+      // This is internal interaction, not navigation
+      window.userNavigating = false;
+      
       if (typeof applyGLBChanges === 'function') {
         applyGLBChanges();
       }
@@ -366,6 +533,9 @@ function parseAircraft(jsonText) {
   
   if (document.getElementById("glb_generate_snippet")) {
     document.getElementById("glb_generate_snippet").addEventListener("click", function() {
+      // This is internal interaction, not navigation
+      window.userNavigating = false;
+      
       if (typeof generateGLBSnippet === 'function') {
         generateGLBSnippet();
       }
@@ -374,11 +544,29 @@ function parseAircraft(jsonText) {
   
   if (document.getElementById("glb_cancel")) {
     document.getElementById("glb_cancel").addEventListener("click", function() {
+      // This is internal interaction, not navigation
+      window.userNavigating = false;
+      
       glbModal.style.display = "none";
       window.editingType = "";
       window.editingObject = null;
     });
   }
+  
+  // Update Origin Box Size
+  document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
+    // This is internal interaction, not navigation
+    window.userNavigating = false;
+    
+    var newSize = parseFloat(document.getElementById("boxSizeInput").value);
+    if (isNaN(newSize) || newSize <= 0) {
+        alert("Please enter a positive number for box size.");
+        return;
+    }
+    if(window.originBox) {
+      window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
+    }
+  });
 })();
 
 /////////////////////////////
@@ -416,18 +604,49 @@ function openEditModalForSelected() {
       window.editingType = "glb";
       window.editingObject = info.metadata.data;
       fillGLBModal();
+      // Make sure snippet is visible
+      document.getElementById("glbTransformSnippet").style.display = "block";
     }
   }
 }
 
-// Update Origin Box Size
-document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
-  var newSize = parseFloat(document.getElementById("boxSizeInput").value);
-  if (isNaN(newSize) || newSize <= 0) {
-       alert("Please enter a positive number for box size.");
-       return;
+// Handle focus/blur events to prevent reload prompts when switching applications
+window.addEventListener('blur', function() {
+  // User is switching to another application, not navigating away
+  window.userNavigating = false;
+});
+
+window.addEventListener('focus', function() {
+  // User returned to the application
+  window.userNavigating = false;
+});
+
+// Also apply this to all links in the application
+document.addEventListener('DOMContentLoaded', function() {
+  // For download buttons and other actions that might trigger navigation
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      // This is an internal button click, not navigation
+      window.userNavigating = false;
+    });
+  });
+});
+
+// For special keys that might cause navigation in combination with Alt
+window.addEventListener('keydown', function(e) {
+  // Alt+Left Arrow for browser back
+  if (e.altKey && e.key === 'ArrowLeft') {
+    e.preventDefault(); // Prevent browser back navigation
   }
-  if(window.originBox) {
-    window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
-  }
+});
+
+// For click events on the canvas (to avoid any accidental reload)
+window.canvas.addEventListener('click', function() {
+  window.userNavigating = false;
+});
+
+// For click events on the document (to avoid any accidental reload)
+document.addEventListener('click', function() {
+  window.userNavigating = false;
 });
