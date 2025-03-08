@@ -1,57 +1,93 @@
+/***************************************************************
+ * 6.1_♻_MAIN_render_loop.js
+ *
+ * This is the main entry point for rendering and simulation steps.
+ * We do exactly ONE simulation step per frame, and clamp deltaTime
+ * to avoid big jumps. The old "while (timeSinceLastUpdate >= global_time_step)"
+ * is removed. We also call updateTrajectory() once per frame if not paused.
+ ***************************************************************/
+
 window.addEventListener("DOMContentLoaded", function () {
 
   // Initialize Babylon.js engine
-  const canvas = document.getElementById("renderCanvas")
-  const engine = new BABYLON.Engine(canvas, true, { 
-    useReverseDepthBuffer: true  // or logarithmicDepthBuffer: true in some versions/configurations 
-  });
+  const canvas = document.getElementById("renderCanvas");
+
+  const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, limitDeviceRatio: 1.0 });
+  engine.enableOfflineSupport = false;
   
-  // Call the external scene generation function
-  const scene = createScene(engine, canvas)
+  // Create the scene (see createScene.js)
+  const scene = createScene(engine, canvas);
 
-
+  // For the main loop, we keep track of time ourselves.
+  let lastFrameTime = performance.now();
+  let maxDeltaTime = 0.05;    // 0.05s => 20 FPS minimum to avoid giant steps
 
   // Render loop
   engine.runRenderLoop(function () {
+    // Process gamepad inputs for pause control regardless of pause state
+    handleGamepadPauseControls();
+    
+
     if (!isPaused && !simulationEnded) {
-      let currentTime = Date.now()
-      let deltaTime = (currentTime - lastFrameTime) / 1000 // Time in seconds
+      // Compute deltaTime since last frame in seconds
+      let currentTime = performance.now();
+      let deltaTime = (currentTime - lastFrameTime) / 1000;
+      lastFrameTime = currentTime;
 
-      lastFrameTime = currentTime
-      timeSinceLastUpdate += deltaTime
-
-      // Process updates in steps of global_time_step seconds
-      while (timeSinceLastUpdate >= global_time_step) {
-        timeSinceLastUpdate -= global_time_step
-        elapsedTime += global_time_step
-
-        // Update forces and moments based on joystick input
-        updateForcesFromJoystickOrKeyboard(scene)
-
-        if (aircraft !== undefined) { sendStateToServer() } // Send state to server if aircraft is defined
+      // Clamp deltaTime to avoid large steps if the user tab was inactive, etc.
+      if (deltaTime > maxDeltaTime) {
+        deltaTime = maxDeltaTime;
       }
+      
+      // We do exactly one simulation step here, if the aircraft exists.
+      // 1) Update local user forces from joystick or keyboard.
+      updateForcesFromJoystickOrKeyboard(scene);
+
+      // 2) Send state to the server for the next integration step.
+      if (aircraft !== undefined) {
+        sendStateToServer();
+      }
+
+      // 3) If we want to record the aircraft trajectory, do it once per frame.
+      //    (We also can check if (elapsedTime < 200.0) to limit how many spheres.)
+      if (aircraft !== undefined && elapsedTime < 200) {
+        updateTrajectory();
+      }
+
+      // 4) Increase the total elapsed time by the same deltaTime, in case the GUI needs it.
+      elapsedTime += deltaTime;
+    } else {
+      // Even in paused state, we want to handle keyboard inputs for camera control
+      // and pause toggle, but not affect physics
+      if (keysPressed['F1']) setActiveCamera(0, scene);
+      if (keysPressed['F2']) setActiveCamera(1, scene);
+      if (keysPressed['F3']) setActiveCamera(2, scene);
+      if (keysPressed['F4']) setActiveCamera(3, scene);
     }
 
-    // Update displayed coordinates and speed once the aircraft is defined (active object)
-    if (aircraft !== undefined) { updateInfo() }
+    // Update the GUI or other info each frame if aircraft is defined.
+    if (aircraft !== undefined) {
+      updateInfo();
+    }
 
-    scene.render() // Render the scene
+    // Render the scene.
+    scene.render();
+  });
 
-  })
-
-  // Resize the engine on resize
-  window.addEventListener("resize", function () {  engine.resize()  }) // Resize the engine when the window is resized
+  // Resize the engine on window resize
+  window.addEventListener("resize", function () {
+    engine.resize();
+  });
 
   // Gamepad event listeners
   window.addEventListener("gamepadconnected", (event) => {
-    gamepadIndex = event.gamepad.index
-    console.log(`Gamepad connected at index ${gamepadIndex}: ${event.gamepad.id}.`)
-  })
+    gamepadIndex = event.gamepad.index;
+    console.log(`Gamepad connected at index ${gamepadIndex}: ${event.gamepad.id}.`);
+  });
 
-  window.addEventListener("gamepaddisconnected", () => { // Gamepad disconnected
-    console.log("Gamepad disconnected.")
-    gamepadIndex = null
-  })
+  window.addEventListener("gamepaddisconnected", () => {
+    console.log("Gamepad disconnected.");
+    gamepadIndex = null;
+  });
 
-}) // End of window.addEventListener("DOMContentLoaded", function () { ... })
-
+});

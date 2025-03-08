@@ -72,14 +72,32 @@ function createRunway(scene, groundConfig) {
     BABYLON.VertexData.ComputeNormals(runwayPositions, runwayIndices, runwayNormals);
     runway.setVerticesData(BABYLON.VertexBuffer.NormalKind, runwayNormals, true);
 
-    // Enable shadows and optional physics for collisions
-    runway.receiveShadows = true;
-    runway.physicsImpostor = new BABYLON.PhysicsImpostor(
-        runway,
-        BABYLON.PhysicsImpostor.MeshImpostor,
-        { mass: 0, friction: 0.5, restitution: 0.1 },
-        scene
-    );
+// This code should replace the physics impostor section in function createRunway
+// around line 104 in file 4.2.3_🎹_create_runway.js
+
+// Enable shadows
+runway.receiveShadows = true;
+
+// Use BoxImpostor instead of MeshImpostor to fix the warning
+// Create a box impostor that approximates the runway's dimensions
+const runwayPhysicsWidth = 25;    // Same as the runway width
+const runwayPhysicsHeight = 0.4;  // Slightly thicker than the offset (0.2)
+const runwayPhysicsLength = 1000; // Same as the runway length
+
+runway.physicsImpostor = new BABYLON.PhysicsImpostor(
+    runway,
+    BABYLON.PhysicsImpostor.BoxImpostor, // Use BoxImpostor instead of MeshImpostor
+    { 
+        mass: 0,
+        friction: 0.5,
+        restitution: 0.1,
+        // You can adjust these dimensions to match your runway
+        width: runwayPhysicsWidth,
+        height: runwayPhysicsHeight,
+        depth: runwayPhysicsLength
+    },
+    scene
+);
 
 
     /***************************************************************

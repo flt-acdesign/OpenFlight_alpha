@@ -1,4 +1,3 @@
-
 # Absolute path of the directory containing the current script file.
 # It needs to be defined at the top.
 project_dir = dirname(@__FILE__)
@@ -33,12 +32,18 @@ include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.3_🕑_a
 
 include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actuator_and_Engine_Dynamics.jl")
 
-
 # Start the Web Browser by launching the client.
 launch_client(project_dir)
 
 # Global timestamp for simulation start.
 const start_time = time()
+
+
+mission_file = joinpath(@__DIR__, raw"./default_mission.yaml")
+println("Loading mission file from: $mission_file")
+mision_data = YAML.load_file(mission_file)
+
+
 
 # Establish the WebSockets connection with graphical front-end.
 establish_websockets_connection()

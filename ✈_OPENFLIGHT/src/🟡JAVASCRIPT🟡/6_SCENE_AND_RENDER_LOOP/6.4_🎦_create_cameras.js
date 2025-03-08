@@ -7,6 +7,15 @@
  * @returns {Object} An object containing all camera instances.
  */
 function setupCameras(scene, canvas, shadowGenerator) {
+
+
+
+
+
+
+
+
+
   // Create and configure the main orbital (arc rotate) camera.
   const arcRotateCamera = new BABYLON.ArcRotateCamera(
     "ArcRotateCamera",
@@ -34,6 +43,11 @@ function setupCameras(scene, canvas, shadowGenerator) {
     arcRotateCamera.inputs.attached.pointers.panningSensibility = 10;
   }
 
+
+
+
+
+
   // Create and configure the follow (chase) camera.
   const followCamera = new BABYLON.FollowCamera(
     "FollowCamera",
@@ -49,6 +63,9 @@ function setupCameras(scene, canvas, shadowGenerator) {
   followCamera.minZ = 10;
   followCamera.maxZ = 8000;
 
+
+
+
   // Create the cockpit camera (first-person view).
   const cockpitCamera = new BABYLON.UniversalCamera(
     "CockpitCamera",
@@ -60,6 +77,11 @@ function setupCameras(scene, canvas, shadowGenerator) {
   // Set clipping planes for cockpit view.
   cockpitCamera.minZ = 1;
   cockpitCamera.maxZ = 8000;
+
+
+
+
+
 
   // Create the wing camera (external view).
   const wingCamera = new BABYLON.UniversalCamera(
@@ -73,8 +95,16 @@ function setupCameras(scene, canvas, shadowGenerator) {
   // Set a wider field of view (~85° in radians).
   wingCamera.fov = 1.9;
 
+
+
+
+
+
+
   // Register all cameras with the scene.
-  scene.cameras.push(arcRotateCamera, followCamera, cockpitCamera, wingCamera);
+  scene.cameras.push(arcRotateCamera, cockpitCamera, followCamera,  wingCamera )
+
+
 
   /**
    * Updates camera positions and targets based on the aircraft's position.
@@ -114,6 +144,7 @@ function setupCameras(scene, canvas, shadowGenerator) {
 
   return {
     arcRotateCamera,
+    
     followCamera,
     cockpitCamera,
     wingCamera
@@ -140,3 +171,5 @@ function setActiveCamera(index, scene) {
     glbNode.setEnabled(index !== 2);
   }
 }
+
+

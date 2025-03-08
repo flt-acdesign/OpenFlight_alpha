@@ -1,16 +1,23 @@
+/***************************************************************
+ * 1.1_🔁_exchange_aircraft_state_to_server.js
+ *
+ * Manages the WebSocket connection with the Julia server, sending
+ * and receiving the aircraft’s state. The main change is that
+ * we NO LONGER call updateTrajectory() in onmessage. We just set
+ * the aircraft’s position and orientation, then update velocity/
+ * force lines. The trajectory is updated in the render loop.
+ ***************************************************************/
+
 // Initialize WebSocket connection
-// Freeport is a variable that holds the port number of the server, defined in 
-// "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" 
-// by the Julia code 
-// "src/🟣JULIA🟣/_Check_packages_and_websockets_port/🎁_load_required_packages_and_find_free_port.jl"
+// freeport is a variable that holds the port number of the server, defined in 
+// "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" by the Julia code
+// "src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl"
 let ws = new WebSocket(`ws://localhost:${freeport}`);
 
-
 // --------------------------------------------------------------------------
-// (New) Keep track of the last update time to compute a variable deltaTime
+// Keep track of the last update time to compute a variable deltaTime for server calls.
 // --------------------------------------------------------------------------
 let lastUpdateTime = performance.now();
-
 
 // Connection opened handler
 ws.onopen = () => {
@@ -28,11 +35,10 @@ ws.onclose = () => {
 };
 
 // --------------------------------------------------------------------------
-// Function to send aircraft state to server
-// (Removed the deltaTime parameter; now we measure it ourselves)
+// Function to send aircraft state to server. We measure deltaTime ourselves;
+// the server uses this to run the integrator with a stable time step.
 // --------------------------------------------------------------------------
 function sendStateToServer() {
-
     // Measure the actual time elapsed since the last call
     const currentTime = performance.now();
     const deltaTime = (currentTime - lastUpdateTime) / 1000.0; // ms -> s
@@ -45,30 +51,35 @@ function sendStateToServer() {
         return;
     }
 
-    // Create aircraft state object
+    // Create aircraft state object. We read the “aircraft” global state.
+    // If the aircraft or orientation are undefined, skip.
+    if (!aircraft || !orientation) {
+        return;
+    }
+
     const aircraftState = {
         // Position coordinates from Babylon.js object
         x: aircraft.position.x,
         y: aircraft.position.y,
         z: aircraft.position.z,
-        
+
         // Velocity components
         vx: velocity.x,
         vy: velocity.y,
         vz: velocity.z,
-        
+
         // Quaternion orientation from Babylon.js object
         qx: orientation.x,
         qy: orientation.y,
         qz: orientation.z,
         qw: orientation.w,
-        
+
         // Angular velocity in body frame
         wx: angularVelocity.x,
         wy: angularVelocity.y,
         wz: angularVelocity.z,
-        
-        // Forces demands
+
+        // Forces demands (these come from the user’s inputs)
         fx: forceX,
         fy: forceY,
         thrust_setting_demand: thrust_setting_demand,
@@ -76,22 +87,18 @@ function sendStateToServer() {
         // Control demands
         roll_demand: roll_demand,
         pitch_demand: pitch_demand,
-        yaw_demand: yaw_demand,    
+        yaw_demand: yaw_demand,
 
         // Forces attained (interpreted as setting, not actual force value)
         thrust_attained: thrust_attained,
 
-        // Attained control values
+        // Attained control values (feedback from server might override them)
         roll_demand_attained: roll_demand_attained,
         pitch_demand_attained: pitch_demand_attained,
         yaw_demand_attained: yaw_demand_attained,
 
-        // (New) The measured variable time step
+        // The measured variable time step
         deltaTime: deltaTime
-
-
-
-
     };
 
     // Send state as JSON string
@@ -99,13 +106,16 @@ function sendStateToServer() {
 }
 
 // --------------------------------------------------------------------------
-// Message handler for receiving server updates
+// Message handler for receiving server updates. The server integrator has
+// advanced the state. We set the new position, velocity, orientation, etc.
+// We NO LONGER call updateTrajectory() here to avoid mismatched timing.
+// Instead, we do that once per frame in the main render loop.
 // --------------------------------------------------------------------------
 ws.onmessage = (event) => {
     // Parse received JSON data
     const responseData = JSON.parse(event.data);
     
-    // Update aircraft position
+    // Update aircraft position in Babylon.js space
     aircraft.position.x = parseFloat(responseData.x);
     aircraft.position.y = parseFloat(responseData.y);
     aircraft.position.z = parseFloat(responseData.z);
@@ -131,7 +141,7 @@ ws.onmessage = (event) => {
     forceGlobalY = parseFloat(responseData.fy_global);
     forceGlobalZ = parseFloat(responseData.fz_global);
 
-    // Update 3D model rotation
+    // Update 3D model rotation (Babylon uses “rotationQuaternion”)
     aircraft.rotationQuaternion = new BABYLON.Quaternion(
         orientation.x,
         orientation.y,
@@ -139,11 +149,11 @@ ws.onmessage = (event) => {
         orientation.w
     );
 
-    // Update aerodynamic angles
+    // Update aerodynamic angles (in radians)
     alpha_RAD = parseFloat(responseData.alpha_RAD);
     beta_RAD = parseFloat(responseData.beta_RAD);
 
-    // Update control feedback
+    // Update control feedback from server solution
     pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);
     roll_demand_attained = parseFloat(responseData.roll_demand_attained);
     yaw_demand_attained = parseFloat(responseData.yaw_demand_attained);
@@ -151,12 +161,9 @@ ws.onmessage = (event) => {
     // Update thrust feedback
     thrust_attained = parseFloat(responseData.thrust_attained);
     
-    // Update trajectory if within time limit
-    if (elapsedTime < 200.0) {
-        updateTrajectory();
-    }
+    // We NO LONGER call updateTrajectory() here. We do it in the main loop.
 
-    // Update visualization elements
+    // Update velocity and force lines (just the lines, not trajectory dots)
     updateVelocityLine();
     updateForceLine();
 };
