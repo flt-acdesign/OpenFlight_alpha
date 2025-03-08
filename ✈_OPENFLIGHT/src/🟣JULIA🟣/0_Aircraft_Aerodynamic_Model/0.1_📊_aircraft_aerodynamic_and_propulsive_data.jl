@@ -1,9 +1,14 @@
 
 cd(@__DIR__)
 
-filename = joinpath(@__DIR__, raw"./📜_Aero_data/SF25B.yaml")
-#println("DEBUG: Attempting to load YAML from: $filename")
-#println("DEBUG: isfile(filename)? ", isfile(filename))
+
+test_aircraft = "SF25B.yaml"
+
+
+filename = joinpath(@__DIR__, raw"../../../../🏭_HANGAR/📜_Aero_data/", test_aircraft)
+
+println("DEBUG: Attempting to load YAML from: $filename")
+println("DEBUG: isfile(filename)? ", isfile(filename))
 
 json_data = YAML.load_file(filename)
 

@@ -4,7 +4,7 @@
 current_path = @__DIR__
 
 # Construct path to the JavaScript initialization file that needs modification
-filepath = joinpath(current_path, "..", "..", "🟡JAVASCRIPT🟡", "0_INITIALIZATION", "0.1_🧾_initializations.js")
+filepath = joinpath(current_path, "..", "..", "..", "🟡JAVASCRIPT🟡", "0_INITIALIZATION", "0.1_🧾_initializations.js")
 
 # Display paths for debugging purposes
 #println("Starting from: ", current_path)

@@ -1,5 +1,5 @@
 ###########################################
-# FILE: create_aircraft_model.html
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\create_aircraft_model.html
 ###########################################
 
 <!DOCTYPE html>
@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Aircraft Geometry Viewer & GLB Loader</title>
-  <link rel="stylesheet" href="styles/style.css">
+  <link rel="stylesheet" href="src/styles/style.css">
   <!-- BabylonJS CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
@@ -129,15 +129,27 @@
     <div class="control-group glb-ops">
       <span class="group-title">GLB Controls</span>
       <div class="button-container">
-        <button id="rotateXBtn" title="Rotate around X axis">
-          <i class="fas fa-sync"></i> X
+        <!-- 
+          We replace the old rotateXBtn/YBtn/ZBtn with
+          three numeric inputs + one "Apply Rotation" button
+        -->
+        <div class="input-group">
+          <label>Rotation X (°):</label>
+          <input type="number" id="glbRotateXInput" value="0" step="1">
+        </div>
+        <div class="input-group">
+          <label>Rotation Y (°):</label>
+          <input type="number" id="glbRotateYInput" value="0" step="1">
+        </div>
+        <div class="input-group">
+          <label>Rotation Z (°):</label>
+          <input type="number" id="glbRotateZInput" value="0" step="1">
+        </div>
+        <button id="applyGlbRotationBtn" title="Apply Rotation to GLB Model">
+          <i class="fas fa-check"></i>
         </button>
-        <button id="rotateYBtn" title="Rotate around Y axis">
-          <i class="fas fa-sync"></i> Y
-        </button>
-        <button id="rotateZBtn" title="Rotate around Z axis">
-          <i class="fas fa-sync"></i> Z
-        </button>
+
+        <!-- Scale controls remain the same -->
         <div class="input-group">
           <label>Scale:</label>
           <input type="number" id="glbScaleInput" value="1" step="0.1" min="0.1">
@@ -341,24 +353,25 @@
   </div>
 
   <!-- Scripts (order is important) -->
-  <script src="js/⛺_scene_setup/set_up_camera.js"></script>
-  <script src="js/⛺_scene_setup/lights_and_shadows.js"></script>
-  <script src="js/⛺_scene_setup/ground_axis_sphere.js"></script>
-  <script src="js/⛺_scene_setup/babylon-setup.js"></script>
-  
-  <script src="js/render_aircraft.js"></script>
-  <script src="js/load_glb_file.js"></script>
-  <script src="js/component-creation.js"></script>
-  <script src="js/interaction.js"></script>
-  <script src="js/scene-utils.js"></script>
-  <script src="js/ui-logic.js"></script>
-  <script src="js/glb-editing.js"></script>
-  <script src="js/json-editor.js"></script>
+  <script src="src/js/⛺_scene_setup/set_up_camera.js"></script>
+  <script src="src/js/⛺_scene_setup/lights_and_shadows.js"></script>
+  <script src="src/js/⛺_scene_setup/ground_axis_sphere.js"></script>
+  <script src="src/js/⛺_scene_setup/babylon-setup.js"></script>
+    
+  <script src="src/js/render_aircraft.js"></script>
+  <script src="src/js/load_glb_file.js"></script>
+  <script src="src/js/component-creation.js"></script>
+  <script src="src/js/interaction.js"></script>
+  <script src="src/js/scene-utils.js"></script>
+  <script src="src/js/ui-logic.js"></script>
+  <script src="src/js/glb-editing.js"></script>
+  <script src="src/js/json-editor.js"></script>
+
 </body>
 </html>
 
 ###########################################
-# FILE: component-creation.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\component-creation.js
 ###########################################
 
 // js/component-creation.js
@@ -539,7 +552,7 @@ function createLabel(text, width, height) {
 }
 
 ###########################################
-# FILE: glb-editing.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\glb-editing.js
 ###########################################
 
 // js/glb-editing.js
@@ -748,21 +761,26 @@ window.generateGLBSnippet = generateGLBSnippet;
 window.updateGLBTransformSnippet = updateGLBTransformSnippet;
 
 ###########################################
-# FILE: interaction.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\interaction.js
 ###########################################
 
-// js/interaction.js
+/********************************************
+ * FILE: interaction.js
+ ********************************************/
+
+/**
+ * We disable gizmos by default, so the translation arrows never
+ * appear when simply selecting an object.
+ */
+gizmoManager.positionGizmoEnabled = false;   // was `true`
+gizmoManager.rotationGizmoEnabled = false;
+gizmoManager.scaleGizmoEnabled    = false;
 
 var pointerDownPos = null;
 window.ctrlIsPressed = false;
 window.isDraggingGizmo = false;
 
-// IMPORTANT: Ensure the gizmo is actually enabled for positions.
-gizmoManager.positionGizmoEnabled = true;   // so we can move objects
-gizmoManager.rotationGizmoEnabled = false;  // optional
-gizmoManager.scaleGizmoEnabled = false;     // optional
-
-// Set up observers for gizmo events
+// Set up observers for gizmo drag events:
 if (gizmoManager.gizmos.positionGizmo) {
   // Track when gizmo drag starts
   gizmoManager.gizmos.positionGizmo.onDragStartObservable.add(function() {
@@ -773,51 +791,53 @@ if (gizmoManager.gizmos.positionGizmo) {
   gizmoManager.gizmos.positionGizmo.onDragEndObservable.add(function() {
     window.isDraggingGizmo = false;
     
-    // Update metadata and snippet at the end of drag
+    // If this is a GLB, update snippet after dragging:
     if (window.selectedComponent && window.selectedComponent.metadata && 
         window.selectedComponent.metadata.type === "glb") {
       updateGLBMetadataFromTransform();
       if (typeof updateGLBTransformSnippet === 'function') {
         updateGLBTransformSnippet();
-        // Make sure the snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
-    
-    // Enforce ground-only vertical movement
+
+    // Enforce ground-only vertical movement, if needed:
     if (window.selectedComponent && window.selectedComponent.name === "ground") {
       const groundPos = window.selectedComponent.position;
       window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
     }
-    
-    // Update JSON Editor if visible
-    if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+
+    // Update JSON Editor if visible:
+    if (window.appState?.jsonEditorVisible && window.jsonEditor) {
       updateJsonEditor();
     }
   });
 }
 
-// Track the Ctrl key to decide when to attach or detach the gizmo.
+/**
+ * Track Ctrl key down => enable the gizmo and attach to mesh
+ */
 window.addEventListener("keydown", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = true;
-
-    // Only attach the gizmo if a valid component is selected
+    
+    // Enable & attach the position gizmo ONLY if something is selected
+    gizmoManager.positionGizmoEnabled = true;
     if (window.selectedComponent) {
       gizmoManager.attachToMesh(window.selectedComponent);
-      
-      // Special handling for ground - restrict to Y-axis only
-      if (window.selectedComponent.name === "ground" && gizmoManager.gizmos.positionGizmo) {
+
+      // Special case: restrict movement axes if ground is selected
+      if (window.selectedComponent.name === "ground") {
         const groundGizmo = gizmoManager.gizmos.positionGizmo;
-        groundGizmo.xGizmo.isEnabled = false; // Disable X movement
-        groundGizmo.zGizmo.isEnabled = false; // Disable Z movement
-        groundGizmo.yGizmo.isEnabled = true;  // Enable only Y movement
-      } else if (gizmoManager.gizmos.positionGizmo) {
-        // Ensure all axes are enabled for non-ground objects
-        const gizmo = gizmoManager.gizmos.positionGizmo;
-        gizmo.xGizmo.isEnabled = true;
-        gizmo.yGizmo.isEnabled = true;
-        gizmo.zGizmo.isEnabled = true;
+        groundGizmo.xGizmo.isEnabled = false; 
+        groundGizmo.zGizmo.isEnabled = false;
+        groundGizmo.yGizmo.isEnabled = true; 
+      } else {
+        // For non-ground objects, allow all axes
+        const pg = gizmoManager.gizmos.positionGizmo;
+        pg.xGizmo.isEnabled = true;
+        pg.yGizmo.isEnabled = true;
+        pg.zGizmo.isEnabled = true;
       }
     }
   }
@@ -826,22 +846,22 @@ window.addEventListener("keydown", function (evt) {
 window.addEventListener("keyup", function (evt) {
   if (evt.key === "Control") {
     window.ctrlIsPressed = false;
-    // Detach the gizmo to avoid accidental moves.
+
+    // Detach gizmo (so it disappears)
     gizmoManager.attachToMesh(null);
+
+    // Also disable the position gizmo so it won't show automatically
+    gizmoManager.positionGizmoEnabled = false;
     
-    // Final update when control is released
-    if (window.selectedComponent && window.selectedComponent.metadata && 
-        window.selectedComponent.metadata.type === "glb") {
+    // Final updates if selected is GLB or ground
+    if (window.selectedComponent && window.selectedComponent.metadata?.type === "glb") {
       updateGLBMetadataFromTransform();
       if (typeof updateGLBTransformSnippet === 'function') {
         updateGLBTransformSnippet();
-        // Make sure the snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
-    
-    // Enforce ground-only vertical movement
-    if (window.selectedComponent && window.selectedComponent.name === "ground") {
+    if (window.selectedComponent?.name === "ground") {
       const groundPos = window.selectedComponent.position;
       window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
     }
@@ -849,60 +869,13 @@ window.addEventListener("keyup", function (evt) {
 });
 
 /**
- * Helper function to update GLB metadata from current transform
- */
-function updateGLBMetadataFromTransform() {
-  if (!window.selectedComponent || !window.selectedComponent.metadata) return;
-  
-  const md = window.selectedComponent.metadata;
-  if (md.type === "glb") {
-    if (!md.data) md.data = {};
-    
-    // Update position in metadata
-    md.data.position = [
-      window.selectedComponent.position.x,
-      window.selectedComponent.position.y,
-      window.selectedComponent.position.z
-    ];
-    
-    // Update rotation (degrees) in metadata
-    md.data.rotationDeg = [
-      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.x),
-      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.y),
-      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.z)
-    ];
-    
-    // Update scale in metadata
-    md.data.scale = window.selectedComponent.scaling.x;
-  }
-}
-
-/**
- * Helper function to ensure ground is restricted to vertical movement only
- */
-function enforceGroundMovementRestrictions() {
-  if (window.selectedComponent && window.selectedComponent.name === "ground") {
-    // Configure the gizmo for ground to allow only Y-axis movement
-    if (gizmoManager.gizmos.positionGizmo) {
-      const groundGizmo = gizmoManager.gizmos.positionGizmo;
-      groundGizmo.xGizmo.isEnabled = false; // Disable X movement
-      groundGizmo.zGizmo.isEnabled = false; // Disable Z movement
-      groundGizmo.yGizmo.isEnabled = true;  // Enable only Y movement
-    }
-    
-    // Force ground position to stay at (0,y,0)
-    const groundPos = window.selectedComponent.position;
-    window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
-  }
-}
-
-/**
- * Main pointer logic for selecting a component or ground.
+ * When we click (pointer down/up), figure out which object we picked.
+ * If we pick "ground" or pick nothing, we clear selection. Otherwise,
+ * we highlight the chosen component but do NOT attach the gizmo yet.
  */
 scene.onPointerObservable.add(function (pointerInfo) {
   switch (pointerInfo.type) {
     case BABYLON.PointerEventTypes.POINTERDOWN:
-      // Only track position for left-button events (button 0)
       if (pointerInfo.event.button === 0) {
         pointerDownPos = {
           x: pointerInfo.event.clientX,
@@ -912,99 +885,86 @@ scene.onPointerObservable.add(function (pointerInfo) {
       break;
 
     case BABYLON.PointerEventTypes.POINTERUP:
-      // Only handle selection for left mouse button (button 0)
-      if (pointerInfo.event.button !== 0) {
-        // Not a left-click, ignore for selection purposes
-        return;
-      }
-
+      if (pointerInfo.event.button !== 0) return; // only left-click
       if (!pointerDownPos) return;
+
       const dx = pointerInfo.event.clientX - pointerDownPos.x;
       const dy = pointerInfo.event.clientY - pointerDownPos.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const dist = Math.sqrt(dx*dx + dy*dy);
       const isClick = dist < 5;
       pointerDownPos = null;
-
-      // Middle-button is ignored for selection
-      if (pointerInfo.event.button === 1) {
-        return;
-      }
-
-      // Right-click is ignored for selection (previously handled for camera)
-      if (pointerInfo.event.button === 2) {
-        return;
-      }
-
       if (!isClick) return;
 
       const pickInfo = pointerInfo.pickInfo;
-      // If click missed or clicked ground => unselect any current component
       if (!pickInfo.hit || pickInfo.pickedMesh.name === "ground") {
+        // Unselect any current component
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
-          // Also detach any gizmo if it was attached
+          // Detach gizmo if it was active
           gizmoManager.attachToMesh(null);
           window.selectedComponent = null;
         }
         clearSelectedNameDisplay();
+
+        // If we actually clicked ground, treat "Ground" as selected
         if (pickInfo.hit && pickInfo.pickedMesh.name === "ground") {
           updateSelectedNameDisplay("Ground");
-          // Set the ground as "selected" specifically for vertical-only movement
           window.selectedComponent = pickInfo.pickedMesh;
-          
-          // Configure the gizmo for ground to allow only Y-axis movement
-          enforceGroundMovementRestrictions();
+          // (But do NOT attach gizmo unless user holds Ctrl => done above)
         }
-        
-        // Hide GLB transform snippet when deselecting
+
+        // Hide GLB snippet if we are not on a GLB
         if (document.getElementById("glbTransformSnippet")) {
           document.getElementById("glbTransformSnippet").style.display = "none";
         }
-        
+
         // Update JSON editor selection
-        if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+        if (window.appState?.jsonEditorVisible && window.jsonEditor) {
           updateJsonEditorSelection(null);
         }
-        
         return;
       }
 
-      // Otherwise, we clicked on a valid mesh (component).
+      // We clicked a valid mesh with metadata
       const info = getMetadata(pickInfo.pickedMesh);
       if (info) {
-        // Unhighlight old selection if needed
+        // Unhighlight old selection
         if (window.selectedComponent && window.selectedComponent !== info.mesh) {
           clearHighlight(window.selectedComponent);
         }
-        // Select the new component
+        // Select the new component (highlight only)
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
 
-        // Reset gizmo to full movement capabilities for non-ground objects
-        if (gizmoManager.gizmos.positionGizmo) {
-          // Always reset to full movement for non-ground objects
+        // If not ground, re-enable all axes if/when Ctrl is pressed
+        if (window.selectedComponent.name !== "ground" && gizmoManager.gizmos.positionGizmo) {
           gizmoManager.gizmos.positionGizmo.xGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.yGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.zGizmo.isEnabled = true;
         }
 
-        const compName = info.metadata?.data?.name 
-          || (info.metadata?.type === "glb" ? "GLB: " + window.lastLoadedGLBName : "Unnamed");
+        const compName = info.metadata?.data?.name
+          || (info.metadata?.type === "glb"
+              ? "GLB: " + window.lastLoadedGLBName
+              : "Unnamed");
         updateSelectedNameDisplay(compName);
-        
-        // If it's a GLB model, make sure to update and show the transform snippet
-        if (info.metadata?.type === "glb" && typeof updateGLBTransformSnippet === 'function') {
-          updateGLBTransformSnippet();
-          document.getElementById("glbTransformSnippet").style.display = "block";
+
+        // If it's GLB, show the snippet (only if Ctrl is pressed + attached)
+        if (info.metadata?.type === "glb") {
+          // We won't attach the gizmo here. We only update snippet display
+          if (typeof updateGLBTransformSnippet === 'function') {
+            updateGLBTransformSnippet();
+            document.getElementById("glbTransformSnippet").style.display = "block";
+          }
         } else {
-          // Hide GLB transform snippet when selecting non-GLB component
+          // Hide snippet for non-GLB
           if (document.getElementById("glbTransformSnippet")) {
             document.getElementById("glbTransformSnippet").style.display = "none";
           }
         }
-        
-        // Update JSON editor selection
-        if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+
+        // Update JSON editor selection:
+        if (window.appState?.jsonEditorVisible && window.jsonEditor) {
           updateJsonEditorSelection(info);
         }
       }
@@ -1013,14 +973,12 @@ scene.onPointerObservable.add(function (pointerInfo) {
 });
 
 /**
- * After releasing the pointer, if the user dragged an object,
- * update the object's position in your JSON data structure.
+ * After releasing the pointer, if we dragged something,
+ * update the relevant position in JSON data.
  */
 scene.onPointerObservable.add(function (pointerInfo) {
   if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERUP) {
     if (!window.selectedComponent) return;
-
-    // If the component has metadata, update the relevant position in the JSON.
     const md = window.selectedComponent.metadata;
     if (md && md.data) {
       if (md.type === "lifting_surface") {
@@ -1036,70 +994,67 @@ scene.onPointerObservable.add(function (pointerInfo) {
           window.selectedComponent.position.z
         ];
       } else if (md.type === "glb") {
-        // Update GLB metadata position
+        // Update GLB's stored metadata
         updateGLBMetadataFromTransform();
-        
-        // Update the GLB transform snippet if it exists
         if (typeof updateGLBTransformSnippet === 'function') {
           updateGLBTransformSnippet();
-          // Make sure snippet is visible
           document.getElementById("glbTransformSnippet").style.display = "block";
         }
       }
     }
-    
-    // Special handling for ground movement
+    // If it's ground, force Y-only
     if (window.selectedComponent.name === "ground") {
-      // Ensure ground only moves in Y axis
-      let groundPos = window.selectedComponent.position;
-      window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
+      let gpos = window.selectedComponent.position;
+      window.selectedComponent.position = new BABYLON.Vector3(0, gpos.y, 0);
     }
-    
     // Update JSON Editor if visible
-    if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+    if (window.appState?.jsonEditorVisible && window.jsonEditor) {
       updateJsonEditor();
     }
   }
 });
 
-// Add double-click handler for editing components
+/**
+ * Double-click => open the edit modal for the selected object
+ * (still does NOT attach the gizmo unless Ctrl is held).
+ */
 window.canvas.addEventListener("dblclick", function (evt) {
-  // Only handle double-click for left mouse button
+  // Only handle left button double-click
   if (evt.button !== 0) return;
   
   const pickResult = scene.pick(scene.pointerX, scene.pointerY);
   if (pickResult.hit) {
     const info = getMetadata(pickResult.pickedMesh);
     if (info && info.metadata) {
-      // Set as selected if not already
+      // If not already selected, highlight it
       if (window.selectedComponent !== info.mesh) {
         if (window.selectedComponent) {
           clearHighlight(window.selectedComponent);
         }
         window.selectedComponent = info.mesh;
         setColorLightPink(window.selectedComponent);
-        
-        // Reset gizmo to full movement capabilities for non-ground objects
+
         if (window.selectedComponent.name !== "ground" && gizmoManager.gizmos.positionGizmo) {
+          // Just enabling axes (actual gizmo attach is only if Ctrl is pressed)
           gizmoManager.gizmos.positionGizmo.xGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.yGizmo.isEnabled = true;
           gizmoManager.gizmos.positionGizmo.zGizmo.isEnabled = true;
         } else if (window.selectedComponent.name === "ground") {
-          // Apply ground restrictions
           enforceGroundMovementRestrictions();
         }
-        
-        const compName = info.metadata?.data?.name 
-          || (info.metadata?.type === "glb" ? "GLB: " + window.lastLoadedGLBName : "Unnamed");
+        const compName = info.metadata?.data?.name
+          || (info.metadata?.type === "glb"
+              ? "GLB: " + window.lastLoadedGLBName
+              : "Unnamed");
         updateSelectedNameDisplay(compName);
-        
-        // Update JSON editor selection
-        if (window.appState && window.appState.jsonEditorVisible && window.jsonEditor) {
+
+        // If JSON editor is open, highlight the appropriate node
+        if (window.appState?.jsonEditorVisible && window.jsonEditor) {
           updateJsonEditorSelection(info);
         }
       }
-      
-      // Open edit modal based on component type
+
+      // Show the appropriate modal
       if (info.metadata.type === "lifting_surface") {
         window.editingType = "lifting_surface";
         window.editingObject = info.metadata.data;
@@ -1112,41 +1067,33 @@ window.canvas.addEventListener("dblclick", function (evt) {
         window.editingType = "glb";
         window.editingObject = info.metadata.data;
         fillGLBModal();
-        // Make sure snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
   }
 });
 
-// Add real-time updates during scene rendering
+/**
+ * Real-time updates while dragging the gizmo (if Ctrl is held)
+ */
 scene.onBeforeRenderObservable.add(() => {
-  // Check if we're currently dragging a GLB model with the gizmo
+  // If currently dragging a GLB, update snippet in real-time
   if (window.isDraggingGizmo && 
-      window.selectedComponent && 
-      window.selectedComponent.metadata && 
-      window.selectedComponent.metadata.type === "glb") {
-    
-    // Update in real-time while dragging
+      window.selectedComponent?.metadata?.type === "glb") {
     if (typeof updateGLBTransformSnippet === 'function') {
       updateGLBTransformSnippet();
-      // Make sure snippet is visible
       document.getElementById("glbTransformSnippet").style.display = "block";
     }
   }
-  
-  // If ground is selected and being dragged, ensure it only moves vertically
-  if (window.isDraggingGizmo && 
-      window.selectedComponent && 
-      window.selectedComponent.name === "ground") {
-    // Force ground position to stay at (0,y,0)
+  // If ground is selected & being dragged, keep it Y-only
+  if (window.isDraggingGizmo && window.selectedComponent?.name === "ground") {
     let groundPos = window.selectedComponent.position;
     window.selectedComponent.position = new BABYLON.Vector3(0, groundPos.y, 0);
   }
 });
 
 /**
- * Helper function to update JSON editor with current aircraft data
+ * Update JSON editor data from `window.aircraftData`
  */
 function updateJsonEditor() {
   if (window.jsonEditor) {
@@ -1155,37 +1102,71 @@ function updateJsonEditor() {
 }
 
 /**
- * Helper function to update JSON editor selection based on component
+ * If a user selects something, focus that part of the JSON in the editor
  */
 function updateJsonEditorSelection(info) {
   if (!window.jsonEditor) return;
-  
   if (!info) {
-    // Deselection - reset to root
     window.jsonEditor.setSelection({});
     return;
   }
-  
   if (info.metadata.type === "lifting_surface") {
     const idx = window.aircraftData.lifting_surfaces.indexOf(info.metadata.data);
     if (idx >= 0) {
-      window.jsonEditor.setSelection({path: ['lifting_surfaces', idx]});
+      window.jsonEditor.setSelection({ path: ["lifting_surfaces", idx] });
       window.jsonEditor.expandAll();
     }
   } else if (info.metadata.type === "fuselage") {
     const idx = window.aircraftData.fuselages.indexOf(info.metadata.data);
     if (idx >= 0) {
-      window.jsonEditor.setSelection({path: ['fuselages', idx]});
+      window.jsonEditor.setSelection({ path: ["fuselages", idx] });
       window.jsonEditor.expandAll();
     }
   } else if (info.metadata.type === "glb") {
-    // GLB model doesn't have direct JSON representation
+    // GLB has no direct JSON array in `aircraftData`
     window.jsonEditor.setSelection({});
   }
 }
 
+/**
+ * Sync GLB metadata with the transform of the selected mesh
+ */
+function updateGLBMetadataFromTransform() {
+  if (!window.selectedComponent?.metadata) return;
+  const md = window.selectedComponent.metadata;
+  if (md.type === "glb") {
+    if (!md.data) md.data = {};
+    md.data.position = [
+      window.selectedComponent.position.x,
+      window.selectedComponent.position.y,
+      window.selectedComponent.position.z
+    ];
+    md.data.rotationDeg = [
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.x),
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.y),
+      BABYLON.Tools.ToDegrees(window.selectedComponent.rotation.z)
+    ];
+    md.data.scale = window.selectedComponent.scaling.x;
+  }
+}
+
+/**
+ * Ground is restricted to Y-axis only
+ */
+function enforceGroundMovementRestrictions() {
+  if (window.selectedComponent && window.selectedComponent.name === "ground") {
+    if (gizmoManager.gizmos.positionGizmo) {
+      gizmoManager.gizmos.positionGizmo.xGizmo.isEnabled = false;
+      gizmoManager.gizmos.positionGizmo.zGizmo.isEnabled = false;
+      gizmoManager.gizmos.positionGizmo.yGizmo.isEnabled = true;
+    }
+    let pos = window.selectedComponent.position;
+    window.selectedComponent.position = new BABYLON.Vector3(0, pos.y, 0);
+  }
+}
+
 ###########################################
-# FILE: json-editor.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\json-editor.js
 ###########################################
 
 // js/json-editor.js
@@ -1353,14 +1334,12 @@ function updateJsonEditor() {
 }
 
 ###########################################
-# FILE: load_glb_file.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\load_glb_file.js
 ###########################################
 
-// js/load_glb_file.js
-
-///////////////////////////////
-//  GLB Loading Functions    //
-///////////////////////////////
+/********************************************
+ * FILE: load_glb_file.js
+ ********************************************/
 
 async function loadGLBFile(file) {
   // 1) Show "Loading 3D Model..." overlay
@@ -1377,11 +1356,10 @@ async function loadGLBFile(file) {
   try {
     // 3) Import the .glb file
     const result = await BABYLON.SceneLoader.ImportMeshAsync(
-      "",    // (rootUrl) - empty since we're passing a File object
-      "",    // (sceneFilename) - again empty for local files
-      file,  // (files) - actual File object from the <input> element
+      "",
+      "",
+      file,
       scene,
-      // Callback for progress
       (evt) => {
         if (evt.lengthComputable) {
           const progress = ((evt.loaded * 100) / evt.total).toFixed();
@@ -1391,7 +1369,6 @@ async function loadGLBFile(file) {
     );
 
     // 4) The result.meshes array contains all imported meshes
-    //    Let's just pick the first to do a bounding‐box calc
     const model = result.meshes[0];
     window.currentGLBModel = model;
 
@@ -1400,7 +1377,7 @@ async function loadGLBFile(file) {
       window.glbRoot = new BABYLON.TransformNode("glbRoot", scene);
     }
     
-    // Update metadata with proper structure for editing
+    // Update metadata for editing
     window.glbRoot.metadata = { 
       type: "glb", 
       data: {
@@ -1418,7 +1395,7 @@ async function loadGLBFile(file) {
       mesh.isPickable = true;
     });
 
-    // 7) [Optional] Auto-center & auto-scale the model
+    // 7) Auto-center & auto-scale (optional)
     const boundingBox = model.getHierarchyBoundingVectors();
     const modelSize = boundingBox.max.subtract(boundingBox.min);
     const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
@@ -1429,19 +1406,16 @@ async function loadGLBFile(file) {
       -modelCenter.y * scaleFactor,
       -modelCenter.z * scaleFactor
     );
-
-    // Store the scale factor in the metadata
     window.glbRoot.metadata.data.scale = scaleFactor;
 
-    // 8) [Optional] Adjust materials for imported GLB meshes,
-    //    but skip ground, sky sphere, origin box, and labels.
+    // 8) Adjust materials for imported GLB
     scene.meshes.forEach(mesh => {
       if (
         mesh.material &&
         mesh.name !== "ground" &&
         mesh.name !== CAMERA_SPHERE_NAME &&
         mesh.name !== "originBox" &&
-        !mesh.name.startsWith("label_")  // Skip labels
+        !mesh.name.startsWith("label_")
       ) {
         mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
         mesh.material.backFaceCulling = false;
@@ -1459,20 +1433,6 @@ async function loadGLBFile(file) {
       }
     });
 
-    // Select the GLB model
-    if (window.selectedComponent) {
-      clearHighlight(window.selectedComponent);
-    }
-    window.selectedComponent = window.glbRoot;
-    setColorLightPink(window.selectedComponent);
-    updateSelectedNameDisplay("GLB: " + window.lastLoadedGLBName);
-    document.getElementById("editComponentBtn").disabled = false;
-    document.getElementById("deleteComponentBtn").disabled = false;
-    
-    // Update and show the transform snippet
-    updateGLBTransformSnippet();
-    document.getElementById("glbTransformSnippet").style.display = "block";
-
   } catch (error) {
     console.error("Error loading GLB file:", error);
     alert("Error loading 3D model. Please try another file.");
@@ -1480,10 +1440,21 @@ async function loadGLBFile(file) {
 
   // 10) Hide loading overlay
   loadingText.style.display = "none";
+
+  // Ensure the newly loaded GLB is NOT selected
+  if (window.selectedComponent) {
+    clearHighlight(window.selectedComponent);
+    gizmoManager.attachToMesh(null);
+    window.selectedComponent = null;
+  }
+  clearSelectedNameDisplay();
+
+  // Also hide the snippet, so no transform info shows
+  document.getElementById("glbTransformSnippet").style.display = "none";
 }
 
 ###########################################
-# FILE: render_aircraft.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\render_aircraft.js
 ###########################################
 
 // js/render_aircraft.js
@@ -1605,7 +1576,7 @@ function recreateAxisProjectionsIfNeeded() {
 }
 
 ###########################################
-# FILE: scene-utils.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\scene-utils.js
 ###########################################
 
 // js/scene-utils.js
@@ -1723,16 +1694,12 @@ function smoothTransitionToTarget(newTarget, camera, scene, durationInSeconds) {
 }
 
 ###########################################
-# FILE: ui-logic.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\ui-logic.js
 ###########################################
 
 /********************************************
  * FILE: ui-logic.js
  ********************************************/
-
-//////////////////////
-// 1) Global Setup  //
-//////////////////////
 
 var liftingSurfaceColors = [
   new BABYLON.Color3(0.8, 1.0, 0.8),
@@ -1761,56 +1728,70 @@ window.currentGLBModel = null; // will store the root mesh of any imported GLB
 // Track the last loaded GLB filename
 window.lastLoadedGLBName = "";
 
-
+/**
+ * Setup GLB controls
+ */
 (function setupGLBControls() {
-  // Rotation buttons
-  document.getElementById("rotateXBtn").addEventListener("click", function() {
-    if (window.glbRoot) {
-      window.glbRoot.rotation.x += Math.PI / 2;
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
-  document.getElementById("rotateYBtn").addEventListener("click", function() {
-    if (window.glbRoot) {
-      window.glbRoot.rotation.y += Math.PI / 2;
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
-  document.getElementById("rotateZBtn").addEventListener("click", function() {
-    if (window.glbRoot) {
-      window.glbRoot.rotation.z += Math.PI / 2;
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
+  // 1) Rotation input fields
+  const rotXInput = document.getElementById("glbRotateXInput");
+  const rotYInput = document.getElementById("glbRotateYInput");
+  const rotZInput = document.getElementById("glbRotateZInput");
 
-  // Scale input/button
-  document.getElementById("applyGlbScaleBtn").addEventListener("click", function() {
-    if (!window.glbRoot) return;
-    const scaleValue = parseFloat(document.getElementById("glbScaleInput").value);
-    if (!isNaN(scaleValue)) {
-      window.glbRoot.scaling = new BABYLON.Vector3(scaleValue, scaleValue, scaleValue);
-      updateGLBTransformSnippet();
-      // Make sure the snippet is visible
-      document.getElementById("glbTransformSnippet").style.display = "block";
-    }
-  });
+  // "Apply Rotation" button
+  const applyRotationBtn = document.getElementById("applyGlbRotationBtn");
+  if (applyRotationBtn) {
+    applyRotationBtn.addEventListener("click", function() {
+      if (!window.glbRoot) return;
 
-  // Toggle translucency
+      // Read the angles (degrees)
+      const xDeg = parseFloat(rotXInput.value) || 0;
+      const yDeg = parseFloat(rotYInput.value) || 0;
+      const zDeg = parseFloat(rotZInput.value) || 0;
+
+      // Convert to radians and set the rotation
+      window.glbRoot.rotation.x = BABYLON.Tools.ToRadians(xDeg);
+      window.glbRoot.rotation.y = BABYLON.Tools.ToRadians(yDeg);
+      window.glbRoot.rotation.z = BABYLON.Tools.ToRadians(zDeg);
+
+      // Update snippet if needed
+      if (typeof updateGLBTransformSnippet === 'function') {
+        updateGLBTransformSnippet();
+        document.getElementById("glbTransformSnippet").style.display = "block";
+      }
+    });
+  }
+
+  // 2) Scale input/button
+  const scaleInput = document.getElementById("glbScaleInput");
+  const applyScaleBtn = document.getElementById("applyGlbScaleBtn");
+  if (applyScaleBtn) {
+    applyScaleBtn.addEventListener("click", function() {
+      if (!window.glbRoot) return;
+      const sVal = parseFloat(scaleInput.value);
+      if (!isNaN(sVal)) {
+        window.glbRoot.scaling = new BABYLON.Vector3(sVal, sVal, sVal);
+        if (typeof updateGLBTransformSnippet === 'function') {
+          updateGLBTransformSnippet();
+          document.getElementById("glbTransformSnippet").style.display = "block";
+        }
+      }
+    });
+  }
+
+  // 3) Toggle translucency
   window.isTranslucent = false;
-  document.getElementById("toggleTranslucencyBtn").addEventListener("click", function() {
-    window.isTranslucent = !window.isTranslucent;
-    setTranslucencyMode(window.isTranslucent);
-  });
-  
-  // Reset view button
-  if (document.getElementById("resetViewBtn")) {
-    document.getElementById("resetViewBtn").addEventListener("click", function() {
+  const translucencyBtn = document.getElementById("toggleTranslucencyBtn");
+  if (translucencyBtn) {
+    translucencyBtn.addEventListener("click", function() {
+      window.isTranslucent = !window.isTranslucent;
+      setTranslucencyMode(window.isTranslucent);
+    });
+  }
+
+  // 4) Reset view button
+  const resetViewBtn = document.getElementById("resetViewBtn");
+  if (resetViewBtn) {
+    resetViewBtn.addEventListener("click", function() {
       if (camera) {
         camera.setTarget(new BABYLON.Vector3(7, 0, 0));
         camera.radius = 40;
@@ -1821,10 +1802,9 @@ window.lastLoadedGLBName = "";
   }
 })();
 
-///////////////////////////////
-// 2) Modal Fill & Show Fns  //
-///////////////////////////////
-
+/**
+ * Fill the Lifting Surface modal
+ */
 function fillLiftingSurfaceModal(data) {
   document.getElementById("ls_name").value = data.name || "";
   document.getElementById("ls_mass_kg").value = data.mass_kg ?? 600;
@@ -1850,6 +1830,9 @@ function fillLiftingSurfaceModal(data) {
   document.getElementById("liftingSurfaceModal").style.display = "block";
 }
 
+/**
+ * Fill the Fuselage modal
+ */
 function fillFuselageModal(data) {
   document.getElementById("fus_name").value = data.name || "fus1";
   document.getElementById("fus_diameter").value = data.diameter ?? 2.5;
@@ -1858,24 +1841,21 @@ function fillFuselageModal(data) {
   document.getElementById("fuselageModal").style.display = "block";
 }
 
-/////////////////////
-// 3) Rendering    //
-/////////////////////
-
+/**
+ * Parse aircraft JSON
+ */
 function parseAircraft(jsonText) {
   aircraftData = JSON.parse(jsonText);
   renderAircraft();
 }
 
-/////////////////////////////
-// 4) Event Listener Setup //
-/////////////////////////////
-
+/**
+ * Event Listener Setup
+ */
 (function setupUI() {
   // Lifting Surface Modal
   const lsModal = document.getElementById("liftingSurfaceModal");
   document.getElementById("ls_submit").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     const newData = {
@@ -1919,7 +1899,6 @@ function parseAircraft(jsonText) {
     clearSelectedNameDisplay();
   });
   document.getElementById("ls_cancel").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     lsModal.style.display = "none";
@@ -1930,7 +1909,6 @@ function parseAircraft(jsonText) {
   // Fuselage Modal
   const fusModal = document.getElementById("fuselageModal");
   document.getElementById("fus_submit").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     const newData = {
@@ -1961,7 +1939,6 @@ function parseAircraft(jsonText) {
     clearSelectedNameDisplay();
   });
   document.getElementById("fus_cancel").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     fusModal.style.display = "none";
@@ -1971,17 +1948,13 @@ function parseAircraft(jsonText) {
 
   // "Add" buttons
   document.getElementById("addLiftingSurfaceBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
     window.editingType = "";
     window.editingObject = null;
     fillLiftingSurfaceModal({});
   });
   document.getElementById("addFuselageBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
     window.editingType = "";
     window.editingObject = null;
     fillFuselageModal({});
@@ -1989,7 +1962,6 @@ function parseAircraft(jsonText) {
 
   // Edit Selected
   document.getElementById("editComponentBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     if (!window.selectedComponent) return;
@@ -2007,7 +1979,6 @@ function parseAircraft(jsonText) {
         window.editingType = "glb";
         window.editingObject = info.metadata.data;
         fillGLBModal();
-        // Make sure the snippet is visible
         document.getElementById("glbTransformSnippet").style.display = "block";
       }
     }
@@ -2015,7 +1986,6 @@ function parseAircraft(jsonText) {
 
   // Delete Selected
   document.getElementById("deleteComponentBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     if (!window.selectedComponent) return;
@@ -2067,24 +2037,15 @@ function parseAircraft(jsonText) {
   // JSON file input (hidden)
   const jsonFileInput = document.getElementById("jsonFileInput");
   document.getElementById("selectJsonBtn").addEventListener("click", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent default navigation behavior
     event.preventDefault();
     event.stopPropagation();
-    
-    // Manually trigger file input dialog
     jsonFileInput.click();
-    
     return false;
   });
   
   jsonFileInput.addEventListener("change", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent event bubbling
     event.stopPropagation();
     
     const file = event.target.files[0];
@@ -2111,12 +2072,10 @@ function parseAircraft(jsonText) {
         // Hide GLB transform snippet
         document.getElementById("glbTransformSnippet").style.display = "none";
         
-        // Ensure axis projections stay visible
         if (typeof recreateAxisProjectionsIfNeeded === 'function') {
           recreateAxisProjectionsIfNeeded();
         }
         
-        // Reset file input to allow loading the same file again if needed
         jsonFileInput.value = '';
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -2133,29 +2092,22 @@ function parseAircraft(jsonText) {
 
   // Download JSON
   document.getElementById("downloadJsonBtn").addEventListener("click", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent default behavior
     event.preventDefault();
     event.stopPropagation();
     
-    // Create a Blob instead of a data URI to prevent browser navigation
     const jsonString = JSON.stringify(aircraftData, null, 2);
     const blob = new Blob([jsonString], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     
-    // Create a link element and trigger download without page navigation
     const dlAnchor = document.createElement("a");
     dlAnchor.href = url;
     dlAnchor.download = "aircraft.json";
     dlAnchor.style.display = "none";
     document.body.appendChild(dlAnchor);
     
-    // Use setTimeout to ensure proper download behavior
     setTimeout(() => {
       dlAnchor.click();
-      // Clean up
       document.body.removeChild(dlAnchor);
       URL.revokeObjectURL(url);
     }, 0);
@@ -2165,7 +2117,6 @@ function parseAircraft(jsonText) {
 
   // Clear Aircraft
   document.getElementById("clearAircraft").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     aircraftData.lifting_surfaces = [];
@@ -2178,7 +2129,6 @@ function parseAircraft(jsonText) {
     }
     clearSelectedNameDisplay();
     
-    // Ensure axis projections stay visible
     if (typeof recreateAxisProjectionsIfNeeded === 'function') {
       recreateAxisProjectionsIfNeeded();
     }
@@ -2186,18 +2136,13 @@ function parseAircraft(jsonText) {
 
   // Toggle Ground
   document.getElementById("toggleGround").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     if (window.ground) {
       ground.isVisible = !ground.isVisible;
-      
-      // Even when ground is hidden, we still want to see the projections
       if (window.groundProjections) {
         window.groundProjections.setEnabled(true);
       }
-      
-      // If projection lines were accidentally lost, recreate them
       if (typeof recreateAxisProjectionsIfNeeded === 'function') {
         recreateAxisProjectionsIfNeeded();
       }
@@ -2207,24 +2152,15 @@ function parseAircraft(jsonText) {
   // GLB file input (hidden)
   const glbRealInput = document.getElementById("glbFileInput");
   document.getElementById("selectGlbBtn").addEventListener("click", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent default navigation behavior
     event.preventDefault();
     event.stopPropagation();
-    
-    // Manually trigger file input dialog
     glbRealInput.click();
-    
     return false;
   });
   
   glbRealInput.addEventListener("change", function(event) {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
-    
-    // Prevent event bubbling
     event.stopPropagation();
     
     const file = event.target.files[0];
@@ -2237,12 +2173,9 @@ function parseAircraft(jsonText) {
     window.lastLoadedGLBName = file.name;
     loadGLBFile(file);
     
-    // Ensure axis projections stay visible
     if (typeof recreateAxisProjectionsIfNeeded === 'function') {
       recreateAxisProjectionsIfNeeded();
     }
-    
-    // Reset file input to allow loading the same file again if needed
     glbRealInput.value = '';
   });
   
@@ -2250,7 +2183,6 @@ function parseAircraft(jsonText) {
   const glbModal = document.getElementById("glbModal");
   if (document.getElementById("glb_submit")) {
     document.getElementById("glb_submit").addEventListener("click", function() {
-      // This is internal interaction, not navigation
       window.userNavigating = false;
       
       if (typeof applyGLBChanges === 'function') {
@@ -2261,7 +2193,6 @@ function parseAircraft(jsonText) {
   
   if (document.getElementById("glb_generate_snippet")) {
     document.getElementById("glb_generate_snippet").addEventListener("click", function() {
-      // This is internal interaction, not navigation
       window.userNavigating = false;
       
       if (typeof generateGLBSnippet === 'function') {
@@ -2272,7 +2203,6 @@ function parseAircraft(jsonText) {
   
   if (document.getElementById("glb_cancel")) {
     document.getElementById("glb_cancel").addEventListener("click", function() {
-      // This is internal interaction, not navigation
       window.userNavigating = false;
       
       glbModal.style.display = "none";
@@ -2283,13 +2213,12 @@ function parseAircraft(jsonText) {
   
   // Update Origin Box Size
   document.getElementById("updateBoxSizeBtn").addEventListener("click", function() {
-    // This is internal interaction, not navigation
     window.userNavigating = false;
     
     var newSize = parseFloat(document.getElementById("boxSizeInput").value);
     if (isNaN(newSize) || newSize <= 0) {
-        alert("Please enter a positive number for box size.");
-        return;
+      alert("Please enter a positive number for box size.");
+      return;
     }
     if(window.originBox) {
       window.originBox.scaling = new BABYLON.Vector3(newSize, newSize, newSize);
@@ -2297,10 +2226,9 @@ function parseAircraft(jsonText) {
   });
 })();
 
-/////////////////////////////
-// 5) Helper Functions     //
-/////////////////////////////
-
+/**
+ * Clear selected name display
+ */
 function clearSelectedNameDisplay() {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: None";
@@ -2308,6 +2236,9 @@ function clearSelectedNameDisplay() {
   document.getElementById("deleteComponentBtn").disabled = true;
 }
 
+/**
+ * Update selected name display
+ */
 function updateSelectedNameDisplay(name) {
   const span = document.getElementById("selectedComponentName");
   span.innerText = "Selected: " + name;
@@ -2316,6 +2247,9 @@ function updateSelectedNameDisplay(name) {
   document.getElementById("deleteComponentBtn").disabled = isNoneOrGround;
 }
 
+/**
+ * Open edit modal for selected
+ */
 function openEditModalForSelected() {
   if (!window.selectedComponent) return;
   const info = getMetadata(window.selectedComponent);
@@ -2332,55 +2266,48 @@ function openEditModalForSelected() {
       window.editingType = "glb";
       window.editingObject = info.metadata.data;
       fillGLBModal();
-      // Make sure snippet is visible
       document.getElementById("glbTransformSnippet").style.display = "block";
     }
   }
 }
 
-// Handle focus/blur events to prevent reload prompts when switching applications
+// Handle focus/blur events
 window.addEventListener('blur', function() {
-  // User is switching to another application, not navigating away
   window.userNavigating = false;
 });
-
 window.addEventListener('focus', function() {
-  // User returned to the application
   window.userNavigating = false;
 });
 
-// Also apply this to all links in the application
+// Also apply to all buttons
 document.addEventListener('DOMContentLoaded', function() {
-  // For download buttons and other actions that might trigger navigation
   const buttons = document.querySelectorAll('button');
   buttons.forEach(button => {
     button.addEventListener('click', function(e) {
-      // This is an internal button click, not navigation
       window.userNavigating = false;
     });
   });
 });
 
-// For special keys that might cause navigation in combination with Alt
+// Prevent Alt+Left from navigating
 window.addEventListener('keydown', function(e) {
-  // Alt+Left Arrow for browser back
   if (e.altKey && e.key === 'ArrowLeft') {
-    e.preventDefault(); // Prevent browser back navigation
+    e.preventDefault();
   }
 });
 
-// For click events on the canvas (to avoid any accidental reload)
+// For clicks on the canvas
 window.canvas.addEventListener('click', function() {
   window.userNavigating = false;
 });
 
-// For click events on the document (to avoid any accidental reload)
+// For any clicks on document
 document.addEventListener('click', function() {
   window.userNavigating = false;
 });
 
 ###########################################
-# FILE: babylon-setup.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\babylon-setup.js
 ###########################################
 
 /********************************************
@@ -2547,7 +2474,7 @@ function initBabylon() {
 initBabylon();
 
 ###########################################
-# FILE: ground_axis_sphere.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\ground_axis_sphere.js
 ###########################################
 
 /********************************************
@@ -2756,7 +2683,7 @@ function createSkySphere() {
  ********************************************/
 
 ###########################################
-# FILE: lights_and_shadows.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\lights_and_shadows.js
 ###########################################
 
 /********************************************
@@ -2806,7 +2733,7 @@ function setupLightsAndShadows() {
   
 
 ###########################################
-# FILE: set_up_camera.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\js\⛺_scene_setup\set_up_camera.js
 ###########################################
 
 /********************************************
@@ -2882,7 +2809,7 @@ function setupCamera() {
   
 
 ###########################################
-# FILE: fuselage-modal.html
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\modals\fuselage-modal.html
 ###########################################
 
 <!-- modals/fuselage-modal.html -->
@@ -2900,7 +2827,7 @@ function setupCamera() {
   
 
 ###########################################
-# FILE: glb-modal.html
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\modals\glb-modal.html
 ###########################################
 
 <!-- modals/glb-modal.html -->
@@ -2921,7 +2848,7 @@ function setupCamera() {
   </div>
 
 ###########################################
-# FILE: ls-modal.html
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\modals\ls-modal.html
 ###########################################
 
 <!-- modals/ls-modal.html -->
@@ -2955,7 +2882,7 @@ function setupCamera() {
   
 
 ###########################################
-# FILE: style.css
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\src\styles\style.css
 ###########################################
 
 /* Make the page fill the entire window and hide scrollbars */

@@ -1,5 +1,4 @@
 
-
 function simple_dynamic_pressure(TAS, alt) # simple and fast equation for flightsim
 
     density = 1.225*(1-0.0000226 * alt) ^ 4.256
@@ -235,3 +234,5 @@ function compressible_qinf(M, p)
     end
     return pt
 end
+
+

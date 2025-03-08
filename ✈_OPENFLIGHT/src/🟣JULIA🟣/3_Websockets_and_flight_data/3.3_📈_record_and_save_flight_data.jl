@@ -2,7 +2,7 @@
 const DECIMAL_PLACES = 5  # Number of decimal places for rounding numerical values
 const TIMESTAMP = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")  # Current timestamp for unique file naming
 # Construct the full path for the CSV output file
-csv_file = joinpath(project_dir, "📊_OUTPUT_OF_SIMULATION_DATA", "simulation_data_" * TIMESTAMP * ".csv")
+csv_file = joinpath(project_dir, "📊_Flight_Test_Data", "simulation_data_" * TIMESTAMP * ".csv")
 
 # Initialize DataFrame with typed columns for storing flight simulation data
 df = DataFrame(

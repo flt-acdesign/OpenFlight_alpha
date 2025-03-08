@@ -1,0 +1,7 @@
+aircraft:
+  aircraft_name: 600  # Mass of the aircraft in kilograms
+  radius_of_giration_pitch: 3.5  # Radius of gyration about the pitch axis in meters
+
+visualization:
+  trees:  # Lift coefficient data
+

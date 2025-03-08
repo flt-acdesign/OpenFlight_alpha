@@ -1,19 +1,15 @@
-
-
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
 let glbNode = null;   // TransformNode holding the loaded GLB
 
-
 let engine, scene;
 let velocity = { x: 30, y: 0, z: 0 }; // Initial velocity
 
-
-
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
 let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
+
 let isPaused = false;
 let simulationEnded = false;
 let velocityLine; // Line to represent velocity vector
@@ -41,7 +37,6 @@ let yaw_demand = 0.0
 let roll_demand_attained = 0.0;
 let pitch_demand_attained = 0.0;
 let yaw_demand_attained = 0.0;
-
 
 // Global force values from server
 let forceGlobalX = 0.0;
