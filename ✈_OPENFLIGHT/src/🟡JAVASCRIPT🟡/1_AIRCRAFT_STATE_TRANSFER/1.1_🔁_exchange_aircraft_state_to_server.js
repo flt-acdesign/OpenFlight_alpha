@@ -1,6 +1,15 @@
 // Initialize WebSocket connection
-// Freeport is a variable that holds the port number of the server, defined in "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js"  by the Julia code "src/🟣JULIA🟣/_PACKAGE_HANDLER_and_FREE_PORT_WEBSOCKETS/🎁_load_required_packages_and_find_free_port.jl"
+// Freeport is a variable that holds the port number of the server, defined in 
+// "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" 
+// by the Julia code 
+// "src/🟣JULIA🟣/_PACKAGE_HANDLER_and_FREE_PORT_WEBSOCKETS/🎁_load_required_packages_and_find_free_port.jl"
 let ws = new WebSocket(`ws://localhost:${freeport}`);
+
+
+// --------------------------------------------------------------------------
+// (New) Keep track of the last update time to compute a variable deltaTime
+// --------------------------------------------------------------------------
+let lastUpdateTime = performance.now();
 
 
 // Connection opened handler
@@ -18,8 +27,18 @@ ws.onclose = () => {
     console.log('Disconnected from WebSocket server');
 };
 
+// --------------------------------------------------------------------------
 // Function to send aircraft state to server
-function sendStateToServer(deltaTime) {
+// (Removed the deltaTime parameter; now we measure it ourselves)
+// --------------------------------------------------------------------------
+function sendStateToServer() {
+
+    // Measure the actual time elapsed since the last call
+    const currentTime = performance.now();
+    const deltaTime = (currentTime - lastUpdateTime) / 1000.0; // ms -> s
+
+    lastUpdateTime = currentTime;
+
     // Check if connection is open before sending
     if (ws.readyState !== WebSocket.OPEN) {
         console.error('WebSocket is not connected');
@@ -67,15 +86,21 @@ function sendStateToServer(deltaTime) {
         pitch_demand_attained: pitch_demand_attained,
         yaw_demand_attained: yaw_demand_attained,
 
-        // Time step
+        // (New) The measured variable time step
         deltaTime: deltaTime
+
+
+
+
     };
 
     // Send state as JSON string
     ws.send(JSON.stringify(aircraftState));
 }
 
+// --------------------------------------------------------------------------
 // Message handler for receiving server updates
+// --------------------------------------------------------------------------
 ws.onmessage = (event) => {
     // Parse received JSON data
     const responseData = JSON.parse(event.data);
@@ -121,12 +146,11 @@ ws.onmessage = (event) => {
     // Update control feedback
     pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);
     roll_demand_attained = parseFloat(responseData.roll_demand_attained);
-    yaw_demand_attained = parseFloat(responseData.yaw_demand_attained)
+    yaw_demand_attained = parseFloat(responseData.yaw_demand_attained);
 
     // Update thrust feedback
     thrust_attained = parseFloat(responseData.thrust_attained);
     
-
     // Update trajectory if within time limit
     if (elapsedTime < 200.0) {
         updateTrajectory();
@@ -135,5 +159,4 @@ ws.onmessage = (event) => {
     // Update visualization elements
     updateVelocityLine();
     updateForceLine();
-
-}
+};

@@ -28,7 +28,7 @@ window.addEventListener("DOMContentLoaded", function () {
         // Update forces and moments based on joystick input
         updateForcesFromJoystickOrKeyboard(scene)
 
-        if (aircraft !== undefined) { sendStateToServer(global_time_step) } // Send state to server if aircraft is defined
+        if (aircraft !== undefined) { sendStateToServer() } // Send state to server if aircraft is defined
       }
     }
 

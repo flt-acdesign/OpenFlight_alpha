@@ -1,3 +1,14 @@
+using Logging
+using Dates  # For time measurement if needed; not strictly required
+
+# Suppose these are global or higher-scope variables
+# that your code defines elsewhere:
+#   - start_time = time()  (somewhere at program start)
+#   - df         = some DataFrame or logging structure
+#   - gather_flight_data(...) is a custom function
+#   - Runge_Kutta_4_integrator(...) is your ODE function
+#   - aircraft_flight_physics_and_propulsive_data is a data structure used by the integrator
+
 # Main function to process and update aircraft state
 function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_propulsive_data)
     try
@@ -41,22 +52,25 @@ function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_
             thrust_attained       = float(aircraft_state_data["thrust_attained"])
         )
 
-        # Time step for integration
+        ########################################################################
+        # 3) Parse the *actual* deltaTime provided by the client
+        ########################################################################
         deltaTime = float(aircraft_state_data["deltaTime"])
 
+        #println(1 / deltaTime)
+
         ########################################################################
-        # 3) Perform numerical integration
-        #    Now the integrator returns a dictionary in the final form we need.
+        # 4) Perform numerical integration
         ########################################################################
         updated_aircraft_state_dictionary_for_JSON = Runge_Kutta_4_integrator(
-            aircraft_current_state_vector,    # 13-element state vector
-            control_demand_vector,           # named tuple of demands
-            deltaTime, 
+            aircraft_current_state_vector,     # 13-element state vector
+            control_demand_vector,            # named tuple of demands
+            deltaTime,
             aircraft_flight_physics_and_propulsive_data
         )
 
         ########################################################################
-        # 4) Optionally record flight_data
+        # 5) Optionally record flight_data
         ########################################################################
         elapsed_time = time() - start_time
         if (elapsed_time > 6.0 && elapsed_time < 21.0)
@@ -64,7 +78,7 @@ function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_
         end
 
         ########################################################################
-        # 5) Return the updated dictionary directly for JSON
+        # 6) Return the updated dictionary for JSON
         ########################################################################
         return updated_aircraft_state_dictionary_for_JSON
 
