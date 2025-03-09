@@ -2,8 +2,15 @@
  * Creates various buildings in the scene using the createFlexibleHouse function.
  * @param {BABYLON.Scene} scene
  * @param {BABYLON.ShadowGenerator} shadowGenerator
+ * @param {boolean} isMediumComplexity - Whether to create fewer buildings (medium complexity mode)
  */
-function create_buildings(scene, shadowGenerator) {
+function create_buildings(scene, shadowGenerator, isMediumComplexity = false) {
+  // Validate required parameters
+  if (!scene || !shadowGenerator) {
+      console.warn("Scene or shadowGenerator missing in create_buildings");
+      return {};
+  }
+  
   // Pre-create dynamic text textures
   const UEM_AERO = createCustomTextTexture(scene, {
     width: 782,
@@ -50,8 +57,13 @@ function create_buildings(scene, shadowGenerator) {
       roofOverhang: 0.0,
       proceduralTexture: WC_text,
       meshesToTexture: ["houseBody"]
-    },
-    cottage1: {
+    }
+  };
+  
+  // If medium complexity, just create the essentials
+  if (!isMediumComplexity) {
+    // Add additional buildings only for high complexity
+    buildingsConfig.cottage1 = {
       short: 8,
       long: 17,
       height: 4,
@@ -60,8 +72,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 3.0,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    cottage2: {
+    };
+    buildingsConfig.cottage2 = {
       short: 9,
       long: 17,
       height: 4,
@@ -70,8 +82,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 2.0,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    cottage3: {
+    };
+    buildingsConfig.cottage3 = {
       short: 8,
       long: 15,
       height: 4,
@@ -80,8 +92,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 2.3,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    bridge: {
+    };
+    buildingsConfig.bridge = {
       short: 6,
       long: 150,
       height: 3,
@@ -91,8 +103,8 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#853d10",
       roofColor: "#a39e93",
       roofOverhang: 2.0
-    },
-    little_tower: {
+    };
+    buildingsConfig.little_tower = {
       short: 4,
       long: 4,
       height: 15,
@@ -100,8 +112,8 @@ function create_buildings(scene, shadowGenerator) {
       position: new BABYLON.Vector3(-858, 8.8, -2145),
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    little_tower_house: {
+    };
+    buildingsConfig.little_tower_house = {
       short: 8,
       long: 17,
       height: 5,
@@ -109,8 +121,8 @@ function create_buildings(scene, shadowGenerator) {
       position: new BABYLON.Vector3(-858, 8.8, -2153),
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    central_body_reyes: {
+    };
+    buildingsConfig.central_body_reyes = {
       short: 6,
       long: 13,
       height: 4,
@@ -119,8 +131,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 0,
       boxColor: "#ffffff",
       roofColor: "#c24e10"
-    },
-    aft_body_reyes: {
+    };
+    buildingsConfig.aft_body_reyes = {
       short: 6,
       long: 7,
       height: 6,
@@ -130,8 +142,8 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#ffffff",
       roofColor: "#c24e10",
       force_gable: true
-    },
-    side_body_reyes: {
+    };
+    buildingsConfig.side_body_reyes = {
       short: 4,
       long: 6,
       height: 5,
@@ -141,8 +153,8 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#ffffff",
       roofColor: "#c24e10",
       force_gable: true
-    },
-    tower_reyes: {
+    };
+    buildingsConfig.tower_reyes = {
       short: 1.5,
       long: 1.5,
       height: 6,
@@ -152,33 +164,16 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#ffffff",
       roofColor: "#ffffff",
       force_gable: false
-    }
-  };
-
-  // Create each building
-  for (const name in buildingsConfig) {
-    createFlexibleHouse(scene, shadowGenerator, buildingsConfig[name]);
+    };
   }
 
-  // Validate required parameters
-  if (!scene || !shadowGenerator) {
-      throw new Error("Scene and shadowGenerator are required");
-  }
-  
-  // Return empty object if no config provided
-  if (!buildingsConfig) {
-      console.warn("No building configurations provided");
-      return {};
-  }
-  
+  // Create the buildings
   const buildings = {};
   
   // Create each building based on the provided configuration
   for (const [buildingName, params] of Object.entries(buildingsConfig)) {
-      buildings[buildingName] = createFlexibleHouse(scene, shadowGenerator, params);
+    buildings[buildingName] = createFlexibleHouse(scene, shadowGenerator, params);
   }
   
   return buildings;
 }
-
-

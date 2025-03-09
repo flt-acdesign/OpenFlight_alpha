@@ -37,20 +37,16 @@ required_packages = [
     "DataFrames",  # Tabular data manipulation
     "StaticArrays",# Fixed-size arrays for performance
     "YAML",         # YAML file parsing and generation
-    "VortexLattice" # Vortex lattice method for aerodynamics, only used for the aero model creation, not in the simulator
+    "VortexLattice", # Vortex lattice method for aerodynamics, only used for the aero model creation, not in the simulator
+    "Printf"        # To produce formatted text output
 ]
 
 # Iterate through required packages and ensure they're installed
-println("Checking packages...")
+println("Checking Julia packages...")
 for pkg in required_packages
     ensure_package(pkg)
 end
 
-println("All required packages are installed and loaded successfully!")
-
-
-
-
-
+println("All required Julia packages are installed and loaded successfully!")
 
 

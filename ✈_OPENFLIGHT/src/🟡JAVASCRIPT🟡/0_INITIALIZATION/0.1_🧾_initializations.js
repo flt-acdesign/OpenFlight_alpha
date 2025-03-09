@@ -55,32 +55,31 @@ let material; // Material for the aircraft
 // Pilot control inputs
 let forceX = 0.0;
 let forceY = 0.0;
-let thrust_setting_demand = 0.0
-let thrust_attained = 0.0
+let thrust_setting_demand = 0.0;
+let thrust_attained = 0.0;
 
 let roll_demand = 0.0;
-let pitch_demand = 0.0
-let yaw_demand = 0.0
+let pitch_demand = 0.0;
+let yaw_demand = 0.0;
 
-let roll_demand_attained = 0.0;
+let roll_demand_attained  = 0.0;
 let pitch_demand_attained = 0.0;
-let yaw_demand_attained = 0.0;
+let yaw_demand_attained   = 0.0;
 
-// Global force values from server
 let forceGlobalX = 0.0;
 let forceGlobalY = 0.0;
 let forceGlobalZ = 0.0;
 
 let alpha_RAD = 0.0;
-let beta_RAD = 0.0;
+let beta_RAD  = 0.0;
 
-// Gamepad variables
 let gamepadIndex = null;
-
 let advancedTexture;
-let positionText, velocityText, forceText, angularVelocityText, momentText, timeText, joystickText, pauseButton, alphaText, betaTextText
+let positionText, velocityText, forceText, angularVelocityText,
+    momentText, timeText, joystickText, pauseButton,
+    alphaText, betaTextText;
 
 let joystickAxes = [0, 0, 0, 0];
-
 let joystickButtons = [];
 
+console.log("Loaded 0.1_🧾_initializations.js. current_graphic_settings=null until mission data arrives...");

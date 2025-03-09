@@ -1,7 +1,18 @@
-# Main WebSocket connection handler function that processes incoming messages
+# Modified WebSocket connection handler function that processes incoming messages
 function websocket_handler(ws)
     println("New WebSocket connection established")
     try
+        # First, immediately send mission data to the client
+        mission_data_message = Dict(
+            "messageType" => "missionData",
+            "initial_velocity" => MISSION_DATA.initial_velocity,
+            "initial_altitude" => MISSION_DATA.initial_altitude,
+            "aircraft_name" => MISSION_DATA.aircraft_name,
+            "scenery_complexity" => MISSION_DATA.scenery_complexity
+        )
+        WebSockets.writeguarded(ws, JSON.json(mission_data_message))
+        println("Mission data sent to client: ", mission_data_message)
+        
         # Keep processing messages while the socket connection is open
         while !eof(ws.socket)
             # Read data from WebSocket connection with error handling
@@ -33,7 +44,7 @@ end
 
 # Server initialization and startup function
 function establish_websockets_connection()
-    port = WebSockets_port  # Port number defined in the client-side JavaScript file, this is found in function "🎁_load_required_packages_and_find_free_port.jl"
+    port = WebSockets_port  # Port number defined in the client-side JavaScript file
     println("Starting WebSocket server on port $port...")
     
     # Create handler functions for HTTP and WebSocket protocols
@@ -52,7 +63,3 @@ function establish_websockets_connection()
         sleep(.1)
     end
 end
-
-
-
-

@@ -5,7 +5,7 @@
 
 using VortexLattice
 using StaticArrays
-using Plots
+#using Plots
 using Printf
 using JSON
 using LinearAlgebra
@@ -305,7 +305,7 @@ end
 # ------------------------------------------------------------------
 # 5) Run analysis and write VTK output
 # ------------------------------------------------------------------
-jsonfile = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈CREATE_AIRCRAFT_MODEL\MIG21.json"   # Update path/filename as needed
+jsonfile = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\📋_Aircraft_data_files\MIG21.json"   # Update path/filename as needed
 aircraft = read_and_preprocess_json(jsonfile)
 
 # Build the system (wings + fuselage) and run the analysis
