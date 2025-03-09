@@ -15,10 +15,6 @@ println("Loading mission file from: $mission_file")
 # Load mission data FIRST, before any includes
 mission_data = YAML.load_file(mission_file)
 
-
-println("Read Mission Data")
-println(mission_data)
-
 # Define MISSION_DATA as a constant BEFORE including other files
 const MISSION_DATA = (
     aircraft_name        = mission_data["aircraft_name"],
