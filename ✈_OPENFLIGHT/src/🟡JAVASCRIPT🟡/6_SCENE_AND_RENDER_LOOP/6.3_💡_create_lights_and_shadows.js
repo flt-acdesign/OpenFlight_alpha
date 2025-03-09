@@ -35,8 +35,6 @@ function setupLights_and_shadows(scene) {
 
   // Shadow Generation Setup
   const shadowGenerator = new BABYLON.CascadedShadowGenerator(2048, sunDirectionalLight);
-  scene.shadowGenerator = shadowGenerator;
-
   
   // Configure shadow cascades (adjust for optimal performance/balance)
   shadowGenerator.numCascades = 4; // Number of shadow cascade levels

@@ -1,18 +1,10 @@
-// In file: 4.3_🏡_WORLD_OBJECTS/4.3.3_🌲_create_trees.js
-
 /***************************************************************
  * Creates trees across the terrain using thin instances with color variations
  * Includes natural green variations and 10% autumn-colored trees
  **************************************************************/
 function createRandomTrees(scene, shadowGenerator, treePositions) {
-    // Check if we should create trees based on graphics settings
-    if (current_graphic_settings.trees === 'none') {
-        console.log("Tree creation skipped: graphic settings set to 'none'");
-        return;
-    }
-
     const treeCount = treePositions.length;
-    console.log(`Creating ${treeCount} trees on the island with setting: ${current_graphic_settings.trees}`);
+    console.log(`There are ${treeCount} trees on the island`);
 
     // Create base tree mesh
     const baseTree = BABYLON.MeshBuilder.CreateCylinder(
@@ -34,26 +26,11 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
     treeMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     baseTree.material = treeMaterial;
 
-    // Adjust tree count based on graphics setting
-    let adjustedTreeCount = treeCount;
-    if (current_graphic_settings.trees === 'few') {
-        // Reduce to 20% of the original count for 'few' setting
-        adjustedTreeCount = Math.max(50, Math.floor(treeCount * 0.2));
-        console.log(`Adjusted tree count to ${adjustedTreeCount} (${current_graphic_settings.trees} setting)`);
-    }
-
     // Initialize data buffers
-    const matricesData = new Float32Array(adjustedTreeCount * 16);
-    const colorData = new Float32Array(adjustedTreeCount * 4);  // RGBA colors
+    const matricesData = new Float32Array(treeCount * 16);
+    const colorData = new Float32Array(treeCount * 4);  // RGBA colors
 
-    // Use a sampling step to skip trees based on adjusted count
-    const samplingStep = Math.max(1, Math.floor(treeCount / adjustedTreeCount));
-    console.log(`Using sampling step of ${samplingStep} for tree creation`);
-
-    let actualTreeCount = 0;
-    for (let i = 0; i < treeCount; i += samplingStep) {
-        if (actualTreeCount >= adjustedTreeCount) break;
-
+    for (let i = 0; i < treeCount; i++) {
         // Random dimensions
         const treeHeight = Math.random() * 9 + 7;
         const treeBaseRadius = Math.random() * 2 + 3;
@@ -69,11 +46,11 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
             new BABYLON.Vector3(treeBaseRadius / 4, treeHeight / 15, treeBaseRadius / 4),
             BABYLON.Quaternion.Identity(),
             new BABYLON.Vector3(treeX, treeY, treeZ)
-        ).copyToArray(matricesData, actualTreeCount * 16);
+        ).copyToArray(matricesData, i * 16);
 
         // Set instance color
         let color;
-        if (Math.random() < 0.1) {  // 10% chance for autumn color
+        if (Math.random() < 0.01) {  // 10% chance for autumn color
             color = new BABYLON.Color3(97/255, 88/255, 11/255);  // Red-brown
         } else {  // Natural green variation
             color = new BABYLON.Color3(
@@ -83,17 +60,14 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
             );
         }
        
+
         // Store color in buffer (RGBA format)
-        color.toArray(colorData, actualTreeCount * 4);
-        colorData[actualTreeCount * 4 + 3] = 1;  // Alpha channel
-        
-        actualTreeCount++;
+        color.toArray(colorData, i * 4);
+        colorData[i * 4 + 3] = 1;  // Alpha channel
     }
 
     // Set thin instance buffers
-    baseTree.thinInstanceSetBuffer("matrix", matricesData.slice(0, actualTreeCount * 16), 16);
-    baseTree.thinInstanceSetBuffer("color", colorData.slice(0, actualTreeCount * 4), 4);
+    baseTree.thinInstanceSetBuffer("matrix", matricesData, 16);
+    baseTree.thinInstanceSetBuffer("color", colorData, 4);
     baseTree.isVisible = true;
-    
-    console.log(`Successfully created ${actualTreeCount} trees`);
 }

@@ -1,56 +1,38 @@
-
 /**
- * Creates and initializes the 3D scene
- * @param {BABYLON.Engine} engine
- * @param {HTMLCanvasElement} canvas
+ * Creates and initializes a complete 3D scene
+ * @param {BABYLON.Engine} engine - The Babylon.js engine instance
+ * @param {HTMLCanvasElement} canvas - The canvas element for rendering
+ * @returns {BABYLON.Scene} The initialized scene
  */
 function createScene(engine, canvas) {
-    // 1) Create the base scene
-    const scene = new BABYLON.Scene(engine);
-    scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
-
-    // 2) Enable physics
-    scene.enablePhysics(
-        new BABYLON.Vector3(0, -9.81, 0),
-        new BABYLON.CannonJSPlugin()
-    );
-
-    // 3) Lights, cameras
-    const { lights, shadowGenerator } = setupLights_and_shadows(scene);
-    const cameras = setupCameras(scene, canvas);
-
-    // 4) Ensure we have a valid current_graphic_settings
-    // If it's still null, use a low-quality default
-    if (!current_graphic_settings) {
-        console.log("No graphics settings detected, using 'low' as default");
-        current_graphic_settings = getGraphicSettings('low');
-    }
-
-    // 5) Create world scenery with current settings
-    console.log("Creating initial world scenery with:", current_graphic_settings);
-    createWorldScenery(scene, shadowGenerator, cameras.arcRotateCamera);
-    
-    // 6) Create default aircraft
-    createAircraft(shadowGenerator, scene);
-
-    // 7) Additional visualization
-    initializeTrajectorySystem(scene);
-    createVelocityLine(scene);
-    createForceLine(scene);
-    
-    createGUI();
-
-    // 8) Setup interactions
-    setupModelTransformations(scene, shadowGenerator);
-    setupPickingCoordinates(scene);
-
-    // 9) Keep a reference to update cameras
+    const scene = initializeBaseScene(engine);
+    const sceneElements = setupSceneElements(scene, canvas);
+    setupInteractions(scene, sceneElements.shadowGenerator);
     setupRenderLoop(scene);
+    
+  // Enable physics FIRST
+  scene.enablePhysics(
+    new BABYLON.Vector3(0, -9.81, 0),
+    new BABYLON.CannonJSPlugin() 
+  );
 
     return scene;
 }
 
 
+
+
+/**
+ * Initializes the base scene with basic properties
+ * @param {BABYLON.Engine} engine - The Babylon.js engine instance
+ * @returns {BABYLON.Scene} The basic initialized scene
+ */
+function initializeBaseScene(engine) {
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
+    
+    return scene;
+}
 
 
 
@@ -64,15 +46,12 @@ function setupSceneElements(scene, canvas) {
     // Setup lights and shadows
     const { lights, shadowGenerator } = setupLights_and_shadows(scene);
 
-    // Setup cameras - Do this BEFORE creating the aircraft
+    // Setup cameras
     const cameras = setupCameras(scene, canvas);
 
     // Create main scene elements
-    // First the world scenery
-    createWorldScenery(scene, shadowGenerator, cameras.arcRotateCamera);
-    
-    // Then the aircraft - This will automatically update camera targets
     createAircraft(shadowGenerator, scene);
+    createWorldScenery(scene, shadowGenerator, cameras.camera);
 
     // Setup visualization elements
     setupVisualizationElements();
@@ -89,7 +68,7 @@ function setupSceneElements(scene, canvas) {
  */
 function setupVisualizationElements() {
 
-    initializeTrajectorySystem(scene);
+    initializeTrajectorySystem();
     createVelocityLine();
     createForceLine();
     createGUI();

@@ -16,14 +16,8 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
 
     // Create the main aircraft sphere.
     aircraft = BABYLON.MeshBuilder.CreateSphere("aircraft", { diameter: 0.1 }, scene);
-    
-    // Use the mission-specified altitude instead of a hardcoded value
-    // Fall back to 400 meters as a default if MISSION_INITIAL_ALTITUDE isn't set
-    const initialAltitude = typeof MISSION_INITIAL_ALTITUDE !== 'undefined' ? MISSION_INITIAL_ALTITUDE : 400;
-    aircraft.position.y = initialAltitude;
+    aircraft.position.y = 430;
     aircraft.rotationQuaternion = new BABYLON.Quaternion(0, 0, 0, 1);
-
-    console.log(`Creating aircraft at altitude: ${initialAltitude}m`);
 
     // Create a transform node to hold the simple aircraft geometry.
     planeNode = new BABYLON.TransformNode("simpleAircraft", scene);
@@ -210,7 +204,6 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     strobeLightSphere.sphere.parent = planeNode;
     strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.25, 0);
 
-    // Update all cameras to point at the new aircraft position
     if (scene.updateCamerasForAircraft) {
         scene.updateCamerasForAircraft(aircraft);
     }

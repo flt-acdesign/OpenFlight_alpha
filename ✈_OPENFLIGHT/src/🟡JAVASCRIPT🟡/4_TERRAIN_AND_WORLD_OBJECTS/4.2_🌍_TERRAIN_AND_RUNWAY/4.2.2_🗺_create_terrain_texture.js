@@ -265,188 +265,163 @@ function calculateVertexColor(params) {
 
 
   
-
-/**
- * create_procedural_ground_texture
- *
- * Creates the ground by splitting it into segments, deforming it using a
- * procedural terrain function, and applying per-vertex colors.
- */
-function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, graphic_settings) {
-  // Array to store positions where trees will be spawned.
-  let treePositions = [];
-
-  // Determine tree spawning probabilities based on the provided graphic settings.
-  const probability_of_spawning_a_tree_fertile = {
-    none: 0,
-    few: 0.05,
-    many: 0.2,
-  }[graphic_settings.trees];
-
-  // Barren trees spawn less frequently.
-  let probability_of_spawning_a_tree_barren = probability_of_spawning_a_tree_fertile / 10;
-
-  // Basic parameters for segmenting the ground.
-  // Adjust segmentCount based on ground setting for performance
-  const segmentCount = graphic_settings.ground === 'island' ? 28 : 20;
-  const segmentSize = 200;
-  
-  // Threshold used in crop regions to decide color transitions.
-  const threshold = 0.1 * groundConfig.amplitude;
-
-  // Create a material that supports per-vertex coloring.
-  const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-  groundMaterial.useVertexColors = true;
-  groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-  groundMaterial.fogEnabled = true;
-
-  // A map to store consistent patch colors for regions (used in crop areas).
-  const patchColorMap = {};
-
   /**
-   * getPatchColor
+   * create_procedural_ground_texture
    *
-   * Returns a consistent patch color for a given world position. If a patch
-   * color hasn't been assigned yet, it randomly selects one from a predefined array.
-   *
-   * @param {Number} worldX - The X-coordinate in world space.
-   * @param {Number} worldZ - The Z-coordinate in world space.
-   * @returns {BABYLON.Color3} The patch color.
+   * Creates the ground by splitting it into segments, deforming it using a
+   * procedural terrain function, and applying per-vertex colors.
    */
-  function getPatchColor(worldX, worldZ) {
-    const patchSize = 200;
-    const patchX = Math.floor(worldX / patchSize);
-    const patchZ = Math.floor(worldZ / patchSize);
-    const patchKey = `${patchX}_${patchZ}`;
-
-    if (!patchColorMap[patchKey]) {
-      // Assume "greenColors" is a predefined array of BABYLON.Color3.
-      const randomIndex = Math.floor(Math.random() * greenColors.length);
-      patchColorMap[patchKey] = greenColors[randomIndex];
-    }
-    return patchColorMap[patchKey];
-  }
-
-  // Define a light direction for shading effects and normalize it.
-  const dVec = new BABYLON.Vector3(-1, -2, -1);
-  dVec.normalize();
-
-  // Destructure terrain configuration parameters.
-  const { freqX, freqZ, amplitude } = groundConfig;
+  function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, graphic_settings) {
+    // Array to store positions where trees will be spawned.
+    let treePositions = [];
   
-  // Adjust ground creation based on selected ground type
-  let groundStyle = graphic_settings.ground;
+    // Determine tree spawning probabilities based on the provided graphic settings.
+    const probability_of_spawning_a_tree_fertile = {
+      none: 0,
+      few: 0.05,
+      many: 0.2,
+    }[graphic_settings.trees];
   
-  // Create subdivisions based on complexity
-  const subdivisions = {
-    'flat': 10,
-    'island': 40
-  }[groundStyle] || 10;
+    // Barren trees spawn less frequently.
+    let probability_of_spawning_a_tree_barren = probability_of_spawning_a_tree_fertile / 10;
   
-  // Loop over the grid to create each ground segment.
-  for (let i = 0; i < segmentCount; i++) {
-    for (let j = 0; j < segmentCount; j++) {
-      // Calculate the center position for the current segment.
-      const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
-      const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
-
-      // Create a ground mesh with subdivisions (for finer vertex control).
-      const groundSegment = BABYLON.MeshBuilder.CreateGround(
-        `groundSegment_${i}_${j}`,
-        {
-          width: segmentSize,
-          height: segmentSize,
-          subdivisions: subdivisions,
-          updatable: true,
-        },
-        scene
-      );
-
-      // Position the segment and assign the material.
-      groundSegment.position.set(centerX, 0, centerZ);
-      groundSegment.material = groundMaterial;
-      groundSegment.receiveShadows = true;
-      groundSegment.isAlwaysActive = true;
-
-      // Retrieve vertex data from the mesh.
-      const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-      const indices = groundSegment.getIndices();
-      const colors = [];
-
-      // Iterate over each vertex (each vertex has 3 values: x, y, z).
-      for (let v = 0; v < positions.length; v += 3) {
-        // Local vertex coordinates within the segment.
-        const localX = positions[v];
-        const localZ = positions[v + 2];
-        // Convert local coordinates to world coordinates.
-        const worldX = localX + centerX;
-        const worldZ = localZ + centerZ;
-
-        // Compute Terrain Height (different based on ground style)
-        let yVal = 0;
-        if (groundStyle === 'flat') {
-          // Flat terrain with subtle variations
-          yVal = 0;
-        } else if (groundStyle === 'island') {
-          // Full undulating island terrain
-          yVal = compute_terrain_height(worldX, worldZ, freqX, freqZ, amplitude);
-        }
-
-        // Determine if the vertex is within special regions.
-        const inside_crops = worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000;
-        const inside_platform = worldX > 0 && worldX < 80 && worldZ > -120 && worldZ < 30;
-        const inside_runway_margins = worldX > -50 && worldX < 80 && worldZ > -600 && worldZ < 600;
-
-        // Calculate Vertex Color
-        // Pass the local getPatchColor function into calculateVertexColor.
-        const vertColor = calculateVertexColor({
-          yVal: yVal,
-          worldX: worldX,
-          worldZ: worldZ,
-          threshold: threshold,
-          amplitude: amplitude,
-          inside_crops: inside_crops,
-          inside_platform: inside_platform,
-          inside_runway_margins: inside_runway_margins,
-          freqX: freqX,
-          freqZ: freqZ,
-          dVec: dVec,
-          treePositions: treePositions,
-          probability_of_spawning_a_tree_fertile: probability_of_spawning_a_tree_fertile,
-          probability_of_spawning_a_tree_barren: probability_of_spawning_a_tree_barren,
-          getPatchColor: getPatchColor // passing the function as a parameter
-        });
-
-        // Adjust Vertex Height
-        // Flatten the sea surface: if the vertex is below sea level, set its y-coordinate to 0.
-        positions[v + 1] = yVal < 0 ? 0 : yVal;
-
-        // Append the Vertex Color
-        // Push the RGBA values for this vertex into the colors array.
-        colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
+    // Basic parameters for segmenting the ground.
+    const segmentCount = 28;
+    const segmentSize = 200;
+    // Threshold used in crop regions to decide color transitions.
+    const threshold = 0.1 * groundConfig.amplitude;
+  
+    // Create a material that supports per-vertex coloring.
+    const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+    groundMaterial.useVertexColors = true;
+    groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+    groundMaterial.fogEnabled = true;
+  
+    // A map to store consistent patch colors for regions (used in crop areas).
+    const patchColorMap = {};
+  
+    /**
+     * getPatchColor
+     *
+     * Returns a consistent patch color for a given world position. If a patch
+     * color hasn’t been assigned yet, it randomly selects one from a predefined array.
+     *
+     * @param {Number} worldX - The X-coordinate in world space.
+     * @param {Number} worldZ - The Z-coordinate in world space.
+     * @returns {BABYLON.Color3} The patch color.
+     */
+    function getPatchColor(worldX, worldZ) {
+      const patchSize = 200;
+      const patchX = Math.floor(worldX / patchSize);
+      const patchZ = Math.floor(worldZ / patchSize);
+      const patchKey = `${patchX}_${patchZ}`;
+  
+      if (!patchColorMap[patchKey]) {
+        // Assume "greenColors" is a predefined array of BABYLON.Color3.
+        const randomIndex = Math.floor(Math.random() * greenColors.length);
+        patchColorMap[patchKey] = greenColors[randomIndex];
       }
-
-      // Update the mesh with the new vertex positions and colors.
-      groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
-      groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
-
-      // Recompute normals for correct lighting after vertex manipulation.
-      const normals = [];
-      BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-      groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
+      return patchColorMap[patchKey];
     }
-  }
-
-  // After creating the ground, create trees at the recorded positions.
-  if (graphic_settings.trees !== 'none') {
-      createRandomTrees(scene, shadowGenerator, treePositions);
+  
+    // Define a light direction for shading effects and normalize it.
+    const dVec = new BABYLON.Vector3(-1, -2, -1);
+    dVec.normalize();
+  
+    // Destructure terrain configuration parameters.
+    const { freqX, freqZ, amplitude } = groundConfig;
+  
+    // Loop over the grid to create each ground segment.
+    for (let i = 0; i < segmentCount; i++) {
+      for (let j = 0; j < segmentCount; j++) {
+        // Calculate the center position for the current segment.
+        const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
+        const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
+  
+        // Create a ground mesh with subdivisions (for finer vertex control).
+        const groundSegment = BABYLON.MeshBuilder.CreateGround(
+          `groundSegment_${i}_${j}`,
+          {
+            width: segmentSize,
+            height: segmentSize,
+            subdivisions: 40, // Detail level for vertex manipulation.
+            updatable: true,
+          },
+          scene
+        );
+  
+        // Position the segment and assign the material.
+        groundSegment.position.set(centerX, 0, centerZ);
+        groundSegment.material = groundMaterial;
+        groundSegment.receiveShadows = true;
+        groundSegment.isAlwaysActive = true;
+  
+        // Retrieve vertex data from the mesh.
+        const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+        const indices = groundSegment.getIndices();
+        const colors = [];
+  
+        // Iterate over each vertex (each vertex has 3 values: x, y, z).
+        for (let v = 0; v < positions.length; v += 3) {
+          // Local vertex coordinates within the segment.
+          const localX = positions[v];
+          const localZ = positions[v + 2];
+          // Convert local coordinates to world coordinates.
+          const worldX = localX + centerX;
+          const worldZ = localZ + centerZ;
+  
+          // --- (A) Compute Terrain Height ---
+          let yVal = compute_terrain_height(worldX, worldZ, freqX, freqZ, amplitude);
+  
+          // Determine if the vertex is within special regions.
+          const inside_crops = worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000;
+          const inside_platform = worldX > 0 && worldX < 80 && worldZ > -120 && worldZ < 30;
+          const inside_runway_margins = worldX > -50 && worldX < 80 && worldZ > -600 && worldZ < 600;
+  
+          // --- (B) Calculate Vertex Color ---
+          // Pass the local getPatchColor function into calculateVertexColor.
+          const vertColor = calculateVertexColor({
+            yVal: yVal,
+            worldX: worldX,
+            worldZ: worldZ,
+            threshold: threshold,
+            amplitude: amplitude,
+            inside_crops: inside_crops,
+            inside_platform: inside_platform,
+            inside_runway_margins: inside_runway_margins,
+            freqX: freqX,
+            freqZ: freqZ,
+            dVec: dVec,
+            treePositions: treePositions,
+            probability_of_spawning_a_tree_fertile: probability_of_spawning_a_tree_fertile,
+            probability_of_spawning_a_tree_barren: probability_of_spawning_a_tree_barren,
+            getPatchColor: getPatchColor // passing the function as a parameter
+          });
+  
+          // --- (C) Adjust Vertex Height ---
+          // Flatten the sea surface: if the vertex is below sea level, set its y-coordinate to 0.
+          positions[v + 1] = yVal < 0 ? 0 : yVal;
+  
+          // --- (E) Append the Vertex Color ---
+          // Push the RGBA values for this vertex into the colors array.
+          colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
+        }
+  
+        // Update the mesh with the new vertex positions and colors.
+        groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+        groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+  
+        // Recompute normals for correct lighting after vertex manipulation.
+        const normals = [];
+        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+        groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
+      }
+    }
+  
+    // After creating the ground, create trees at the recorded positions.
+    createRandomTrees(scene, shadowGenerator, treePositions);
   }
   
-  // Enable dynamic sea generation for 'island' terrain only
-  if (graphic_settings.ground === 'island') {
-      enableDynamicSeaGeneration(scene);
-  }
-}
 
 
 

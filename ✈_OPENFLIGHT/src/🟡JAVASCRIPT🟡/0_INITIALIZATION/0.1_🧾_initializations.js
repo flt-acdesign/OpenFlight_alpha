@@ -1,32 +1,17 @@
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
-let scenery_complexity = "high"
-
-// Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
 let aircraft_name = "SF25B.yaml"
 
-
-// Initial velocity in m/s
 let initial_velocity = 30
-
-// Initial altitude in m
 let initial_altitude = 40
 
-
-// FLIGHT TEST PARAMETERS
-
-// start recording in seconds after start of flight
 let start_flight_data_recording_at = 6
-
-//  finish recording in seconds
 let finish_flight_data_recording_at = 9
-
-
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"
 let show_trajectory = "true"
 
-
+let scenery_complexity = "high"
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
@@ -55,31 +40,32 @@ let material; // Material for the aircraft
 // Pilot control inputs
 let forceX = 0.0;
 let forceY = 0.0;
-let thrust_setting_demand = 0.0;
-let thrust_attained = 0.0;
+let thrust_setting_demand = 0.0
+let thrust_attained = 0.0
 
 let roll_demand = 0.0;
-let pitch_demand = 0.0;
-let yaw_demand = 0.0;
+let pitch_demand = 0.0
+let yaw_demand = 0.0
 
-let roll_demand_attained  = 0.0;
+let roll_demand_attained = 0.0;
 let pitch_demand_attained = 0.0;
-let yaw_demand_attained   = 0.0;
+let yaw_demand_attained = 0.0;
 
+// Global force values from server
 let forceGlobalX = 0.0;
 let forceGlobalY = 0.0;
 let forceGlobalZ = 0.0;
 
 let alpha_RAD = 0.0;
-let beta_RAD  = 0.0;
+let beta_RAD = 0.0;
 
+// Gamepad variables
 let gamepadIndex = null;
+
 let advancedTexture;
-let positionText, velocityText, forceText, angularVelocityText,
-    momentText, timeText, joystickText, pauseButton,
-    alphaText, betaTextText;
+let positionText, velocityText, forceText, angularVelocityText, momentText, timeText, joystickText, pauseButton, alphaText, betaTextText
 
 let joystickAxes = [0, 0, 0, 0];
+
 let joystickButtons = [];
 
-console.log("Loaded 0.1_🧾_initializations.js. current_graphic_settings=null until mission data arrives...");
