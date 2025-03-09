@@ -329,7 +329,7 @@ function pauseSimulation() {
       const titleText = new BABYLON.GUI.TextBlock("titleText");
       titleText.text = "FLIGHT CONTROLS";
       titleText.color = "white";
-      titleText.fontSize = 22; // Increased for better visibility
+      titleText.fontSize = 28; // Increased for better visibility
       titleText.fontWeight = "bold";
       titleBar.addControl(titleText);
 
@@ -338,13 +338,13 @@ function pauseSimulation() {
       contentPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
       contentPanel.top = "80px"; // Position below title bar
       contentPanel.width = "500px";
-      contentPanel.spacing = 10; // Add spacing between elements
+      contentPanel.spacing = 8; // Add spacing between elements
       
       // KEYBOARD CONTROLS SECTION
       const keyboardTitle = new BABYLON.GUI.TextBlock("keyboardTitle");
       keyboardTitle.text = "KEYBOARD CONTROLS";
       keyboardTitle.color = "#4CAF50";
-      keyboardTitle.fontSize = 18;
+      keyboardTitle.fontSize = 23;
       keyboardTitle.height = "30px";
       keyboardTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       contentPanel.addControl(keyboardTitle);
@@ -359,13 +359,13 @@ function pauseSimulation() {
         const cmdText = new BABYLON.GUI.TextBlock();
         cmdText.text = command;
         cmdText.color = "white";
-        cmdText.fontSize = 14; // Larger font size
+        cmdText.fontSize = 21; // Larger font size
         cmdText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
         const keysText = new BABYLON.GUI.TextBlock();
         keysText.text = keys;
         keysText.color = "#FFD700"; // Gold color for keys
-        keysText.fontSize = 14; // Larger font size
+        keysText.fontSize = 21; // Larger font size
         keysText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
         row.addControl(cmdText, 0, 0);
@@ -383,7 +383,7 @@ function pauseSimulation() {
 
       // Add spacing between keyboard and gamepad sections
       const spacer = new BABYLON.GUI.Rectangle("spacer");
-      spacer.height = "20px";
+      spacer.height = "10px";
       spacer.thickness = 0;
       spacer.background = "transparent";
       contentPanel.addControl(spacer);
@@ -402,11 +402,11 @@ function pauseSimulation() {
       const gamepadTitle = new BABYLON.GUI.TextBlock("gamepadTitle");
       gamepadTitle.text = "GAMEPAD CONTROLS";
       gamepadTitle.color = "#4CAF50";
-      gamepadTitle.fontSize = 18;
+      gamepadTitle.fontSize = 23;
       gamepadTitle.height = "40px";
       gamepadTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       gamepadTitle.paddingLeft = "10px";
-      gamepadTitle.paddingTop = "10px";
+      gamepadTitle.paddingTop = "15px";
       gamepadPanel.addControl(gamepadTitle);
 
       // Enhanced gamepad controls with more descriptive text
@@ -414,8 +414,8 @@ function pauseSimulation() {
       const gamepadYaw = createControlRow("Yaw/Throttle:", "Right stick");
       const gamepadPause = createControlRow("Pause/Resume:", "Start button");
       const gamepadCamera = createControlRow("Camera Toggle:", "A / B / X / Y");
-      const gamepadReset = createControlRow("Reset Position:", "Right Bumper (RB)");
-      const gamepadExtra = createControlRow("Button 6:", "Restart Mission");
+      const gamepadReset = createControlRow("Reset Position:", "START Button");
+      const gamepadExtra = createControlRow("Pause/Resume:", "SELECT Button");
       
       gamepadPanel.addControl(gamepadPitch);
       gamepadPanel.addControl(gamepadYaw);
@@ -431,7 +431,7 @@ function pauseSimulation() {
       const tipText = new BABYLON.GUI.TextBlock("tipText");
       tipText.text = "TIP: Connect gamepad before starting the simulation";
       tipText.color = "#FFD700";
-      tipText.fontSize = 12;
+      tipText.fontSize = 18;
       tipText.height = "30px";
       tipText.paddingTop = "12px";
       contentPanel.addControl(tipText);
@@ -441,7 +441,7 @@ function pauseSimulation() {
       dismissButton.width = "50px";
       dismissButton.height = "50px";
       dismissButton.color = "white";
-      dismissButton.fontSize = 14;
+      dismissButton.fontSize = 21;
       dismissButton.background = "#f44336";
       dismissButton.cornerRadius = 25;
       dismissButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;

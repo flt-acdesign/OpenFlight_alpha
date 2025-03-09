@@ -1,5 +1,33 @@
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
+let scenery_complexity = "high"
+
+// Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
+let aircraft_name = "SF25B.yaml"
+
+
+// Initial velocity in m/s
+let initial_velocity = 30
+
+// Initial altitude in m
+let initial_altitude = 40
+
+
+// FLIGHT TEST PARAMETERS
+
+// start recording in seconds after start of flight
+let start_flight_data_recording_at = 6
+
+//  finish recording in seconds
+let finish_flight_data_recording_at = 9
+
+
+let show_force_vectors = "true"
+let show_velocity_vectors = "true"
+let show_trajectory = "true"
+
+
+
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
 let glbNode = null;   // TransformNode holding the loaded GLB

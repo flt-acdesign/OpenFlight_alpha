@@ -1,10 +1,27 @@
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
+###########################################
+
+using YAML
+using Dates
+using Sockets
+using Printf
+using LinearAlgebra
+
+
+
 # Absolute path of the directory containing the current script file.
 # It needs to be defined at the top.
 project_dir = dirname(@__FILE__)
 
+
+
+
+
 # Add required Julia packages in the first execution and ignore afterwards.
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🎁_load_required_packages.jl")
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl")
+include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/✨_sync_mission_data_to_javascript.jl")
 
 # Load general code and functions.
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.4_📈_get_constants_and_interpolate_coefficients.jl")

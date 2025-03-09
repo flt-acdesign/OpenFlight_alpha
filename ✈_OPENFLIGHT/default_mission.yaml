@@ -1,7 +1,25 @@
-aircraft:
-  aircraft_name: 600  # Mass of the aircraft in kilograms
-  radius_of_giration_pitch: 3.5  # Radius of gyration about the pitch axis in meters
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\default_mission.yaml
+###########################################
 
-visualization:
-  trees:  # Lift coefficient data
+# AIRCRAFT PARAMETERS
+
+aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
+
+initial_velocity: 30  # Initial velocity in m/s
+initial_altitude: 40  # Initial altitude in m
+
+
+# FLIGHT TEST PARAMETERS
+
+start_flight_data_recording_at:  6    # start recording in seconds after start of flight
+finish_flight_data_recording_at: 9    # finish recording in seconds
+show_force_vectors: "true"
+show_velocity_vectors: "true"
+show_trajectory: "true"
+
+
+# VISUALIZATION PARAMETERS
+
+scenery_complexity: "high"   #  "low", "medium" or "high"
 
