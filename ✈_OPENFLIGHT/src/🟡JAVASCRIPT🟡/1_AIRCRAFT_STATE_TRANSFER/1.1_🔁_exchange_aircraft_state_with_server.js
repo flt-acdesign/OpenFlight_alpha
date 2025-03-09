@@ -1,4 +1,4 @@
-// 1.1_🔁_exchange_aircraft_state_to_server.js
+// 1.1_🔁_exchange_aircraft_state_with_server.js
 
 // Ensure freeport is defined
 //if (typeof freeport === "undefined") {

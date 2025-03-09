@@ -7,9 +7,17 @@ initial_velocity: 30  # Initial velocity in m/s
 initial_altitude: 40  # Initial altitude in m
 
 
+# FLIGHT TEST PARAMETERS
+
+start_flight_data_recording_at:  6    # start recording in seconds after start of flight
+finish_flight_data_recording_at: 20    # finish recording in seconds after start of flight
+
+
 # VISUALIZATION PARAMETERS
 
 scenery_complexity: "medium"   #  "low", "medium" or "high"
-
+show_force_vectors: "true"     # "true", "false"  : Show lines representing force vectors
+show_velocity_vectors: "true"     # "true", "false"  : Show lines representing velocity vectors
+show_trajectory: "true"     # "true", "false"  : Show markers representing the trajectory
 
 
