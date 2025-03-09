@@ -1,58 +1,86 @@
-let freeport = 8000  // default value for the server port, it will be updated by the server
+// 0.1_🧾_initializations.js
+//
+// This file initializes mission parameters and graphics settings for the simulation.
 
-let aircraft = null;  // The sphere
-let planeNode = null; // TransformNode holding the simple plane
-let glbNode = null;   // TransformNode holding the loaded GLB
 
-let engine, scene;
-let velocity = { x: 30, y: 0, z: 0 }; // Initial velocity
+// default value for the server port, it will be updated by the server
+let freeport = 8000  // Default value for the scenery complexity, will be overriden by the value set in the mission.yaml file
+let scenery_complexity= "medium"
 
-let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
-let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
 
-let isPaused = false;
-let simulationEnded = false;
-let velocityLine; // Line to represent velocity vector
-let forceLine; // Line to represent force vector
-let simulationStartTime = Date.now();
-let lastFrameTime = Date.now();
-let elapsedTime = 0; // Total elapsed time
-let timeSinceLastUpdate = 0; // Accumulated time since last update
-let fps_demanded = 60 // Frames per second demanded
-let global_time_step = 1.0 / fps_demanded  // seconds, play ping-pong at this rate
-let distanceFromCenter = 0
+let current_graphic_settings = getGraphicSettings(scenery_complexity);
 
-let material; // Material for the aircraft
+// Expose the default settings globally so that they can be updated by other modules.
+window.current_graphic_settings = current_graphic_settings;
 
-// Pilot control inputs
-let forceX = 0.0;
+
+//---------------------------------------------------------------------
+// Function to return graphics settings based on the complexity level.
+// It normalizes the input string (trimming whitespace and converting to lower case)
+// so that any valid specification (e.g., "High", " high", "HIGH") is correctly matched.
+//---------------------------------------------------------------------
+function getGraphicSettings(complexity) {
+    const level = complexity.trim().toLowerCase();
+    const settings = {
+        low: {
+            ground: "none",
+            trees: "none",
+            sky: "flat"
+        },
+        medium: {
+            ground: "flat",
+            trees: "few",
+            sky: "medium"
+        },
+        high: {
+            ground: "island",
+            trees: "many",
+            sky: "full"
+        }
+    };
+    return settings[level] || settings.low;
+}
+
+
+//---------------------------------------------------------------------
+// Default mission parameters
+//---------------------------------------------------------------------
+let MISSION_INITIAL_VELOCITY = 30;   // Default initial velocity (m/s)
+let MISSION_INITIAL_ALTITUDE = 400;  // Default initial altitude (m)
+
+// Other global simulation variables:
+let aircraft = null;
+let velocity = { x: 30, y: 0, z: 0 };
+let orientation = { x: 0, y: 0, z: 0, w: 1 };
+let angularVelocity = { x: 0, y: 0, z: 0 };
+
+let forceX = 0
 let forceY = 0.0;
-let thrust_setting_demand = 0.0
-let thrust_attained = 0.0
+let thrust_setting_demand = 0.0;
+let thrust_attained = 0.0;
 
 let roll_demand = 0.0;
-let pitch_demand = 0.0
-let yaw_demand = 0.0
+let pitch_demand = 0.0;
+let yaw_demand = 0.0;
 
-let roll_demand_attained = 0.0;
+let roll_demand_attained  = 0.0;
 let pitch_demand_attained = 0.0;
-let yaw_demand_attained = 0.0;
+let yaw_demand_attained   = 0.0;
 
-// Global force values from server
 let forceGlobalX = 0.0;
 let forceGlobalY = 0.0;
 let forceGlobalZ = 0.0;
 
 let alpha_RAD = 0.0;
-let beta_RAD = 0.0;
+let beta_RAD  = 0.0;
 
-// Gamepad variables
 let gamepadIndex = null;
-
 let advancedTexture;
-let positionText, velocityText, forceText, angularVelocityText, momentText, timeText, joystickText, pauseButton, alphaText, betaTextText
+let positionText, velocityText, forceText, angularVelocityText,
+    momentText, timeText, joystickText, pauseButton,
+    alphaText, betaTextText;
 
 let joystickAxes = [0, 0, 0, 0];
-
 let joystickButtons = [];
 
+console.log("Loaded 0.1_🧾_initializations.js. current_graphic_settings=null until mission data arrives...");

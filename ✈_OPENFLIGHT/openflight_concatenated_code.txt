@@ -1,56 +1,97 @@
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight_✈.jl
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
 ###########################################
+
+using YAML
+using Dates
+using Sockets
+using Printf
+using LinearAlgebra
 
 # Absolute path of the directory containing the current script file.
 # It needs to be defined at the top.
 project_dir = dirname(@__FILE__)
 
-# Add required Julia packages in the first execution and ignore afterwards.
+# Mission file path
+mission_file = joinpath(@__DIR__, "default_mission.yaml")
+println("Loading mission file from: $mission_file")
+
+# Load mission data FIRST, before any includes
+mission_data = YAML.load_file(mission_file)
+
+# Define MISSION_DATA as a constant BEFORE including other files
+const MISSION_DATA = (
+    aircraft_name        = mission_data["aircraft_name"],
+    initial_velocity     = mission_data["initial_velocity"],
+    initial_altitude     = mission_data["initial_altitude"],
+    scenery_complexity   = mission_data["scenery_complexity"]
+)
+
+@info "Mission Data: aircraft=$(MISSION_DATA.aircraft_name), V0=$(MISSION_DATA.initial_velocity) m/s, alt0=$(MISSION_DATA.initial_altitude) m, complexity=$(MISSION_DATA.scenery_complexity)"
+
+# 1) Add required Julia packages and check for free WebSocket port:
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🎁_load_required_packages.jl")
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl")
 
-# Load general code and functions.
+# 2) Load aerodynamic and flight-model code:
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.4_📈_get_constants_and_interpolate_coefficients.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.1_📊_aircraft_aerodynamic_and_propulsive_data.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.1_▶_compute_aerodynamic_force_coeffs.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.2_⏩_compute_aerodynamic_moment_coeffs.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.3_🚀_compute_propulsive_forces.jl")
 
+# 3) Load math & auxiliary functions:
 include(raw"./SRC/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.1_🔮_quaternions_and_transformations.jl")
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.2_🛠_auxiliary_functions.jl")
 
+# 4) Load the simulation engine:
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.1_⭐_Runge_Kutta_4_integrator.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.2_🤸‍♀️_compute_6DOF_equations_of_motion.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.3_💥_handle_collisions.jl")
 include(raw"./src/🟣JULIA🟣/2_Simulation_engine/2.4_📶_compute_initial_flight_conditions.jl")
 
+# 5) Load websockets + flight-data code:
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.0_🌐_launch_web_browser.jl")
-include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🤝_Establish_WebSockets_connection.jl") 
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🤝_Establish_WebSockets_connection.jl")
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.2_🔁_Update_and_transfer_aircraft_state.jl")
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.3_📈_record_and_save_flight_data.jl")
 
+# 6) Load atmosphere, anemometry, and constants:
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.1_🎯_physical_constants.jl")
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.2_🌍_ISA76.jl")
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.3_🕑_anemometry.jl")
 
+# 7) Load control/actuator dynamics:
 include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actuator_and_Engine_Dynamics.jl")
 
-# Start the Web Browser by launching the client.
+# Launch the local web browser with the client front-end
 launch_client(project_dir)
 
-# Global timestamp for simulation start.
+# Global timestamp for simulation start
 const start_time = time()
 
-
-mission_file = joinpath(@__DIR__, raw"./default_mission.yaml")
-println("Loading mission file from: $mission_file")
-mision_data = YAML.load_file(mission_file)
-
-
-
-# Establish the WebSockets connection with graphical front-end.
+# Establish the WebSockets connection with front-end
 establish_websockets_connection()
+
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\default_mission.yaml
+###########################################
+
+
+# AIRCRAFT PARAMETERS
+
+aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
+
+initial_velocity: 30  # Initial velocity in m/s
+initial_altitude: 40  # Initial altitude in m
+
+
+# VISUALIZATION PARAMETERS
+
+scenery_complexity: "high"   #  "low", "medium" or "high"
+
+
+
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\flatten_openflight.jl
@@ -68,7 +109,7 @@ using Base.Filesystem: walkdir, basename, joinpath, splitext
 # 4. Specify folders to exclude (new feature)
 # -----------------------------------------------------------------------------
 folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT"
-extensions  = [".html", ".css", ".js", ".jl"]
+extensions  = [".html", ".css", ".js", ".jl", ".yaml", ".json"]
 output_file = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\openflight_concatenated_code.txt"
 exclude_folders = String[
     # Add folders to exclude (relative or absolute paths)
@@ -148,7 +189,7 @@ println("Total files processed: $(length(all_files))")
     <meta charset="UTF-8">
     <title>OPENFLIGHT Sim 2025</title>
     <link rel="stylesheet" href="./00_CSS_styles/styles.css">
-    <link rel="icon" href="./00_CSS_styles/aircraft.ico" sizes="any">
+    <link rel="icon" href="./00_CSS_styles/openflight.ico" sizes="any">
 
     <!-- ***Include downloaded Babylon.js and external libraries via local files*** -->
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.js"></script>
@@ -160,7 +201,6 @@ println("Total files processed: $(length(all_files))")
 
     <!-- Initialize global variables and aircraft state -->
     <script src="./0_INITIALIZATION/0.1_🧾_initializations.js"></script>
-    <script src="./0_INITIALIZATION/0.2_📺_graphic_settings.js"></script>
 
     <!-- Websockets connection and code to transfer aircraft state to and from server -->
     <script src="./1_AIRCRAFT_STATE_TRANSFER/1.1_🔁_exchange_aircraft_state_to_server.js"></script>
@@ -263,142 +303,111 @@ body {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\0_INITIALIZATION\0.1_🧾_initializations.js
 ###########################################
 
-let freeport = 8000  // default value for the server port, it will be updated by the server
+// 0.1_🧾_initializations.js
+//
+// This file initializes mission parameters and graphics settings for the simulation.
 
-let aircraft = null;  // The sphere
-let planeNode = null; // TransformNode holding the simple plane
-let glbNode = null;   // TransformNode holding the loaded GLB
+//---------------------------------------------------------------------
+// Function to return graphics settings based on the complexity level.
+// It normalizes the input string (trimming whitespace and converting to lower case)
+// so that any valid specification (e.g., "High", " high", "HIGH") is correctly matched.
+//---------------------------------------------------------------------
+function getGraphicSettings(complexity) {
+    const level = complexity.trim().toLowerCase();
+    const settings = {
+        low: {
+            ground: "none",
+            trees: "none",
+            sky: "flat"
+        },
+        medium: {
+            ground: "flat",
+            trees: "few",
+            sky: "medium"
+        },
+        high: {
+            ground: "island",
+            trees: "many",
+            sky: "full"
+        }
+    };
+    return settings[level] || settings.low;
+}
 
-let engine, scene;
-let velocity = { x: 30, y: 0, z: 0 }; // Initial velocity
+//---------------------------------------------------------------------
+// Set default graphics settings until mission data arrives.
+// The default here is set to "medium" (you can change this default as desired).
+// Once mission data is received via WebSocket the code should update this variable.
+//---------------------------------------------------------------------
+let current_graphic_settings = getGraphicSettings('medium');
+console.log("Using default graphics settings until mission data arrives:", current_graphic_settings);
 
-let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
-let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
+// Expose the default settings globally so that they can be updated by other modules.
+window.current_graphic_settings = current_graphic_settings;
 
-let isPaused = false;
-let simulationEnded = false;
-let velocityLine; // Line to represent velocity vector
-let forceLine; // Line to represent force vector
-let simulationStartTime = Date.now();
-let lastFrameTime = Date.now();
-let elapsedTime = 0; // Total elapsed time
-let timeSinceLastUpdate = 0; // Accumulated time since last update
-let fps_demanded = 60 // Frames per second demanded
-let global_time_step = 1.0 / fps_demanded  // seconds, play ping-pong at this rate
-let distanceFromCenter = 0
+//---------------------------------------------------------------------
+// Default mission parameters
+//---------------------------------------------------------------------
+let MISSION_INITIAL_VELOCITY = 30;   // Default initial velocity (m/s)
+let MISSION_INITIAL_ALTITUDE = 400;  // Default initial altitude (m)
 
-let material; // Material for the aircraft
+// Other global simulation variables:
+let aircraft = null;
+let velocity = { x: 30, y: 0, z: 0 };
+let orientation = { x: 0, y: 0, z: 0, w: 1 };
+let angularVelocity = { x: 0, y: 0, z: 0 };
 
-// Pilot control inputs
-let forceX = 0.0;
+let forceX = 0
 let forceY = 0.0;
-let thrust_setting_demand = 0.0
-let thrust_attained = 0.0
+let thrust_setting_demand = 0.0;
+let thrust_attained = 0.0;
 
 let roll_demand = 0.0;
-let pitch_demand = 0.0
-let yaw_demand = 0.0
+let pitch_demand = 0.0;
+let yaw_demand = 0.0;
 
-let roll_demand_attained = 0.0;
+let roll_demand_attained  = 0.0;
 let pitch_demand_attained = 0.0;
-let yaw_demand_attained = 0.0;
+let yaw_demand_attained   = 0.0;
 
-// Global force values from server
 let forceGlobalX = 0.0;
 let forceGlobalY = 0.0;
 let forceGlobalZ = 0.0;
 
 let alpha_RAD = 0.0;
-let beta_RAD = 0.0;
+let beta_RAD  = 0.0;
 
-// Gamepad variables
 let gamepadIndex = null;
-
 let advancedTexture;
-let positionText, velocityText, forceText, angularVelocityText, momentText, timeText, joystickText, pauseButton, alphaText, betaTextText
+let positionText, velocityText, forceText, angularVelocityText,
+    momentText, timeText, joystickText, pauseButton,
+    alphaText, betaTextText;
 
 let joystickAxes = [0, 0, 0, 0];
-
 let joystickButtons = [];
 
-
-###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\0_INITIALIZATION\0.2_📺_graphic_settings.js
-###########################################
-
-// Define possible options for each attribute
-const GRAPHIC_OPTIONS = {
-    ground: ['none', 'flat', 'island'],
-    trees: ['none', 'few', 'many'],
-    sky: ['flat', 'medium', 'full']
-  };
-  
-  // Parent structure with complexity levels
-  const graphic_settings = {
-    low: {
-      ground: GRAPHIC_OPTIONS.ground[0],
-      trees: GRAPHIC_OPTIONS.trees[0],
-      sky: GRAPHIC_OPTIONS.sky[0]
-    },
-    medium: {
-      ground: GRAPHIC_OPTIONS.ground[1],
-      trees: GRAPHIC_OPTIONS.trees[1],
-      sky: GRAPHIC_OPTIONS.sky[1]
-    },
-    high: {
-      ground: GRAPHIC_OPTIONS.ground[2],
-      trees: GRAPHIC_OPTIONS.trees[2],
-      sky: GRAPHIC_OPTIONS.sky[2]
-    }
-  };
-  
-  // Optional helper function to get settings
-  function getGraphicSettings(complexity) {
-    return graphic_settings[complexity.toLowerCase()] || graphic_settings.low;
-  }
-  
-
-
-
-// Accessing medium complexity settings
-//console.log(graphic_settings.medium); 
-// Returns: { ground: 'flat', trees: 'few', sky: 'medium' }
-
-
-// Using the helper function
-const current_graphic_settings = getGraphicSettings('high');
-// Returns high complexity configuration
-
-
+console.log("Loaded 0.1_🧾_initializations.js. current_graphic_settings=null until mission data arrives...");
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\1_AIRCRAFT_STATE_TRANSFER\1.1_🔁_exchange_aircraft_state_to_server.js
 ###########################################
 
-/***************************************************************
- * 1.1_🔁_exchange_aircraft_state_to_server.js
- *
- * Manages the WebSocket connection with the Julia server, sending
- * and receiving the aircraft’s state. The main change is that
- * we NO LONGER call updateTrajectory() in onmessage. We just set
- * the aircraft’s position and orientation, then update velocity/
- * force lines. The trajectory is updated in the render loop.
- ***************************************************************/
+// 1.1_🔁_exchange_aircraft_state_to_server.js
+
+// Ensure freeport is defined
+if (typeof freeport === "undefined") {
+    var freeport = 8000; // default port if not defined elsewhere
+}
 
 // Initialize WebSocket connection
-// freeport is a variable that holds the port number of the server, defined in 
-// "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" by the Julia code
-// "src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl"
 let ws = new WebSocket(`ws://localhost:${freeport}`);
 
-// --------------------------------------------------------------------------
-// Keep track of the last update time to compute a variable deltaTime for server calls.
-// --------------------------------------------------------------------------
+// For measuring time between client updates to pass deltaTime to the server
 let lastUpdateTime = performance.now();
 
-// Connection opened handler
+// Connection opened
 ws.onopen = () => {
-    console.log('Connected to WebSocket server');
+    console.log('Connected to WebSocket server, awaiting mission data...');
 };
 
 // Error handler
@@ -406,119 +415,138 @@ ws.onerror = (error) => {
     console.error('WebSocket Error:', error);
 };
 
-// Connection closed handler
+// Connection closed
 ws.onclose = () => {
     console.log('Disconnected from WebSocket server');
 };
 
-// --------------------------------------------------------------------------
-// Function to send aircraft state to server. We measure deltaTime ourselves;
-// the server uses this to run the integrator with a stable time step.
-// --------------------------------------------------------------------------
+/**
+ * Sends the current aircraft state to the server for integration.
+ * Called once per frame in the main render loop.
+ */
 function sendStateToServer() {
-    // Measure the actual time elapsed since the last call
-    const currentTime = performance.now();
-    const deltaTime = (currentTime - lastUpdateTime) / 1000.0; // ms -> s
-
-    lastUpdateTime = currentTime;
-
-    // Check if connection is open before sending
-    if (ws.readyState !== WebSocket.OPEN) {
-        console.error('WebSocket is not connected');
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
         return;
     }
 
-    // Create aircraft state object. We read the “aircraft” global state.
-    // If the aircraft or orientation are undefined, skip.
+    const now = performance.now();
+    const deltaTime = (now - lastUpdateTime) / 1000;
+    lastUpdateTime = now;
+
     if (!aircraft || !orientation) {
         return;
     }
 
     const aircraftState = {
-        // Position coordinates from Babylon.js object
         x: aircraft.position.x,
         y: aircraft.position.y,
         z: aircraft.position.z,
-
-        // Velocity components
         vx: velocity.x,
         vy: velocity.y,
         vz: velocity.z,
-
-        // Quaternion orientation from Babylon.js object
         qx: orientation.x,
         qy: orientation.y,
         qz: orientation.z,
         qw: orientation.w,
-
-        // Angular velocity in body frame
         wx: angularVelocity.x,
         wy: angularVelocity.y,
         wz: angularVelocity.z,
-
-        // Forces demands (these come from the user’s inputs)
         fx: forceX,
         fy: forceY,
         thrust_setting_demand: thrust_setting_demand,
-
-        // Control demands
         roll_demand: roll_demand,
         pitch_demand: pitch_demand,
         yaw_demand: yaw_demand,
-
-        // Forces attained (interpreted as setting, not actual force value)
         thrust_attained: thrust_attained,
-
-        // Attained control values (feedback from server might override them)
         roll_demand_attained: roll_demand_attained,
         pitch_demand_attained: pitch_demand_attained,
         yaw_demand_attained: yaw_demand_attained,
-
-        // The measured variable time step
         deltaTime: deltaTime
     };
 
-    // Send state as JSON string
     ws.send(JSON.stringify(aircraftState));
 }
 
-// --------------------------------------------------------------------------
-// Message handler for receiving server updates. The server integrator has
-// advanced the state. We set the new position, velocity, orientation, etc.
-// We NO LONGER call updateTrajectory() here to avoid mismatched timing.
-// Instead, we do that once per frame in the main render loop.
-// --------------------------------------------------------------------------
+/**
+ * Handler for messages from the server:
+ * 1) "missionData" => initial altitude, velocity, scenery_complexity, etc.
+ * 2) Normal integrator updates for aircraft state.
+ */
 ws.onmessage = (event) => {
-    // Parse received JSON data
     const responseData = JSON.parse(event.data);
-    
-    // Update aircraft position in Babylon.js space
+
+    if (responseData.messageType === "missionData") {
+        console.log("Received mission data from server:", responseData);
+
+        if (typeof window.MISSION_DATA === 'undefined') {
+            window.MISSION_DATA = {};
+        }
+        
+        const previousComplexity = window.MISSION_DATA.scenery_complexity || null;
+        
+        MISSION_DATA.initial_velocity = responseData.initial_velocity || MISSION_INITIAL_VELOCITY;
+        MISSION_DATA.initial_altitude = responseData.initial_altitude || MISSION_INITIAL_ALTITUDE;
+        MISSION_DATA.scenery_complexity = responseData.scenery_complexity || "low";
+        MISSION_DATA.aircraft_name = responseData.aircraft_name;
+        
+        MISSION_INITIAL_VELOCITY = MISSION_DATA.initial_velocity;
+        MISSION_INITIAL_ALTITUDE = MISSION_DATA.initial_altitude;
+        
+        current_graphic_settings = getGraphicSettings(MISSION_DATA.scenery_complexity);
+        console.log("=> Setting current_graphic_settings =>", current_graphic_settings);
+        
+        const complexityChanged = previousComplexity !== MISSION_DATA.scenery_complexity;
+        
+        // Use window.scene to ensure the scene is globally available
+        if (window.scene) {
+            if (!aircraft || complexityChanged || MISSION_DATA.scenery_complexity === "high") {
+                console.log("Building/rebuilding scene with new complexity:", MISSION_DATA.scenery_complexity);
+                
+                if (aircraft) {
+                    console.log("Disposing existing aircraft and scenery elements");
+                    if (glbNode) glbNode.dispose();
+                    if (planeNode) planeNode.dispose();
+                    
+                    const meshes = window.scene.meshes.slice();
+                    meshes.forEach(mesh => {
+                        if (mesh.name.includes("ground") ||
+                            mesh.name.includes("sky") ||
+                            mesh.name.includes("tree") ||
+                            mesh.name.includes("building") ||
+                            mesh.name.includes("runway")) {
+                            mesh.dispose();
+                        }
+                    });
+                    
+                    aircraft.dispose();
+                    aircraft = null;
+                }
+                
+                createWorldScenery(window.scene, shadowGenerator, window.scene.activeCamera);
+                createAircraft(window.scene.shadowGenerator, window.scene);
+            } else if (aircraft) {
+                aircraft.position.y = MISSION_INITIAL_ALTITUDE;
+                if (window.scene.updateCamerasForAircraft) {
+                    window.scene.updateCamerasForAircraft(aircraft);
+                }
+            }
+        }
+        return;
+    }
+
+    // Normal state update
     aircraft.position.x = parseFloat(responseData.x);
     aircraft.position.y = parseFloat(responseData.y);
     aircraft.position.z = parseFloat(responseData.z);
 
-    // Update velocity vector
     velocity.x = parseFloat(responseData.vx);
     velocity.y = parseFloat(responseData.vy);
     velocity.z = parseFloat(responseData.vz);
 
-    // Update orientation quaternion
     orientation.x = parseFloat(responseData.qx);
     orientation.y = parseFloat(responseData.qy);
     orientation.z = parseFloat(responseData.qz);
     orientation.w = parseFloat(responseData.qw);
-
-    // Update angular velocity
-    angularVelocity.x = parseFloat(responseData.wx);
-    angularVelocity.y = parseFloat(responseData.wy);
-    angularVelocity.z = parseFloat(responseData.wz);
-
-    // Update global forces
-    forceGlobalX = parseFloat(responseData.fx_global);
-    forceGlobalY = parseFloat(responseData.fy_global);
-    forceGlobalZ = parseFloat(responseData.fz_global);
-
-    // Update 3D model rotation (Babylon uses “rotationQuaternion”)
     aircraft.rotationQuaternion = new BABYLON.Quaternion(
         orientation.x,
         orientation.y,
@@ -526,21 +554,22 @@ ws.onmessage = (event) => {
         orientation.w
     );
 
-    // Update aerodynamic angles (in radians)
+    angularVelocity.x = parseFloat(responseData.wx);
+    angularVelocity.y = parseFloat(responseData.wy);
+    angularVelocity.z = parseFloat(responseData.wz);
+
+    forceGlobalX = parseFloat(responseData.fx_global);
+    forceGlobalY = parseFloat(responseData.fy_global);
+    forceGlobalZ = parseFloat(responseData.fz_global);
+
     alpha_RAD = parseFloat(responseData.alpha_RAD);
-    beta_RAD = parseFloat(responseData.beta_RAD);
+    beta_RAD  = parseFloat(responseData.beta_RAD);
 
-    // Update control feedback from server solution
     pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);
-    roll_demand_attained = parseFloat(responseData.roll_demand_attained);
-    yaw_demand_attained = parseFloat(responseData.yaw_demand_attained);
+    roll_demand_attained  = parseFloat(responseData.roll_demand_attained);
+    yaw_demand_attained   = parseFloat(responseData.yaw_demand_attained);
+    thrust_attained       = parseFloat(responseData.thrust_attained);
 
-    // Update thrust feedback
-    thrust_attained = parseFloat(responseData.thrust_attained);
-    
-    // We NO LONGER call updateTrajectory() here. We do it in the main loop.
-
-    // Update velocity and force lines (just the lines, not trajectory dots)
     updateVelocityLine();
     updateForceLine();
 };
@@ -549,15 +578,12 @@ ws.onmessage = (event) => {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\2_GUI\2.1_📟_gui.js
 ###########################################
 
+// 2.1_📟_gui.js
+
 // ------------------------------------------------------------
 // GUI Creation Functions
 // ------------------------------------------------------------
 
-/**
- * Creates and configures a text block with improved readability.
- * @param {string} color - Color of the text.
- * @returns {BABYLON.GUI.TextBlock} Configured text block.
- */
 function createStyledTextBlock(color = "white") {
   const textBlock = new BABYLON.GUI.TextBlock();
   textBlock.textWrapping = BABYLON.GUI.TextWrapping.WordWrap;
@@ -568,7 +594,7 @@ function createStyledTextBlock(color = "white") {
   textBlock.fontFamily = "Arial";
   textBlock.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
   textBlock.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-  // Add a subtle shadow for better contrast.
+  // Subtle shadow
   textBlock.shadowColor = "black";
   textBlock.shadowBlur = 0;
   textBlock.shadowOffsetX = 1;
@@ -576,37 +602,29 @@ function createStyledTextBlock(color = "white") {
   return textBlock;
 }
 
-// FPS calculation variables
+// For calculating FPS
 let fpsArray = [];
 const maxFpsArrayLength = 60;
 let lastFpsUpdateTime = performance.now();
 let fpsText;
 
-/**
- * Calculates current FPS based on recent frame times
- */
 function calculateFPS() {
   const currentTime = performance.now();
   const deltaTime = currentTime - lastFpsUpdateTime;
   lastFpsUpdateTime = currentTime;
-  
+
   fpsArray.push(deltaTime);
   if (fpsArray.length > maxFpsArrayLength) {
     fpsArray.shift();
   }
-  
-  const averageFrameTime = fpsArray.reduce((sum, time) => sum + time, 0) / fpsArray.length;
-  return Math.round(1000 / averageFrameTime);
+
+  const avgFrameTime = fpsArray.reduce((sum, t) => sum + t, 0) / fpsArray.length;
+  return Math.round(1000 / avgFrameTime);
 }
 
-/**
- * Creates the main GUI interface.
- */
 function createGUI() {
-  // Create the fullscreen UI texture.
   advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-  // Create the main container panel.
   const mainPanel = new BABYLON.GUI.StackPanel();
   mainPanel.width = "350px";
   mainPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -616,10 +634,10 @@ function createGUI() {
   mainPanel.background = "rgba(44, 62, 80, 0.8)";
   advancedTexture.addControl(mainPanel);
 
-  // Create a small toggle button to hide/show the panel.
+  // Small toggle button to hide/show the panel
   createPanelToggleButton(advancedTexture, mainPanel);
 
-  // Create header text.
+  // Header
   const headerText = createStyledTextBlock("white");
   headerText.text = "Flight Data";
   headerText.fontSize = 24;
@@ -627,42 +645,35 @@ function createGUI() {
   headerText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
   mainPanel.addControl(headerText);
 
-  // Create information text blocks.
+  // Info text blocks
   positionText = createStyledTextBlock();
   velocityText = createStyledTextBlock();
   timeText = createStyledTextBlock();
   alpha_beta_Text = createStyledTextBlock();
   joystickText = createStyledTextBlock();
   fpsText = createStyledTextBlock("#00ff00");
-  joystickText.fontSize = 16; // Slightly smaller for compactness
+  joystickText.fontSize = 16;
 
   [positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText].forEach(text => {
     mainPanel.addControl(text);
   });
 
-  // Create a horizontal container for the buttons.
+  // A horizontal row for buttons
   const buttonRow = new BABYLON.GUI.StackPanel();
   buttonRow.isVertical = false;
   buttonRow.width = "100%";
-  buttonRow.height = "50px"; // Explicit height to ensure the container is visible
+  buttonRow.height = "50px";
   buttonRow.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
   buttonRow.spacing = 10;
-  // (Optional: set a temporary background to verify visibility)
-  // buttonRow.background = "rgba(255,0,0,0.1)";
   mainPanel.addControl(buttonRow);
 
-  // Create the file load and pause buttons (smaller).
+  // The file load and pause buttons
   const fileLoadBtn = createFileLoadButton();
-  pauseButton = createPauseButton(); // Global variable used in pauseSimulation.
+  pauseButton = createPauseButton();
   buttonRow.addControl(fileLoadBtn);
   buttonRow.addControl(pauseButton);
 }
 
-/**
- * Creates a small toggle button in the top-left corner that hides/shows the main panel.
- * @param {BABYLON.GUI.AdvancedDynamicTexture} advancedTexture - The main UI texture.
- * @param {BABYLON.GUI.StackPanel} mainPanel - The main panel to toggle.
- */
 function createPanelToggleButton(advancedTexture, mainPanel) {
   const toggleButton = BABYLON.GUI.Button.CreateSimpleButton("toggleButton", "");
   toggleButton.width = "20px";
@@ -687,10 +698,6 @@ function createPanelToggleButton(advancedTexture, mainPanel) {
   advancedTexture.addControl(toggleButton);
 }
 
-/**
- * Creates and returns a button to load .glb files by triggering a hidden HTML <input type="file"> element.
- * @returns {BABYLON.GUI.Button} The file load button.
- */
 function createFileLoadButton() {
   const fileLoadButton = BABYLON.GUI.Button.CreateSimpleButton("fileLoadButton", "Load Aircraft (.glb)");
   fileLoadButton.width = "120px";
@@ -718,25 +725,20 @@ function createFileLoadButton() {
     }
   });
 
-  // Setup file input event listener.
+  // Setup file input event listener
   const fileInput = document.getElementById("fileInput");
   if (fileInput) {
     fileInput.addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (file) {
         console.log("Selected .glb file:", file.name);
-        // TODO: Load the .glb file into Babylon.
+        // TODO: Load .glb file
       }
     });
   }
-
   return fileLoadButton;
 }
 
-/**
- * Creates and returns a pause button.
- * @returns {BABYLON.GUI.Button} The pause button.
- */
 function createPauseButton() {
   const pauseBtn = BABYLON.GUI.Button.CreateSimpleButton("pauseButton", "Pause Simulation");
   pauseBtn.width = "120px";
@@ -745,11 +747,9 @@ function createPauseButton() {
   pauseBtn.fontSize = 16;
   pauseBtn.cornerRadius = 10;
   pauseBtn.thickness = 2;
-  // Set initial background to green (for "Pause Simulation")
   pauseBtn.background = "#4CAF50";
   pauseBtn.hoverCursor = "pointer";
-  
-  // Apply hover effects only if the button text is "Pause Simulation"
+
   pauseBtn.onPointerEnterObservable.add(() => {
     if (pauseBtn.textBlock.text === "Pause Simulation") {
       pauseBtn.background = "#45a049";
@@ -760,45 +760,45 @@ function createPauseButton() {
       pauseBtn.background = "#4CAF50";
     }
   });
-  
+
   pauseBtn.onPointerUpObservable.add(pauseSimulation);
   return pauseBtn;
 }
 
 /**
- * Updates all GUI information elements with compact, formatted text.
+ * Called each frame (in the main render loop) to update GUI text
  */
 function updateInfo() {
-  // Update location and altitude on separate lines.
+  // 1) If no aircraft yet, bail out
+  if (!aircraft) {
+    return;
+  }
+
+  // 2) If we do have an aircraft, we can read position
   positionText.text =
     `Location: N:${(-aircraft.position.z).toFixed(0)} | E:${(-aircraft.position.x).toFixed(0)}\nAlt: ${(3.2808399 * aircraft.position.y).toFixed(0)} ft / ${aircraft.position.y.toFixed(0)} m`;
 
-  const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
-  // Separate lines for speed and vertical speed.
+  const speed = Math.sqrt(velocity.x**2 + velocity.y**2 + velocity.z**2);
   velocityText.text =
     `Speed: ${(speed * 1.94384449).toFixed(0)} kt / ${(speed * 3.6).toFixed(0)} km/h / ${speed.toFixed(0)} m/s\nVario: ${velocity.y.toFixed(1)} m/s`;
 
   timeText.text = `Flight time: ${elapsedTime.toFixed(1)} s`;
 
-  alpha_beta_Text.text = `α: ${rad2deg(alpha_RAD).toFixed(1)}°  β: ${rad2deg(beta_RAD).toFixed(1)}°`;
+  alpha_beta_Text.text = `α: ${(alpha_RAD * 180 / Math.PI).toFixed(1)}°  β: ${(beta_RAD * 180 / Math.PI).toFixed(1)}°`;
 
-  // Update controls information.
   joystickText.text = `Controls: ${joystickAxes.map(v => v.toFixed(2)).join(", ")}`;
-  
-  // Update FPS counter
+
+  // FPS
   const currentFPS = calculateFPS();
   fpsText.text = `FPS: ${currentFPS}`;
-  
-  // Change color based on FPS
   if (currentFPS > 45) {
-    fpsText.color = "#00ff00"; // Green for good performance
+    fpsText.color = "#00ff00";
   } else if (currentFPS > 30) {
-    fpsText.color = "#ffff00"; // Yellow for moderate performance
+    fpsText.color = "#ffff00";
   } else {
-    fpsText.color = "#ff0000"; // Red for poor performance
+    fpsText.color = "#ff0000";
   }
 }
-
 
 
 
@@ -818,6 +818,7 @@ function pauseSimulation() {
   // Show/hide a big "pauseIndicator"
   if (isPaused) {
     if (!window.pauseIndicator) {
+      /**
       const pauseIndicatorRect = new BABYLON.GUI.Rectangle("pauseIndicator");
       pauseIndicatorRect.width = "220px";
       pauseIndicatorRect.height = "60px";
@@ -833,12 +834,13 @@ function pauseSimulation() {
       pauseText.color = "white";
       pauseText.fontSize = 12;
       pauseText.fontWeight = "bold";
-      pauseIndicatorRect.addControl(pauseText);
+      //pauseIndicatorRect.addControl(pauseText);
 
       advancedTexture.addControl(pauseIndicatorRect);
       window.pauseIndicator = pauseIndicatorRect;
+      */
     } else {
-      window.pauseIndicator.isVisible = true;
+      //window.pauseIndicator.isVisible = true;
     }
   } else {
     // On resume, hide
@@ -878,7 +880,7 @@ function pauseSimulation() {
       const titleText = new BABYLON.GUI.TextBlock("titleText");
       titleText.text = "FLIGHT CONTROLS";
       titleText.color = "white";
-      titleText.fontSize = 22; // Increased for better visibility
+      titleText.fontSize = 28; // Increased for better visibility
       titleText.fontWeight = "bold";
       titleBar.addControl(titleText);
 
@@ -887,13 +889,13 @@ function pauseSimulation() {
       contentPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
       contentPanel.top = "80px"; // Position below title bar
       contentPanel.width = "500px";
-      contentPanel.spacing = 10; // Add spacing between elements
+      contentPanel.spacing = 8; // Add spacing between elements
       
       // KEYBOARD CONTROLS SECTION
       const keyboardTitle = new BABYLON.GUI.TextBlock("keyboardTitle");
       keyboardTitle.text = "KEYBOARD CONTROLS";
       keyboardTitle.color = "#4CAF50";
-      keyboardTitle.fontSize = 18;
+      keyboardTitle.fontSize = 23;
       keyboardTitle.height = "30px";
       keyboardTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       contentPanel.addControl(keyboardTitle);
@@ -908,13 +910,13 @@ function pauseSimulation() {
         const cmdText = new BABYLON.GUI.TextBlock();
         cmdText.text = command;
         cmdText.color = "white";
-        cmdText.fontSize = 14; // Larger font size
+        cmdText.fontSize = 21; // Larger font size
         cmdText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
         const keysText = new BABYLON.GUI.TextBlock();
         keysText.text = keys;
         keysText.color = "#FFD700"; // Gold color for keys
-        keysText.fontSize = 14; // Larger font size
+        keysText.fontSize = 21; // Larger font size
         keysText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
 
         row.addControl(cmdText, 0, 0);
@@ -932,7 +934,7 @@ function pauseSimulation() {
 
       // Add spacing between keyboard and gamepad sections
       const spacer = new BABYLON.GUI.Rectangle("spacer");
-      spacer.height = "20px";
+      spacer.height = "10px";
       spacer.thickness = 0;
       spacer.background = "transparent";
       contentPanel.addControl(spacer);
@@ -951,11 +953,11 @@ function pauseSimulation() {
       const gamepadTitle = new BABYLON.GUI.TextBlock("gamepadTitle");
       gamepadTitle.text = "GAMEPAD CONTROLS";
       gamepadTitle.color = "#4CAF50";
-      gamepadTitle.fontSize = 18;
+      gamepadTitle.fontSize = 23;
       gamepadTitle.height = "40px";
       gamepadTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       gamepadTitle.paddingLeft = "10px";
-      gamepadTitle.paddingTop = "10px";
+      gamepadTitle.paddingTop = "15px";
       gamepadPanel.addControl(gamepadTitle);
 
       // Enhanced gamepad controls with more descriptive text
@@ -963,8 +965,8 @@ function pauseSimulation() {
       const gamepadYaw = createControlRow("Yaw/Throttle:", "Right stick");
       const gamepadPause = createControlRow("Pause/Resume:", "Start button");
       const gamepadCamera = createControlRow("Camera Toggle:", "A / B / X / Y");
-      const gamepadReset = createControlRow("Reset Position:", "Right Bumper (RB)");
-      const gamepadExtra = createControlRow("Button 6:", "Restart Mission");
+      const gamepadReset = createControlRow("Reset Position:", "START Button");
+      const gamepadExtra = createControlRow("Pause/Resume:", "SELECT Button");
       
       gamepadPanel.addControl(gamepadPitch);
       gamepadPanel.addControl(gamepadYaw);
@@ -980,7 +982,7 @@ function pauseSimulation() {
       const tipText = new BABYLON.GUI.TextBlock("tipText");
       tipText.text = "TIP: Connect gamepad before starting the simulation";
       tipText.color = "#FFD700";
-      tipText.fontSize = 12;
+      tipText.fontSize = 18;
       tipText.height = "30px";
       tipText.paddingTop = "12px";
       contentPanel.addControl(tipText);
@@ -990,7 +992,7 @@ function pauseSimulation() {
       dismissButton.width = "50px";
       dismissButton.height = "50px";
       dismissButton.color = "white";
-      dismissButton.fontSize = 14;
+      dismissButton.fontSize = 21;
       dismissButton.background = "#f44336";
       dismissButton.cornerRadius = 25;
       dismissButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -1364,69 +1366,82 @@ function updateForcesFromJoystickOrKeyboard(scene) {
 ###########################################
 
 /***************************************************************
- * Creates the main world scenery, applying fog settings and
- * delegating sub-elements (sky, ground, trees, runway, reference
- * cube) to specialized functions.
- *
- * Note: We treat the coordinate system such that:
- *   - x and z are the "ground plane" (horizontal).
- *   - y is the vertical axis (height).
- **************************************************************/
-function createWorldScenery(scene, shadowGenerator, camera) {
-    // Wavelengths along the x and z axes (for the compute_terrain_height)
-    const xWavelength = 833;   
-    const zWavelength = 500;   
+ * 4.1_🌍_create_world_scenery.js
+ * 
+ * Creates the main world scenery, using 'current_graphic_settings'
+ * to adjust ground style, sky, and tree density:
+ *   - sky: "flat" | "medium" | "full"
+ *   - ground: "none" | "flat" | "island"
+ *   - trees: "none" | "few"  | "many"
+ * 
+ * If scenery_complexity = "high", we expect:
+ *   ground = "island", trees = "many", sky = "full"
+ * If "medium", we get "flat", "few", "medium sky."
+ * If "low",   we get "none", "none", "flat sky," etc.
+ ***************************************************************/
 
-    // Store config parameters for ground undulation in the scene
+
+function createWorldScenery(scene, shadowGenerator, camera) {
+    console.log("Creating world scenery with graphics settings:", current_graphic_settings);
+
+    // Setup freq/amplitude for 'island' terrain (if used)
+    const xWavelength = 833;   
+    const zWavelength = 500;
     scene.groundConfig = {
         freqX: 1 / xWavelength,
         freqZ: 1 / zWavelength,
         amplitude: 500
     };
 
-    // Create the sky sphere behind/around everything
-    createSkySphere(scene, camera);
+    // 1) Sky - Based on complexity
+    if (current_graphic_settings.sky !== 'flat') {
+        // Create sphere + gradient
+        createSkySphere(scene, camera);
+        // Also enable some fog if not 'flat'
+        create_fog(scene);
+    } else {
+        // For 'flat' sky
+        scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
+    }
 
-    create_fog(scene)
+    // 2) Ground based on complexity
+    if (current_graphic_settings.ground !== 'none') {
+        create_procedural_ground_texture(
+            scene,
+            scene.groundConfig,
+            shadowGenerator,
+            current_graphic_settings
+        );
+    }
 
-    // Create the segmented ground with custom vertex colors
-    create_procedural_ground_texture(scene, scene.groundConfig, shadowGenerator, current_graphic_settings);
-
-    // (Optional) create reference objects, trees, runway, etc.
+    // 3) Always create the control tower as a reference point
     create_control_tower(scene, shadowGenerator);
 
-    create_lighthouses(scene, shadowGenerator)
+    // 4) Create trees based on complexity
+    if (current_graphic_settings.trees !== 'none') {
+        // Trees will be created in create_procedural_ground_texture 
+        // based on the complexity setting
+    }
 
-    create_wind_turbines(scene, shadowGenerator)
+    // 5) Create additional objects based on complexity
+    if (current_graphic_settings.trees === 'many') {
+        // These are higher-complexity objects that should only appear
+        // on the 'high' setting
+        create_buildings(scene, shadowGenerator);
+        create_lighthouses(scene, shadowGenerator);
+        create_wind_turbines(scene, shadowGenerator);
+    } else if (current_graphic_settings.trees === 'few') {
+        // Medium complexity - add only buildings but fewer
+        create_buildings(scene, shadowGenerator, true); // Pass true to indicate medium complexity
+    }
 
+    // Create runway regardless of complexity
+    document.fonts.load('120px "ICAORWYID"').then(() => {
+        createRunway(scene, scene.groundConfig);
+    });
 
-
-    //createRunway(scene, scene.groundConfig)
-
-// Wait until the font is loaded
-document.fonts.load('120px "ICAORWYID"').then(() => {
-    // Now we know the font is available!
-    // -> Create or update your dynamic texture here
-    createRunway(scene, scene.groundConfig)
-});
-
-    
-
-    const buildings = create_buildings(scene, shadowGenerator )
-
-
-    // Enable dynamic sea generation (call this after creating your scene and camera)
-    enableDynamicSeaGeneration(scene, scene.activeCamera )
-
-
-
+    console.log("World scenery creation complete; complexity =", current_graphic_settings);
 }
-
-
-
-
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.2_🌍_TERRAIN_AND_RUNWAY\4.2.1_🏞_create_terrain_height.js
@@ -1804,163 +1819,188 @@ function calculateVertexColor(params) {
 
 
   
+
+/**
+ * create_procedural_ground_texture
+ *
+ * Creates the ground by splitting it into segments, deforming it using a
+ * procedural terrain function, and applying per-vertex colors.
+ */
+function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, graphic_settings) {
+  // Array to store positions where trees will be spawned.
+  let treePositions = [];
+
+  // Determine tree spawning probabilities based on the provided graphic settings.
+  const probability_of_spawning_a_tree_fertile = {
+    none: 0,
+    few: 0.05,
+    many: 0.2,
+  }[graphic_settings.trees];
+
+  // Barren trees spawn less frequently.
+  let probability_of_spawning_a_tree_barren = probability_of_spawning_a_tree_fertile / 10;
+
+  // Basic parameters for segmenting the ground.
+  // Adjust segmentCount based on ground setting for performance
+  const segmentCount = graphic_settings.ground === 'island' ? 28 : 20;
+  const segmentSize = 200;
+  
+  // Threshold used in crop regions to decide color transitions.
+  const threshold = 0.1 * groundConfig.amplitude;
+
+  // Create a material that supports per-vertex coloring.
+  const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+  groundMaterial.useVertexColors = true;
+  groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+  groundMaterial.fogEnabled = true;
+
+  // A map to store consistent patch colors for regions (used in crop areas).
+  const patchColorMap = {};
+
   /**
-   * create_procedural_ground_texture
+   * getPatchColor
    *
-   * Creates the ground by splitting it into segments, deforming it using a
-   * procedural terrain function, and applying per-vertex colors.
+   * Returns a consistent patch color for a given world position. If a patch
+   * color hasn't been assigned yet, it randomly selects one from a predefined array.
+   *
+   * @param {Number} worldX - The X-coordinate in world space.
+   * @param {Number} worldZ - The Z-coordinate in world space.
+   * @returns {BABYLON.Color3} The patch color.
    */
-  function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, graphic_settings) {
-    // Array to store positions where trees will be spawned.
-    let treePositions = [];
-  
-    // Determine tree spawning probabilities based on the provided graphic settings.
-    const probability_of_spawning_a_tree_fertile = {
-      none: 0,
-      few: 0.05,
-      many: 0.2,
-    }[graphic_settings.trees];
-  
-    // Barren trees spawn less frequently.
-    let probability_of_spawning_a_tree_barren = probability_of_spawning_a_tree_fertile / 10;
-  
-    // Basic parameters for segmenting the ground.
-    const segmentCount = 28;
-    const segmentSize = 200;
-    // Threshold used in crop regions to decide color transitions.
-    const threshold = 0.1 * groundConfig.amplitude;
-  
-    // Create a material that supports per-vertex coloring.
-    const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-    groundMaterial.useVertexColors = true;
-    groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-    groundMaterial.fogEnabled = true;
-  
-    // A map to store consistent patch colors for regions (used in crop areas).
-    const patchColorMap = {};
-  
-    /**
-     * getPatchColor
-     *
-     * Returns a consistent patch color for a given world position. If a patch
-     * color hasn’t been assigned yet, it randomly selects one from a predefined array.
-     *
-     * @param {Number} worldX - The X-coordinate in world space.
-     * @param {Number} worldZ - The Z-coordinate in world space.
-     * @returns {BABYLON.Color3} The patch color.
-     */
-    function getPatchColor(worldX, worldZ) {
-      const patchSize = 200;
-      const patchX = Math.floor(worldX / patchSize);
-      const patchZ = Math.floor(worldZ / patchSize);
-      const patchKey = `${patchX}_${patchZ}`;
-  
-      if (!patchColorMap[patchKey]) {
-        // Assume "greenColors" is a predefined array of BABYLON.Color3.
-        const randomIndex = Math.floor(Math.random() * greenColors.length);
-        patchColorMap[patchKey] = greenColors[randomIndex];
-      }
-      return patchColorMap[patchKey];
+  function getPatchColor(worldX, worldZ) {
+    const patchSize = 200;
+    const patchX = Math.floor(worldX / patchSize);
+    const patchZ = Math.floor(worldZ / patchSize);
+    const patchKey = `${patchX}_${patchZ}`;
+
+    if (!patchColorMap[patchKey]) {
+      // Assume "greenColors" is a predefined array of BABYLON.Color3.
+      const randomIndex = Math.floor(Math.random() * greenColors.length);
+      patchColorMap[patchKey] = greenColors[randomIndex];
     }
+    return patchColorMap[patchKey];
+  }
+
+  // Define a light direction for shading effects and normalize it.
+  const dVec = new BABYLON.Vector3(-1, -2, -1);
+  dVec.normalize();
+
+  // Destructure terrain configuration parameters.
+  const { freqX, freqZ, amplitude } = groundConfig;
   
-    // Define a light direction for shading effects and normalize it.
-    const dVec = new BABYLON.Vector3(-1, -2, -1);
-    dVec.normalize();
+  // Adjust ground creation based on selected ground type
+  let groundStyle = graphic_settings.ground;
   
-    // Destructure terrain configuration parameters.
-    const { freqX, freqZ, amplitude } = groundConfig;
+  // Create subdivisions based on complexity
+  const subdivisions = {
+    'flat': 10,
+    'island': 40
+  }[groundStyle] || 10;
   
-    // Loop over the grid to create each ground segment.
-    for (let i = 0; i < segmentCount; i++) {
-      for (let j = 0; j < segmentCount; j++) {
-        // Calculate the center position for the current segment.
-        const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
-        const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
-  
-        // Create a ground mesh with subdivisions (for finer vertex control).
-        const groundSegment = BABYLON.MeshBuilder.CreateGround(
-          `groundSegment_${i}_${j}`,
-          {
-            width: segmentSize,
-            height: segmentSize,
-            subdivisions: 40, // Detail level for vertex manipulation.
-            updatable: true,
-          },
-          scene
-        );
-  
-        // Position the segment and assign the material.
-        groundSegment.position.set(centerX, 0, centerZ);
-        groundSegment.material = groundMaterial;
-        groundSegment.receiveShadows = true;
-        groundSegment.isAlwaysActive = true;
-  
-        // Retrieve vertex data from the mesh.
-        const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-        const indices = groundSegment.getIndices();
-        const colors = [];
-  
-        // Iterate over each vertex (each vertex has 3 values: x, y, z).
-        for (let v = 0; v < positions.length; v += 3) {
-          // Local vertex coordinates within the segment.
-          const localX = positions[v];
-          const localZ = positions[v + 2];
-          // Convert local coordinates to world coordinates.
-          const worldX = localX + centerX;
-          const worldZ = localZ + centerZ;
-  
-          // --- (A) Compute Terrain Height ---
-          let yVal = compute_terrain_height(worldX, worldZ, freqX, freqZ, amplitude);
-  
-          // Determine if the vertex is within special regions.
-          const inside_crops = worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000;
-          const inside_platform = worldX > 0 && worldX < 80 && worldZ > -120 && worldZ < 30;
-          const inside_runway_margins = worldX > -50 && worldX < 80 && worldZ > -600 && worldZ < 600;
-  
-          // --- (B) Calculate Vertex Color ---
-          // Pass the local getPatchColor function into calculateVertexColor.
-          const vertColor = calculateVertexColor({
-            yVal: yVal,
-            worldX: worldX,
-            worldZ: worldZ,
-            threshold: threshold,
-            amplitude: amplitude,
-            inside_crops: inside_crops,
-            inside_platform: inside_platform,
-            inside_runway_margins: inside_runway_margins,
-            freqX: freqX,
-            freqZ: freqZ,
-            dVec: dVec,
-            treePositions: treePositions,
-            probability_of_spawning_a_tree_fertile: probability_of_spawning_a_tree_fertile,
-            probability_of_spawning_a_tree_barren: probability_of_spawning_a_tree_barren,
-            getPatchColor: getPatchColor // passing the function as a parameter
-          });
-  
-          // --- (C) Adjust Vertex Height ---
-          // Flatten the sea surface: if the vertex is below sea level, set its y-coordinate to 0.
-          positions[v + 1] = yVal < 0 ? 0 : yVal;
-  
-          // --- (E) Append the Vertex Color ---
-          // Push the RGBA values for this vertex into the colors array.
-          colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
+  // Loop over the grid to create each ground segment.
+  for (let i = 0; i < segmentCount; i++) {
+    for (let j = 0; j < segmentCount; j++) {
+      // Calculate the center position for the current segment.
+      const centerX = (i - segmentCount / 2) * segmentSize + segmentSize / 2;
+      const centerZ = (j - segmentCount / 2) * segmentSize + segmentSize / 2;
+
+      // Create a ground mesh with subdivisions (for finer vertex control).
+      const groundSegment = BABYLON.MeshBuilder.CreateGround(
+        `groundSegment_${i}_${j}`,
+        {
+          width: segmentSize,
+          height: segmentSize,
+          subdivisions: subdivisions,
+          updatable: true,
+        },
+        scene
+      );
+
+      // Position the segment and assign the material.
+      groundSegment.position.set(centerX, 0, centerZ);
+      groundSegment.material = groundMaterial;
+      groundSegment.receiveShadows = true;
+      groundSegment.isAlwaysActive = true;
+
+      // Retrieve vertex data from the mesh.
+      const positions = groundSegment.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+      const indices = groundSegment.getIndices();
+      const colors = [];
+
+      // Iterate over each vertex (each vertex has 3 values: x, y, z).
+      for (let v = 0; v < positions.length; v += 3) {
+        // Local vertex coordinates within the segment.
+        const localX = positions[v];
+        const localZ = positions[v + 2];
+        // Convert local coordinates to world coordinates.
+        const worldX = localX + centerX;
+        const worldZ = localZ + centerZ;
+
+        // Compute Terrain Height (different based on ground style)
+        let yVal = 0;
+        if (groundStyle === 'flat') {
+          // Flat terrain with subtle variations
+          yVal = 0;
+        } else if (groundStyle === 'island') {
+          // Full undulating island terrain
+          yVal = compute_terrain_height(worldX, worldZ, freqX, freqZ, amplitude);
         }
-  
-        // Update the mesh with the new vertex positions and colors.
-        groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
-        groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
-  
-        // Recompute normals for correct lighting after vertex manipulation.
-        const normals = [];
-        BABYLON.VertexData.ComputeNormals(positions, indices, normals);
-        groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
+
+        // Determine if the vertex is within special regions.
+        const inside_crops = worldX > -400 && worldX < 200 && worldZ > -3000 && worldZ < 3000;
+        const inside_platform = worldX > 0 && worldX < 80 && worldZ > -120 && worldZ < 30;
+        const inside_runway_margins = worldX > -50 && worldX < 80 && worldZ > -600 && worldZ < 600;
+
+        // Calculate Vertex Color
+        // Pass the local getPatchColor function into calculateVertexColor.
+        const vertColor = calculateVertexColor({
+          yVal: yVal,
+          worldX: worldX,
+          worldZ: worldZ,
+          threshold: threshold,
+          amplitude: amplitude,
+          inside_crops: inside_crops,
+          inside_platform: inside_platform,
+          inside_runway_margins: inside_runway_margins,
+          freqX: freqX,
+          freqZ: freqZ,
+          dVec: dVec,
+          treePositions: treePositions,
+          probability_of_spawning_a_tree_fertile: probability_of_spawning_a_tree_fertile,
+          probability_of_spawning_a_tree_barren: probability_of_spawning_a_tree_barren,
+          getPatchColor: getPatchColor // passing the function as a parameter
+        });
+
+        // Adjust Vertex Height
+        // Flatten the sea surface: if the vertex is below sea level, set its y-coordinate to 0.
+        positions[v + 1] = yVal < 0 ? 0 : yVal;
+
+        // Append the Vertex Color
+        // Push the RGBA values for this vertex into the colors array.
+        colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
       }
+
+      // Update the mesh with the new vertex positions and colors.
+      groundSegment.setVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+      groundSegment.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+
+      // Recompute normals for correct lighting after vertex manipulation.
+      const normals = [];
+      BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+      groundSegment.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, true);
     }
-  
-    // After creating the ground, create trees at the recorded positions.
-    createRandomTrees(scene, shadowGenerator, treePositions);
+  }
+
+  // After creating the ground, create trees at the recorded positions.
+  if (graphic_settings.trees !== 'none') {
+      createRandomTrees(scene, shadowGenerator, treePositions);
   }
   
+  // Enable dynamic sea generation for 'island' terrain only
+  if (graphic_settings.ground === 'island') {
+      enableDynamicSeaGeneration(scene);
+  }
+}
 
 
 
@@ -2488,131 +2528,144 @@ runway.physicsImpostor = new BABYLON.PhysicsImpostor(
 ###########################################
 
 /***************************************************************
+ * 4.2.4_🌖_create_sky_sphere_and_fog.js
+ * 
+ * Creates a large sky sphere with a vertical gradient. Also
+ * configures linear fog. Then, updateSkySphereDiameter ensures
+ * the sphere scales so the camera remains inside it. 
+ ***************************************************************/
+
+/**
  * Creates a large sky sphere with a vertical gradient texture.
  * Automatically positions it based on the camera target.
- **************************************************************/
+ */
 function createSkySphere(scene, camera) {
-    // Create a sphere (with inverted normals) to serve as the sky dome.
+    // Create a sphere (with inverted normals) as the sky dome
     const skySphere = BABYLON.MeshBuilder.CreateSphere(
         "skySphere",
-        { diameter: 7000, sideOrientation: BABYLON.Mesh.BACKSIDE },
+        { 
+            diameter: 7000, 
+            sideOrientation: BABYLON.Mesh.BACKSIDE,
+            segments: (current_graphic_settings.sky === 'full') ? 32 : 16
+        },
         scene
     );
 
-    // Create a dynamic texture to paint a vertical gradient.
-    const textureSize = 512;
+    // Dynamic texture for vertical gradient
+    const textureSize = (current_graphic_settings.sky === 'full') ? 512 : 256;
     const skyTexture = new BABYLON.DynamicTexture(
         "skyTexture",
         { width: textureSize, height: textureSize },
         scene
     );
-
-    // Get the 2D drawing context of the texture.
     const ctx = skyTexture.getContext();
 
-    // Create a vertical gradient from a warm color (top) to a lighter color (bottom).
-    const gradient = ctx.createLinearGradient(0, 0, 0, textureSize);
-    gradient.addColorStop(0, "rgb(246, 97, 42)");   // Near the top.
-    gradient.addColorStop(1, "rgb(229, 229, 240)");   // Near the bottom.
-
-    // Fill the texture with the gradient.
+    // Choose gradient based on complexity
+    let gradient;
+    if (current_graphic_settings.sky === 'full') {
+        gradient = ctx.createLinearGradient(0, 0, 0, textureSize);
+        gradient.addColorStop(0,    "rgb(246, 97, 42)");    // top
+        gradient.addColorStop(0.4,  "rgb(253, 184, 119)"); 
+        gradient.addColorStop(0.7,  "rgb(208, 218, 224)");
+        gradient.addColorStop(1.0,  "rgb(229, 229, 240)");  // bottom
+    } else {
+        // medium or simpler
+        gradient = ctx.createLinearGradient(0, 0, 0, textureSize);
+        gradient.addColorStop(0,    "rgb(246, 97, 42)");
+        gradient.addColorStop(1.0,  "rgb(229, 229, 240)");
+    }
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, textureSize, textureSize);
     skyTexture.update();
 
-    // Create a material that uses the gradient texture.
+    // Material for sphere
     const skyMaterial = new BABYLON.StandardMaterial("skyMaterial", scene);
-    skyMaterial.backFaceCulling = false;  // Render the inside of the sphere.
+    skyMaterial.backFaceCulling = false;
     skyMaterial.diffuseTexture = skyTexture;
     skyMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
-
-    // Apply the material to the sky sphere.
     skySphere.material = skyMaterial;
-    skySphere.isAlwaysActive = true; // Ensure it renders even if outside the frustum.
+    skySphere.isAlwaysActive = true;
 
-    // Align the sky sphere with the camera target if available.
+    // Position the sky sphere at the camera target if available
     if (camera && camera.target) {
         skySphere.position.copyFrom(camera.target);
     } else {
-        //console.warn("Camera or camera.target is undefined. Positioning sky sphere at the origin.");
         skySphere.position = BABYLON.Vector3.Zero();
     }
 
-    // Optionally rotate the sky sphere (here rotated 90° around the Z-axis).
+    // Optionally rotate
     skySphere.rotation.z = Math.PI / 2;
 
     return skySphere;
 }
 
-
-/***************************************************************
- * Dynamically updates the sky sphere's diameter to ensure that the
- * camera remains safely inside it, preserving the fog effect.
- * This function scales the sphere based on:
- *   1. The aircraft's distance from the origin.
- *   2. The camera's distance from the aircraft (with a margin).
- **************************************************************/
+/**
+ * Dynamically updates the sky sphere's diameter so the camera
+ * remains inside it, preserving the fog effect.
+ */
 function updateSkySphereDiameter(scene, camera) {
-    // Use the provided camera or fall back to the scene's active camera.
+    // Use provided camera or fallback to active camera
     const activeCam = camera || scene.activeCamera;
     if (!activeCam) {
-        console.warn("No active camera found for updating sky sphere diameter.");
         return;
     }
-    
-    // Ensure the aircraft is defined (assuming 'aircraft' is a global mesh).
-    if (typeof aircraft === "undefined") {
-        console.warn("Aircraft is undefined. Cannot update sky sphere diameter based on aircraft position.");
+
+    // If there's no aircraft yet, skip
+    if (!aircraft) {
         return;
     }
+
+    // Retrieve the sky sphere
+    const skySphere = scene.getMeshByName("skySphere");
     
-    // Calculate how far the aircraft is from the origin.
+    // Only proceed if sky sphere exists
+    if (!skySphere) {
+        return; // Silently return instead of logging an error
+    }
+
+    // How far is aircraft from origin?
     const distanceFromCenter = aircraft.position.length();
 
-    // Set the base diameter for the sky sphere.
+    // Base diameter
     let newDiameter = 7000;
-    // Increase the diameter if the aircraft is far from the origin.
+
+    // Increase if the aircraft is far
     if (distanceFromCenter > 2000) {
         newDiameter += (distanceFromCenter - 2000) * 2;
     }
-    
-    // Additionally, ensure the sky sphere is large enough relative to the camera.
-    const margin = 500; // Desired minimum distance between the camera and the sphere's inner surface.
+
+    // Ensure big enough vs. camera distance
+    const margin = 500;
     const camDistance = BABYLON.Vector3.Distance(activeCam.position, aircraft.position);
-    // If the sphere's radius is too small, adjust the diameter.
     if (newDiameter / 2 < camDistance + margin) {
         newDiameter = (camDistance + margin) * 2;
     }
 
-    // Retrieve the sky sphere from the scene.
-    const skySphere = scene.getMeshByName("skySphere");
-    if (skySphere) {
-        // Calculate the uniform scaling factor.
-        const scale = newDiameter / 7000; // 7000 is the base diameter.
-        skySphere.scaling = new BABYLON.Vector3(scale, scale, scale);
+    // Scale factor
+    const scale = newDiameter / 7000; 
+    skySphere.scaling = new BABYLON.Vector3(scale, scale, scale);
+}
+
+
+
+/**
+ * Configures linear fog for the scene, based on complexity
+ */
+function create_fog(scene) {
+    scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
+
+    if (current_graphic_settings.sky === 'full') {
+        scene.fogStart = 300.0;
+        scene.fogEnd = 2800.0;
+        scene.fogColor = new BABYLON.Color3(180/255, 206/255, 255/255);
+        scene.fogDensity = 0.58;
     } else {
-        console.warn("Sky sphere not found in the scene.");
+        scene.fogStart = 500.0;
+        scene.fogEnd = 2000.0;
+        scene.fogColor = new BABYLON.Color3(180/255, 206/255, 255/255);
+        scene.fogDensity = 0.4;
     }
 }
-
-
-/***************************************************************
- * Configures linear fog to enhance atmospheric depth.
- **************************************************************/
-function create_fog(scene) {
-    // Enable linear fog.
-    scene.fogMode   = BABYLON.Scene.FOGMODE_LINEAR;
-    scene.fogStart  = 300.0;
-    scene.fogEnd    = 2800.0;
-    scene.fogColor  = new BABYLON.Color3(180 / 255, 206 / 255, 255 / 255);
-    scene.fogDensity = 0.58;
-    // Uncomment and adjust these if needed:
-    // scene.fogNearPlane = 10.0;
-    // scene.fogFarPlane = 10000.0;
-    // scene.fogEnabled = true;
-}
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.3_🏡_WORLD_OBJECTS\4.3.1_🏠_generic_house_constructor.js
@@ -2952,13 +3005,21 @@ function create_control_tower(scene, shadowGenerator) {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.3_🏡_WORLD_OBJECTS\4.3.3_🌲_create_trees.js
 ###########################################
 
+// In file: 4.3_🏡_WORLD_OBJECTS/4.3.3_🌲_create_trees.js
+
 /***************************************************************
  * Creates trees across the terrain using thin instances with color variations
  * Includes natural green variations and 10% autumn-colored trees
  **************************************************************/
 function createRandomTrees(scene, shadowGenerator, treePositions) {
+    // Check if we should create trees based on graphics settings
+    if (current_graphic_settings.trees === 'none') {
+        console.log("Tree creation skipped: graphic settings set to 'none'");
+        return;
+    }
+
     const treeCount = treePositions.length;
-    console.log(`There are ${treeCount} trees on the island`);
+    console.log(`Creating ${treeCount} trees on the island with setting: ${current_graphic_settings.trees}`);
 
     // Create base tree mesh
     const baseTree = BABYLON.MeshBuilder.CreateCylinder(
@@ -2980,11 +3041,26 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
     treeMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     baseTree.material = treeMaterial;
 
-    // Initialize data buffers
-    const matricesData = new Float32Array(treeCount * 16);
-    const colorData = new Float32Array(treeCount * 4);  // RGBA colors
+    // Adjust tree count based on graphics setting
+    let adjustedTreeCount = treeCount;
+    if (current_graphic_settings.trees === 'few') {
+        // Reduce to 20% of the original count for 'few' setting
+        adjustedTreeCount = Math.max(50, Math.floor(treeCount * 0.2));
+        console.log(`Adjusted tree count to ${adjustedTreeCount} (${current_graphic_settings.trees} setting)`);
+    }
 
-    for (let i = 0; i < treeCount; i++) {
+    // Initialize data buffers
+    const matricesData = new Float32Array(adjustedTreeCount * 16);
+    const colorData = new Float32Array(adjustedTreeCount * 4);  // RGBA colors
+
+    // Use a sampling step to skip trees based on adjusted count
+    const samplingStep = Math.max(1, Math.floor(treeCount / adjustedTreeCount));
+    console.log(`Using sampling step of ${samplingStep} for tree creation`);
+
+    let actualTreeCount = 0;
+    for (let i = 0; i < treeCount; i += samplingStep) {
+        if (actualTreeCount >= adjustedTreeCount) break;
+
         // Random dimensions
         const treeHeight = Math.random() * 9 + 7;
         const treeBaseRadius = Math.random() * 2 + 3;
@@ -3000,11 +3076,11 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
             new BABYLON.Vector3(treeBaseRadius / 4, treeHeight / 15, treeBaseRadius / 4),
             BABYLON.Quaternion.Identity(),
             new BABYLON.Vector3(treeX, treeY, treeZ)
-        ).copyToArray(matricesData, i * 16);
+        ).copyToArray(matricesData, actualTreeCount * 16);
 
         // Set instance color
         let color;
-        if (Math.random() < 0.01) {  // 10% chance for autumn color
+        if (Math.random() < 0.1) {  // 10% chance for autumn color
             color = new BABYLON.Color3(97/255, 88/255, 11/255);  // Red-brown
         } else {  // Natural green variation
             color = new BABYLON.Color3(
@@ -3014,16 +3090,19 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
             );
         }
        
-
         // Store color in buffer (RGBA format)
-        color.toArray(colorData, i * 4);
-        colorData[i * 4 + 3] = 1;  // Alpha channel
+        color.toArray(colorData, actualTreeCount * 4);
+        colorData[actualTreeCount * 4 + 3] = 1;  // Alpha channel
+        
+        actualTreeCount++;
     }
 
     // Set thin instance buffers
-    baseTree.thinInstanceSetBuffer("matrix", matricesData, 16);
-    baseTree.thinInstanceSetBuffer("color", colorData, 4);
+    baseTree.thinInstanceSetBuffer("matrix", matricesData.slice(0, actualTreeCount * 16), 16);
+    baseTree.thinInstanceSetBuffer("color", colorData.slice(0, actualTreeCount * 4), 4);
     baseTree.isVisible = true;
+    
+    console.log(`Successfully created ${actualTreeCount} trees`);
 }
 
 ###########################################
@@ -3034,8 +3113,15 @@ function createRandomTrees(scene, shadowGenerator, treePositions) {
  * Creates various buildings in the scene using the createFlexibleHouse function.
  * @param {BABYLON.Scene} scene
  * @param {BABYLON.ShadowGenerator} shadowGenerator
+ * @param {boolean} isMediumComplexity - Whether to create fewer buildings (medium complexity mode)
  */
-function create_buildings(scene, shadowGenerator) {
+function create_buildings(scene, shadowGenerator, isMediumComplexity = false) {
+  // Validate required parameters
+  if (!scene || !shadowGenerator) {
+      console.warn("Scene or shadowGenerator missing in create_buildings");
+      return {};
+  }
+  
   // Pre-create dynamic text textures
   const UEM_AERO = createCustomTextTexture(scene, {
     width: 782,
@@ -3082,8 +3168,13 @@ function create_buildings(scene, shadowGenerator) {
       roofOverhang: 0.0,
       proceduralTexture: WC_text,
       meshesToTexture: ["houseBody"]
-    },
-    cottage1: {
+    }
+  };
+  
+  // If medium complexity, just create the essentials
+  if (!isMediumComplexity) {
+    // Add additional buildings only for high complexity
+    buildingsConfig.cottage1 = {
       short: 8,
       long: 17,
       height: 4,
@@ -3092,8 +3183,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 3.0,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    cottage2: {
+    };
+    buildingsConfig.cottage2 = {
       short: 9,
       long: 17,
       height: 4,
@@ -3102,8 +3193,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 2.0,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    cottage3: {
+    };
+    buildingsConfig.cottage3 = {
       short: 8,
       long: 15,
       height: 4,
@@ -3112,8 +3203,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 2.3,
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    bridge: {
+    };
+    buildingsConfig.bridge = {
       short: 6,
       long: 150,
       height: 3,
@@ -3123,8 +3214,8 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#853d10",
       roofColor: "#a39e93",
       roofOverhang: 2.0
-    },
-    little_tower: {
+    };
+    buildingsConfig.little_tower = {
       short: 4,
       long: 4,
       height: 15,
@@ -3132,8 +3223,8 @@ function create_buildings(scene, shadowGenerator) {
       position: new BABYLON.Vector3(-858, 8.8, -2145),
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    little_tower_house: {
+    };
+    buildingsConfig.little_tower_house = {
       short: 8,
       long: 17,
       height: 5,
@@ -3141,8 +3232,8 @@ function create_buildings(scene, shadowGenerator) {
       position: new BABYLON.Vector3(-858, 8.8, -2153),
       boxColor: "#ffe5b4",
       roofColor: "#c24e10"
-    },
-    central_body_reyes: {
+    };
+    buildingsConfig.central_body_reyes = {
       short: 6,
       long: 13,
       height: 4,
@@ -3151,8 +3242,8 @@ function create_buildings(scene, shadowGenerator) {
       rotationY_DEG: 0,
       boxColor: "#ffffff",
       roofColor: "#c24e10"
-    },
-    aft_body_reyes: {
+    };
+    buildingsConfig.aft_body_reyes = {
       short: 6,
       long: 7,
       height: 6,
@@ -3162,8 +3253,8 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#ffffff",
       roofColor: "#c24e10",
       force_gable: true
-    },
-    side_body_reyes: {
+    };
+    buildingsConfig.side_body_reyes = {
       short: 4,
       long: 6,
       height: 5,
@@ -3173,8 +3264,8 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#ffffff",
       roofColor: "#c24e10",
       force_gable: true
-    },
-    tower_reyes: {
+    };
+    buildingsConfig.tower_reyes = {
       short: 1.5,
       long: 1.5,
       height: 6,
@@ -3184,36 +3275,19 @@ function create_buildings(scene, shadowGenerator) {
       boxColor: "#ffffff",
       roofColor: "#ffffff",
       force_gable: false
-    }
-  };
-
-  // Create each building
-  for (const name in buildingsConfig) {
-    createFlexibleHouse(scene, shadowGenerator, buildingsConfig[name]);
+    };
   }
 
-  // Validate required parameters
-  if (!scene || !shadowGenerator) {
-      throw new Error("Scene and shadowGenerator are required");
-  }
-  
-  // Return empty object if no config provided
-  if (!buildingsConfig) {
-      console.warn("No building configurations provided");
-      return {};
-  }
-  
+  // Create the buildings
   const buildings = {};
   
   // Create each building based on the provided configuration
   for (const [buildingName, params] of Object.entries(buildingsConfig)) {
-      buildings[buildingName] = createFlexibleHouse(scene, shadowGenerator, params);
+    buildings[buildingName] = createFlexibleHouse(scene, shadowGenerator, params);
   }
   
   return buildings;
 }
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.3_🏡_WORLD_OBJECTS\4.3.5_🗼_create_lighthouses.js
@@ -3443,25 +3517,15 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 function create_lighthouses(scene, shadowGenerator) {
+    // Only create lighthouse if we're in high complexity mode
+    if (current_graphic_settings.trees !== 'many') {
+        console.log("Skipping lighthouses in low/medium complexity mode");
+        return;
+    }
 
-// Create the Morse tower at position (10,0,5) with 8 segments,
+    // Create the Morse tower at position
     const morseTower = createMorseTower(scene, shadowGenerator, {
-
-        // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
         basePosition: new BABYLON.Vector3(1971, 249, 955),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
@@ -3474,8 +3538,6 @@ function create_lighthouses(scene, shadowGenerator) {
     });
     
     const lighthouse = createMorseTower(scene, shadowGenerator, {
-    
-        // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
         basePosition: new BABYLON.Vector3(-1986, 25, -1380),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
@@ -3485,8 +3547,19 @@ function create_lighthouses(scene, shadowGenerator) {
         blinkUnit: 300,         // ms for a dot
         separationTime: 1000    // ms of pause after pattern
     });
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.3_🏡_WORLD_OBJECTS\4.3.6._💡_blinking_light_constructor.js
@@ -3840,64 +3913,62 @@ function createWindTurbine({
 
 
 function create_wind_turbines(scene, shadowGenerator) {
+  // Only create turbines if we're in high complexity mode
+  if (current_graphic_settings.trees !== 'many') {
+      console.log("Skipping wind turbines in low/medium complexity mode");
+      return;
+  }
 
-// Create a wind turbine with base at (0,0,0), tower height 120,
-// light gray color, rotor speed 12 rpm, and nacelle oriented 45° from north.
-const turbine1 = createWindTurbine({
-  baseX: 1152,
-  baseY: 234,
-  baseZ: 785,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 12,
-  orientationAngle: 93,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
-
-
-const turbine2 = createWindTurbine({
-  baseX: 1222,
-  baseY: 249,
-  baseZ: 708,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 10,
-  orientationAngle: 95,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
-
-const turbine3 = createWindTurbine({
-  baseX: 1307,
-  baseY: 261,
-  baseZ: 639,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 13,
-  orientationAngle: 92,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
+  const turbine1 = createWindTurbine({
+      baseX: 1152,
+      baseY: 234,
+      baseZ: 785,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 12,
+      orientationAngle: 93,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
 
 
-const turbine4 = createWindTurbine({
-  baseX: 1473,
-  baseY: 271,
-  baseZ: 590,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 12,
-  orientationAngle: 95,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
+  const turbine2 = createWindTurbine({
+      baseX: 1222,
+      baseY: 249,
+      baseZ: 708,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 10,
+      orientationAngle: 95,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
+
+  const turbine3 = createWindTurbine({
+      baseX: 1307,
+      baseY: 261,
+      baseZ: 639,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 13,
+      orientationAngle: 92,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
 
 
-
-
+  const turbine4 = createWindTurbine({
+      baseX: 1473,
+      baseY: 271,
+      baseZ: 590,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 12,
+      orientationAngle: 95,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
 }
-
 
   
 
@@ -3923,8 +3994,14 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
 
     // Create the main aircraft sphere.
     aircraft = BABYLON.MeshBuilder.CreateSphere("aircraft", { diameter: 0.1 }, scene);
-    aircraft.position.y = 430;
+    
+    // Use the mission-specified altitude instead of a hardcoded value
+    // Fall back to 400 meters as a default if MISSION_INITIAL_ALTITUDE isn't set
+    const initialAltitude = typeof MISSION_INITIAL_ALTITUDE !== 'undefined' ? MISSION_INITIAL_ALTITUDE : 400;
+    aircraft.position.y = initialAltitude;
     aircraft.rotationQuaternion = new BABYLON.Quaternion(0, 0, 0, 1);
+
+    console.log(`Creating aircraft at altitude: ${initialAltitude}m`);
 
     // Create a transform node to hold the simple aircraft geometry.
     planeNode = new BABYLON.TransformNode("simpleAircraft", scene);
@@ -4111,6 +4188,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     strobeLightSphere.sphere.parent = planeNode;
     strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.25, 0);
 
+    // Update all cameras to point at the new aircraft position
     if (scene.updateCamerasForAircraft) {
         scene.updateCamerasForAircraft(aircraft);
     }
@@ -4416,53 +4494,75 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\5_3D_FLIGHT_DATA_VISUALIZATION\5.1_📐_draw_forces_and_velocities.js
 ###########################################
 
-/**
- * Converts radians to degrees
- * @param {number} rad - Angle in radians
- * @returns {number} Angle in degrees
- */
-const rad2deg = rad => (rad * 180.0) / Math.PI;
+// 5.1_📐_draw_forces_and_velocities.js
 
-function createVelocityLine() {
+// Global variables to hold the lines
+let velocityLine, forceLine;
+
+/**
+ * Creates a line mesh for visualizing velocity.
+ * @param {BABYLON.Scene} scene - The Babylon.js scene.
+ */
+function createVelocityLine(scene) {
     // Create initial points
-    const points = [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 0, 0)];
+    const points = [
+        new BABYLON.Vector3(0, 0, 0),
+        new BABYLON.Vector3(0, 0, 0)
+    ];
     velocityLine = BABYLON.MeshBuilder.CreateLines("velocityLine", { points: points }, scene);
     velocityLine.color = BABYLON.Color3.Red();
     velocityLine.renderingGroupId = 1;
 }
 
-function createForceLine() {
+/**
+ * Creates a line mesh for visualizing force.
+ * @param {BABYLON.Scene} scene - The Babylon.js scene.
+ */
+function createForceLine(scene) {
     // Create initial points
-    const points = [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 0, 0)];
+    const points = [
+        new BABYLON.Vector3(0, 0, 0),
+        new BABYLON.Vector3(0, 0, 0)
+    ];
     forceLine = BABYLON.MeshBuilder.CreateLines("forceLine", { points: points }, scene);
     forceLine.color = BABYLON.Color3.Blue();
     forceLine.renderingGroupId = 1;
 }
 
+/**
+ * Updates the velocity line based on the current aircraft position and velocity.
+ */
 function updateVelocityLine() {
+    if (!aircraft || !velocityLine) return;
+    
     const origin = aircraft.position.clone();
     const velocityVector = new BABYLON.Vector3(velocity.x, velocity.y, velocity.z);
     
-    // Scale the velocity vector for visualization
+    // Scale the velocity vector for visualization purposes.
     const scaleFactor = 0.3;
     const endPoint = origin.add(velocityVector.scale(scaleFactor));
     
-    // Update existing line points
+    // Update the line's vertices.
     velocityLine.setVerticesData(BABYLON.VertexBuffer.PositionKind, [
         origin.x, origin.y, origin.z,
         endPoint.x, endPoint.y, endPoint.z
     ]);
 }
 
+/**
+ * Updates the force line based on the current aircraft position and global forces.
+ */
 function updateForceLine() {
+    if (!aircraft || !forceLine) return;
+    
     const origin = aircraft.position.clone();
     const forceVector = new BABYLON.Vector3(forceGlobalX, forceGlobalY, forceGlobalZ);
     
-    // Scale the force vector for visualization
-    const scaleFactor = .002;
+    // Scale the force vector for visualization purposes.
+    const scaleFactor = 0.002;
     const endPoint = origin.add(forceVector.scale(scaleFactor));
     
-    // Update existing line points
+    // Update the line's vertices.
     forceLine.setVerticesData(BABYLON.VertexBuffer.PositionKind, [
         origin.x, origin.y, origin.z,
         endPoint.x, endPoint.y, endPoint.z
@@ -4473,58 +4573,69 @@ function updateForceLine() {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\5_3D_FLIGHT_DATA_VISUALIZATION\5.2_➰_draw_aircraft_trajectory.js
 ###########################################
 
+// 5.2_➰_draw_aircraft_trajectory.js
+// This file sets up the trajectory system to record and display the aircraft's path using thin instances.
 
+let trajectoryBaseSphere;         // Base sphere for thin instances
+let trajectoryMatrixData = [];    // Array to store transformation matrices
 
-
-
-let trajectoryBaseSphere;   // The base sphere for thin instances
-let trajectoryMatrixData = [];  // Array to store transformation matrices
-
-function initializeTrajectorySystem() {
-    // Create a single base sphere (invisible) for thin instances
+/**
+ * Initializes the trajectory system by creating a single (invisible) base sphere
+ * that will serve as the template for thin instances.
+ *
+ * @param {BABYLON.Scene} scene - The Babylon.js scene to which the trajectory sphere is added.
+ */
+function initializeTrajectorySystem(scene) {
+    // Create a base sphere for thin instances.
     trajectoryBaseSphere = BABYLON.MeshBuilder.CreateSphere("trajectoryBase", { 
         diameter: 1.1, 
         segments: 4 
     }, scene);
     
-    // Assign material once
+    // Create and assign a material for the sphere.
     const trajectoryMaterial = new BABYLON.StandardMaterial("trajectoryMaterial", scene);
-    trajectoryMaterial.emissiveColor = new BABYLON.Color3(0, 1, 0); // Green color
+    trajectoryMaterial.emissiveColor = new BABYLON.Color3(0, 1, 0); // Green color for visibility
     trajectoryBaseSphere.material = trajectoryMaterial;
 
-    // Enable thin instances
+    // Enable thin instances so that we can efficiently render many copies.
     trajectoryBaseSphere.useThinInstances = true;
 
-    // Hide the base sphere itself
+    // Hide the base sphere so only the thin instances (the recorded trajectory points) are visible.
     trajectoryBaseSphere.isVisible = false;
 }
 
+/**
+ * Updates the trajectory by recording the aircraft's current position as a new thin instance.
+ */
 function updateTrajectory() {
-    if (!trajectoryBaseSphere) {
-        console.warn("Trajectory system not initialized. Call initializeTrajectorySystem() first.");
+    // Make sure there's an aircraft and that the trajectory system has been initialized.
+    if (!aircraft || !trajectoryBaseSphere) {
         return;
     }
-
-    // Create a new transformation matrix for the current aircraft position
-    const matrix = BABYLON.Matrix.Translation(aircraft.position.x, aircraft.position.y, aircraft.position.z);
     
-    // Add the new matrix to the trajectory data
+    // Create a new transformation matrix corresponding to the current aircraft position.
+    const matrix = BABYLON.Matrix.Translation(
+        aircraft.position.x,
+        aircraft.position.y,
+        aircraft.position.z
+    );
+    
+    // Add the new matrix to the array.
     trajectoryMatrixData.push(matrix);
     
-    // Convert matrices to Float32Array
+    // Convert the array of matrices into a Float32Array.
     const matrixData = new Float32Array(trajectoryMatrixData.length * 16);
-    trajectoryMatrixData.forEach((matrix, index) => {
-        matrix.copyToArray(matrixData, index * 16);
+    trajectoryMatrixData.forEach((mat, index) => {
+        mat.copyToArray(matrixData, index * 16);
     });
     
-    // Make base mesh visible when instances are added
+    // Make the base sphere visible once we start adding instances.
     trajectoryBaseSphere.isVisible = true;
     
-    // Set the buffer and update the number of instances
+    // Update the thin instance buffer with the new transformation matrices.
     trajectoryBaseSphere.thinInstanceSetBuffer("matrix", matrixData, 16);
     trajectoryBaseSphere.thinInstanceCount = trajectoryMatrixData.length;
 }
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\6_SCENE_AND_RENDER_LOOP\6.1_♻_MAIN_render_loop.js
@@ -4533,94 +4644,85 @@ function updateTrajectory() {
 /***************************************************************
  * 6.1_♻_MAIN_render_loop.js
  *
- * This is the main entry point for rendering and simulation steps.
- * We do exactly ONE simulation step per frame, and clamp deltaTime
- * to avoid big jumps. The old "while (timeSinceLastUpdate >= global_time_step)"
- * is removed. We also call updateTrajectory() once per frame if not paused.
+ * Main render loop for the simulation.
  ***************************************************************/
+
+window.keysPressed = window.keysPressed || {};
+window.isPaused = window.isPaused || false;
+window.simulationEnded = window.simulationEnded || false;
+window.elapsedTime = window.elapsedTime || 0;
+window.gamepadIndex = window.gamepadIndex || null;
+
+
+// (Other global variables like aircraft, velocity, etc. should be declared elsewhere.)
 
 window.addEventListener("DOMContentLoaded", function () {
 
-  // Initialize Babylon.js engine
-  const canvas = document.getElementById("renderCanvas");
+// Initialize Babylon.js engine
+const canvas = document.getElementById("renderCanvas");
+const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, limitDeviceRatio: 1.0 });
+engine.enableOfflineSupport = false;
 
-  const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, limitDeviceRatio: 1.0 });
-  engine.enableOfflineSupport = false;
+// Create the scene (assumed to be defined in createScene.js)
+const scene = createScene(engine, canvas);
+window.scene = scene;  // Make scene globally available
+
+
+// For the main loop, keep track of time
+let lastFrameTime = performance.now();
+const maxDeltaTime = 0.05; // Maximum allowed deltaTime
+
+// Render loop
+engine.runRenderLoop(function () {
+  // Process gamepad pause control
+  handleGamepadPauseControls();
   
-  // Create the scene (see createScene.js)
-  const scene = createScene(engine, canvas);
-
-  // For the main loop, we keep track of time ourselves.
-  let lastFrameTime = performance.now();
-  let maxDeltaTime = 0.05;    // 0.05s => 20 FPS minimum to avoid giant steps
-
-  // Render loop
-  engine.runRenderLoop(function () {
-    // Process gamepad inputs for pause control regardless of pause state
-    handleGamepadPauseControls();
+  if (!isPaused && !simulationEnded) {
+    let currentTime = performance.now();
+    let deltaTime = (currentTime - lastFrameTime) / 1000;
+    lastFrameTime = currentTime;
     
-
-    if (!isPaused && !simulationEnded) {
-      // Compute deltaTime since last frame in seconds
-      let currentTime = performance.now();
-      let deltaTime = (currentTime - lastFrameTime) / 1000;
-      lastFrameTime = currentTime;
-
-      // Clamp deltaTime to avoid large steps if the user tab was inactive, etc.
-      if (deltaTime > maxDeltaTime) {
-        deltaTime = maxDeltaTime;
-      }
-      
-      // We do exactly one simulation step here, if the aircraft exists.
-      // 1) Update local user forces from joystick or keyboard.
-      updateForcesFromJoystickOrKeyboard(scene);
-
-      // 2) Send state to the server for the next integration step.
-      if (aircraft !== undefined) {
-        sendStateToServer();
-      }
-
-      // 3) If we want to record the aircraft trajectory, do it once per frame.
-      //    (We also can check if (elapsedTime < 200.0) to limit how many spheres.)
-      if (aircraft !== undefined && elapsedTime < 200) {
-        updateTrajectory();
-      }
-
-      // 4) Increase the total elapsed time by the same deltaTime, in case the GUI needs it.
-      elapsedTime += deltaTime;
-    } else {
-      // Even in paused state, we want to handle keyboard inputs for camera control
-      // and pause toggle, but not affect physics
-      if (keysPressed['F1']) setActiveCamera(0, scene);
-      if (keysPressed['F2']) setActiveCamera(1, scene);
-      if (keysPressed['F3']) setActiveCamera(2, scene);
-      if (keysPressed['F4']) setActiveCamera(3, scene);
+    if (deltaTime > maxDeltaTime) {
+      deltaTime = maxDeltaTime;
     }
-
-    // Update the GUI or other info each frame if aircraft is defined.
+    
     if (aircraft !== undefined) {
-      updateInfo();
+      updateForcesFromJoystickOrKeyboard(scene);
+      sendStateToServer();
     }
+    
+    if (aircraft !== undefined && elapsedTime < 200) {
+      updateTrajectory();
+    }
+    
+    elapsedTime += deltaTime;
+  } else {
+    if (keysPressed['F1']) setActiveCamera(0, scene);
+    if (keysPressed['F2']) setActiveCamera(1, scene);
+    if (keysPressed['F3']) setActiveCamera(2, scene);
+    if (keysPressed['F4']) setActiveCamera(3, scene);
+  }
+  
+  if (aircraft !== undefined) {
+    updateInfo();
+  }
+  
+  scene.render();
+});
 
-    // Render the scene.
-    scene.render();
-  });
+window.addEventListener("resize", function () {
+  engine.resize();
+});
 
-  // Resize the engine on window resize
-  window.addEventListener("resize", function () {
-    engine.resize();
-  });
+window.addEventListener("gamepadconnected", (event) => {
+  gamepadIndex = event.gamepad.index;
+  console.log(`Gamepad connected at index ${gamepadIndex}: ${event.gamepad.id}.`);
+});
 
-  // Gamepad event listeners
-  window.addEventListener("gamepadconnected", (event) => {
-    gamepadIndex = event.gamepad.index;
-    console.log(`Gamepad connected at index ${gamepadIndex}: ${event.gamepad.id}.`);
-  });
-
-  window.addEventListener("gamepaddisconnected", () => {
-    console.log("Gamepad disconnected.");
-    gamepadIndex = null;
-  });
+window.addEventListener("gamepaddisconnected", () => {
+  console.log("Gamepad disconnected.");
+  gamepadIndex = null;
+});
 
 });
 
@@ -4628,41 +4730,59 @@ window.addEventListener("DOMContentLoaded", function () {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\6_SCENE_AND_RENDER_LOOP\6.2_🌄_create_scene.js
 ###########################################
 
+
 /**
- * Creates and initializes a complete 3D scene
- * @param {BABYLON.Engine} engine - The Babylon.js engine instance
- * @param {HTMLCanvasElement} canvas - The canvas element for rendering
- * @returns {BABYLON.Scene} The initialized scene
+ * Creates and initializes the 3D scene
+ * @param {BABYLON.Engine} engine
+ * @param {HTMLCanvasElement} canvas
  */
 function createScene(engine, canvas) {
-    const scene = initializeBaseScene(engine);
-    const sceneElements = setupSceneElements(scene, canvas);
-    setupInteractions(scene, sceneElements.shadowGenerator);
-    setupRenderLoop(scene);
-    
-  // Enable physics FIRST
-  scene.enablePhysics(
-    new BABYLON.Vector3(0, -9.81, 0),
-    new BABYLON.CannonJSPlugin() 
-  );
-
-    return scene;
-}
-
-
-
-
-/**
- * Initializes the base scene with basic properties
- * @param {BABYLON.Engine} engine - The Babylon.js engine instance
- * @returns {BABYLON.Scene} The basic initialized scene
- */
-function initializeBaseScene(engine) {
+    // 1) Create the base scene
     const scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
+
+    // 2) Enable physics
+    scene.enablePhysics(
+        new BABYLON.Vector3(0, -9.81, 0),
+        new BABYLON.CannonJSPlugin()
+    );
+
+    // 3) Lights, cameras
+    const { lights, shadowGenerator } = setupLights_and_shadows(scene);
+    const cameras = setupCameras(scene, canvas);
+
+    // 4) Ensure we have a valid current_graphic_settings
+    // If it's still null, use a low-quality default
+    if (!current_graphic_settings) {
+        console.log("No graphics settings detected, using 'low' as default");
+        current_graphic_settings = getGraphicSettings('low');
+    }
+
+    // 5) Create world scenery with current settings
+    console.log("Creating initial world scenery with:", current_graphic_settings);
+    createWorldScenery(scene, shadowGenerator, cameras.arcRotateCamera);
     
+    // 6) Create default aircraft
+    createAircraft(shadowGenerator, scene);
+
+    // 7) Additional visualization
+    initializeTrajectorySystem(scene);
+    createVelocityLine(scene);
+    createForceLine(scene);
+    
+    createGUI();
+
+    // 8) Setup interactions
+    setupModelTransformations(scene, shadowGenerator);
+    setupPickingCoordinates(scene);
+
+    // 9) Keep a reference to update cameras
+    setupRenderLoop(scene);
+
     return scene;
 }
+
+
 
 
 
@@ -4676,12 +4796,15 @@ function setupSceneElements(scene, canvas) {
     // Setup lights and shadows
     const { lights, shadowGenerator } = setupLights_and_shadows(scene);
 
-    // Setup cameras
+    // Setup cameras - Do this BEFORE creating the aircraft
     const cameras = setupCameras(scene, canvas);
 
     // Create main scene elements
+    // First the world scenery
+    createWorldScenery(scene, shadowGenerator, cameras.arcRotateCamera);
+    
+    // Then the aircraft - This will automatically update camera targets
     createAircraft(shadowGenerator, scene);
-    createWorldScenery(scene, shadowGenerator, cameras.camera);
 
     // Setup visualization elements
     setupVisualizationElements();
@@ -4698,7 +4821,7 @@ function setupSceneElements(scene, canvas) {
  */
 function setupVisualizationElements() {
 
-    initializeTrajectorySystem();
+    initializeTrajectorySystem(scene);
     createVelocityLine();
     createForceLine();
     createGUI();
@@ -4813,6 +4936,8 @@ function setupLights_and_shadows(scene) {
 
   // Shadow Generation Setup
   const shadowGenerator = new BABYLON.CascadedShadowGenerator(2048, sunDirectionalLight);
+  scene.shadowGenerator = shadowGenerator;
+
   
   // Configure shadow cascades (adjust for optimal performance/balance)
   shadowGenerator.numCascades = 4; // Number of shadow cascade levels
@@ -4850,18 +4975,20 @@ function setupLights_and_shadows(scene) {
  * @returns {Object} An object containing all camera instances.
  */
 function setupCameras(scene, canvas, shadowGenerator) {
-
-
-  // Create and configure the main orbital (arc rotate) camera.
+  // Use mission data for initial camera position if available
+  const initialAltitude = typeof MISSION_INITIAL_ALTITUDE !== 'undefined' ? MISSION_INITIAL_ALTITUDE : 400;
+  
+  // Create and configure the main orbital (arc rotate) camera
   const arcRotateCamera = new BABYLON.ArcRotateCamera(
     "ArcRotateCamera",
-    -1.2, // Alpha rotation.
-    1.6,  // Beta rotation.
-    100,  // Radius (distance from target).
-    new BABYLON.Vector3(170, 110, -70), // Target position.
+    -1.2, // Alpha rotation
+    1.6,  // Beta rotation
+    100,  // Radius (distance from target)
+    new BABYLON.Vector3(0, initialAltitude, 0), // Initial target position
     scene
   );
-  // Use a near plane of 1 and a far plane of 4000 to reduce depth buffer issues.
+  
+  // Camera settings
   arcRotateCamera.minZ = 10;
   arcRotateCamera.maxZ = 8000;
   arcRotateCamera.fov = 0.47;
@@ -4869,68 +4996,51 @@ function setupCameras(scene, canvas, shadowGenerator) {
   arcRotateCamera.upperBetaLimit = Math.PI;
   arcRotateCamera.lowerBetaLimit = 0;
   arcRotateCamera.inertia = 0.9;
-  // Increase the lower radius limit so the camera does not zoom in too close,
-  // which can cause z-fighting with nearby objects.
-  arcRotateCamera.lowerRadiusLimit = 10; // Changed from 0.1 to 10
+  arcRotateCamera.lowerRadiusLimit = 10;
   arcRotateCamera.upperRadiusLimit = 1650;
   arcRotateCamera.wheelPrecision = 8;
-  // Adjust panning sensitivity if available.
   if (arcRotateCamera.inputs.attached.pointers) {
     arcRotateCamera.inputs.attached.pointers.panningSensibility = 10;
   }
 
-
-
-  // Create and configure the follow (chase) camera.
+  // Create and configure the follow (chase) camera
   const followCamera = new BABYLON.FollowCamera(
     "FollowCamera",
-    new BABYLON.Vector3(0, 10, -1), // Initial position.
+    new BABYLON.Vector3(0, initialAltitude, -1),
     scene
   );
-  followCamera.heightOffset = 5;          // Height above target.
-  followCamera.rotationOffset = 180;      // Rotate 180° around the target.
-  followCamera.cameraAcceleration = 0.01; // Smoothing factor.
-  followCamera.maxCameraSpeed = 60;        // Maximum speed.
-  followCamera.radius = -10;               // Distance from target.
-  // Set clipping planes to match other cameras.
+  followCamera.heightOffset = 5;
+  followCamera.rotationOffset = 180;
+  followCamera.cameraAcceleration = 0.01;
+  followCamera.maxCameraSpeed = 60;
+  followCamera.radius = -10;
   followCamera.minZ = 10;
   followCamera.maxZ = 8000;
 
+  // Create the cockpit camera (first-person view)
+  const cockpitCamera = new BABYLON.UniversalCamera(
+    "CockpitCamera",
+    new BABYLON.Vector3(0, initialAltitude, 0),
+    scene
+  );
+  cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
+  cockpitCamera.fov = 0.87;
+  cockpitCamera.minZ = 1;
+  cockpitCamera.maxZ = 8000;
 
-
-  // Create the wing camera (external view).
+  // Create the wing camera (external view)
   const wingCamera = new BABYLON.UniversalCamera(
     "WingCamera",
-    new BABYLON.Vector3(0, 0, 0), // Initial position.
+    new BABYLON.Vector3(0, initialAltitude, 0),
     scene
   );
   wingCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
   wingCamera.minZ = 1;
   wingCamera.maxZ = 8000;
-  // Set a wider field of view (~85° in radians).
   wingCamera.fov = 1.9;
 
-
-
-  // Create the cockpit camera (first-person view).
-  const cockpitCamera = new BABYLON.UniversalCamera(
-    "CockpitCamera",
-    new BABYLON.Vector3(0, 0, 0), // Initial position.
-    scene
-  );
-  cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
-  cockpitCamera.fov = 0.87;
-  // Set clipping planes for cockpit view.
-  cockpitCamera.minZ = 1;
-  cockpitCamera.maxZ = 8000;
-
-
-
-
-
-
-  // Register all cameras with the scene.
-  scene.cameras.push(arcRotateCamera, followCamera,  wingCamera, cockpitCamera)
+  // Register all cameras with the scene
+  scene.cameras.push(arcRotateCamera, cockpitCamera, followCamera, wingCamera);
 
   /**
    * Updates camera positions and targets based on the aircraft's position.
@@ -4938,39 +5048,46 @@ function setupCameras(scene, canvas, shadowGenerator) {
    * @param {BABYLON.Mesh} aircraft - The aircraft mesh to follow.
    */
   function updateCamerasForAircraft(aircraft) {
-    if (!aircraft) return;
+    if (!aircraft) {
+      console.warn("updateCamerasForAircraft called with no aircraft");
+      return;
+    }
 
-    // Update locked targets for the orbital and follow cameras.
+    console.log(`Updating cameras to target aircraft at position: x=${aircraft.position.x.toFixed(2)}, y=${aircraft.position.y.toFixed(2)}, z=${aircraft.position.z.toFixed(2)}`);
+
+    // CRITICAL FIX: Make the arcRotateCamera truly follow the aircraft by setting it as the 
+    // lockedTarget, not just setting the target position once
     arcRotateCamera.lockedTarget = aircraft;
+
+    // Update the follow camera to target the aircraft
     followCamera.lockedTarget = aircraft;
 
-    // Configure the cockpit camera (first-person view).
+    // Configure the cockpit camera (first-person view)
     cockpitCamera.parent = aircraft;
     cockpitCamera.position.set(0.5, 1, 0);
     cockpitCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
       0,
-      Math.PI / 2, // Rotate 90° around the Y axis.
+      Math.PI / 2, // Rotate 90° around the Y axis
       0
     );
 
-    // Configure the wing camera (external view).
+    // Configure the wing camera (external view)
     wingCamera.parent = aircraft;
     wingCamera.position.set(-1.5, 0.5, -3.2);
     wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0);
+    
+    // Ensure arcRotateCamera is the active camera by default
+    if (scene.activeCamera !== arcRotateCamera) {
+      scene.activeCamera = arcRotateCamera;
+      console.log("Set active camera to ArcRotateCamera");
+    }
   }
 
-  // If an aircraft is defined, perform an initial update.
-  // (Note: 'aircraft' is assumed to be a global variable or defined elsewhere.)
-  if (typeof aircraft !== "undefined" && aircraft) {
-    updateCamerasForAircraft(aircraft);
-  }
-
-  // Expose the update function on the scene for external access.
+  // Expose the update function on the scene for external access
   scene.updateCamerasForAircraft = updateCamerasForAircraft;
 
   return {
     arcRotateCamera,
-    
     followCamera,
     cockpitCamera,
     wingCamera
@@ -4984,124 +5101,115 @@ function setupCameras(scene, canvas, shadowGenerator) {
  * @param {BABYLON.Scene} scene - The Babylon.js scene.
  */
 function setActiveCamera(index, scene) {
-  if (index < 0 || index >= scene.cameras.length) {
-    console.warn("Invalid camera index:", index);
+  if (!scene || !scene.cameras || index < 0 || index >= scene.cameras.length) {
+    console.warn("Invalid scene or camera index:", index);
     return;
   }
+  
+  // Set the active camera
+  const previousCamera = scene.activeCamera ? scene.activeCamera.name : "none";
   scene.activeCamera = scene.cameras[index];
+  console.log(`Switched from camera ${previousCamera} to ${scene.activeCamera.name}`);
 
-  // Toggle aircraft model visibility for cockpit view.
-  // Assumes 'glbNode' is a global mesh representing the aircraft model.
+  // Toggle aircraft model visibility for cockpit view
   if (typeof glbNode !== "undefined" && glbNode) {
-    // Hide the aircraft model in cockpit view (assuming index 2 is the cockpit camera).
+    // Hide the aircraft model in cockpit view (assuming index 2 is the cockpit camera)
     glbNode.setEnabled(index !== 2);
   }
 }
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\0_Aircraft_Aerodynamic_Model\0.1_📊_aircraft_aerodynamic_and_propulsive_data.jl
 ###########################################
 
+###########################################
+# FILE: 0.1_📊_aircraft_aerodynamic_and_propulsive_data.jl
+###########################################
 
 cd(@__DIR__)
 
+# IMPORTANT: We now reference the global MISSION_DATA from `OpenFlight_✈.jl`.
+# That file defines: const MISSION_DATA = (aircraft_name=..., initial_velocity=..., ...)
 
-test_aircraft = "SF25B.yaml"
-
+# Instead of hard-coding "SF25B.yaml", use MISSION_DATA.aircraft_name:
+test_aircraft = MISSION_DATA.aircraft_name
 
 filename = joinpath(@__DIR__, raw"../../../../🏭_HANGAR/📜_Aero_data/", test_aircraft)
 
 println("DEBUG: Attempting to load YAML aero data from: $filename")
-#println("DEBUG: isfile(filename)? ", isfile(filename))
 
 json_data = YAML.load_file(filename)
-
 aircraft_aero_and_propulsive_database = parse_aero_data(json_data)
 
- # OJO!!! revisar completamente y validar
-function compute_inertial_tensor_body_frame(aircraft_mass, radius_of_giration_pitch, radius_of_giration_roll, radius_of_giration_yaw, principal_axis_pitch_up_DEG  ) 
+
+# The function to compute the body-frame inertial tensor is the same as before:
+function compute_inertial_tensor_body_frame(aircraft_mass, radius_of_giration_pitch, radius_of_giration_roll, radius_of_giration_yaw, principal_axis_pitch_up_DEG)
     I_body_principal_axes = [
         aircraft_mass * radius_of_giration_roll^2  0.0  0.0;
-        0.0  aircraft_mass * radius_of_giration_yaw^2   0.0;
+        0.0  aircraft_mass * radius_of_giration_yaw^2  0.0;
         0.0  0.0  aircraft_mass * radius_of_giration_pitch^2
     ]
 
-    # Convert angle to radians
     θ = deg2rad(principal_axis_pitch_up_DEG)
-    
-    # Rotation matrix around z-axis
     R = [
-        cos(θ)  -sin(θ)  0.0;
-        sin(θ)   cos(θ)  0.0;
-        0.0      0.0     1.0
+        cos(θ)  -sin(θ)   0.0;
+        sin(θ)   cos(θ)   0.0;
+        0.0      0.0      1.0
     ]
-    
-    # Compute rotated inertia tensor: I_body = R * I_body_principal_axes * R'
     I_body = R * I_body_principal_axes * transpose(R)
-
     return I_body
 end
 
-
+# Build a NamedTuple with the aerodynamic/propulsive data for the chosen aircraft:
 aircraft_flight_physics_and_propulsive_data = (
-    # Aircraft mass and geometry
     aircraft_mass = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
 
     x_CoG = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_CoG"),
     x_wing_aerodynamic_center = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_wing_aerodynamic_center"),
 
     wing_lift_lever_arm_wrt_CoG_over_MAC = -1 * (
-        (fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_wing_aerodynamic_center")) - 
-        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_CoG")) 
-        / fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"), 
+        (fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_wing_aerodynamic_center")) -
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "x_CoG")
+    ) / fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"),
 
     reference_area = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_area"),
     reference_span = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "reference_span"),
-    #Cl_vs_alpha_RAD = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_vs_alpha_RAD"),
     AR = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "AR"),
     Oswald_factor = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Oswald_factor"),
-
-    #CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0"),
-
-    #CD0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=0.0),
-
     wing_mean_aerodynamic_chord = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"),
 
     # Control derivatives
-    derivative_roll_vs_aileron = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_roll_vs_aileron"),     # d_C_rolling_moment/d_aileron (per rad)
-    derivative_pitch_vs_elevator = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_pitch_vs_elevator"),  # d_C_pitching_moment/d_elevator (per rad)
-    derivative_yaw_vs_rudder = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_yaw_vs_rudder"),      # d_C_yawing_moment/d_rudder (per rad)
+    derivative_roll_vs_aileron    = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_roll_vs_aileron"),
+    derivative_pitch_vs_elevator  = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_pitch_vs_elevator"),
+    derivative_yaw_vs_rudder      = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_yaw_vs_rudder"),
 
     # Static stability derivatives
-    CM0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM0"),        # Zero-lift pitching moment coefficient
-    CN_beta = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CN_beta"),     # Derivative of yawing moment w.r.t. sideslip angle
-    CM_alpha = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM_alpha"),    # Derivative of pitching moment w.r.t. angle of attack
+    CM0     = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM0"),
+    CN_beta = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CN_beta"),
+    CM_alpha= fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM_alpha"),
 
     # Dynamic stability derivatives
-    Cl_p = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_p"),      # Roll damping coefficient
-    Cm_q = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cm_q"),      # Pitch damping coefficient
-    Cn_r = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cn_r"),       # Yaw damping coefficient
+    Cl_p = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_p"),
+    Cm_q = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cm_q"),
+    Cn_r = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cn_r"),
 
     # Propulsion
-    maximum_thrust_at_sea_level = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "maximum_thrust_at_sea_level"),     # Static thrust at sea level (N)
-    thrust_installation_angle_DEG = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "thrust_installation_angle_DEG"),      # Tilt of thrust line wrt x-axis (deg)
+    maximum_thrust_at_sea_level   = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "maximum_thrust_at_sea_level"),
+    thrust_installation_angle_DEG = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "thrust_installation_angle_DEG"),
 
     # Actuator dynamics
-    control_actuator_speed = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "control_actuator_speed"),      # Actuator speed ratio (amplitude/sec)
-    engine_spool_up_speed = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "engine_spool_up_speed"),       # Spool-up speed (fraction of max thrust/sec)
-    engine_spool_down_speed = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "engine_spool_down_speed"),     # Spool-down speed (fraction of max thrust/sec)
+    control_actuator_speed  = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "control_actuator_speed"),
+    engine_spool_up_speed   = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "engine_spool_up_speed"),
+    engine_spool_down_speed = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "engine_spool_down_speed"),
 
     # Inertia matrix
     I_body = compute_inertial_tensor_body_frame(
-            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
-            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_pitch"),
-            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_roll"),
-            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_yaw"),
-            fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "principal_axis_pitch_up_DEG"),
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "aircraft_mass"),
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_pitch"),
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_roll"),
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "radius_of_giration_yaw"),
+        fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "principal_axis_pitch_up_DEG")
     )
-
 )
 
 ###########################################
@@ -6407,10 +6515,21 @@ end
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.1_🤝_Establish_WebSockets_connection.jl
 ###########################################
 
-# Main WebSocket connection handler function that processes incoming messages
+# Modified WebSocket connection handler function that processes incoming messages
 function websocket_handler(ws)
     println("New WebSocket connection established")
     try
+        # First, immediately send mission data to the client
+        mission_data_message = Dict(
+            "messageType" => "missionData",
+            "initial_velocity" => MISSION_DATA.initial_velocity,
+            "initial_altitude" => MISSION_DATA.initial_altitude,
+            "aircraft_name" => MISSION_DATA.aircraft_name,
+            "scenery_complexity" => MISSION_DATA.scenery_complexity
+        )
+        WebSockets.writeguarded(ws, JSON.json(mission_data_message))
+        println("Mission data sent to client: ", mission_data_message)
+        
         # Keep processing messages while the socket connection is open
         while !eof(ws.socket)
             # Read data from WebSocket connection with error handling
@@ -6442,7 +6561,7 @@ end
 
 # Server initialization and startup function
 function establish_websockets_connection()
-    port = WebSockets_port  # Port number defined in the client-side JavaScript file, this is found in function "🎁_load_required_packages_and_find_free_port.jl"
+    port = WebSockets_port  # Port number defined in the client-side JavaScript file
     println("Starting WebSocket server on port $port...")
     
     # Create handler functions for HTTP and WebSocket protocols
@@ -6461,10 +6580,6 @@ function establish_websockets_connection()
         sleep(.1)
     end
 end
-
-
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl

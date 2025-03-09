@@ -1,7 +1,15 @@
-aircraft:
-  aircraft_name: 600  # Mass of the aircraft in kilograms
-  radius_of_giration_pitch: 3.5  # Radius of gyration about the pitch axis in meters
 
-visualization:
-  trees:  # Lift coefficient data
+# AIRCRAFT PARAMETERS
+
+aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
+
+initial_velocity: 30  # Initial velocity in m/s
+initial_altitude: 40  # Initial altitude in m
+
+
+# VISUALIZATION PARAMETERS
+
+scenery_complexity: "medium"   #  "low", "medium" or "high"
+
+
 

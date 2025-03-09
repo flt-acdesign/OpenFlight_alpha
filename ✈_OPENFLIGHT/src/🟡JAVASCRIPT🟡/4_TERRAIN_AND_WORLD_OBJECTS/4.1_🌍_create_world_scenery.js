@@ -1,64 +1,77 @@
 /***************************************************************
- * Creates the main world scenery, applying fog settings and
- * delegating sub-elements (sky, ground, trees, runway, reference
- * cube) to specialized functions.
- *
- * Note: We treat the coordinate system such that:
- *   - x and z are the "ground plane" (horizontal).
- *   - y is the vertical axis (height).
- **************************************************************/
-function createWorldScenery(scene, shadowGenerator, camera) {
-    // Wavelengths along the x and z axes (for the compute_terrain_height)
-    const xWavelength = 833;   
-    const zWavelength = 500;   
+ * 4.1_🌍_create_world_scenery.js
+ * 
+ * Creates the main world scenery, using 'current_graphic_settings'
+ * to adjust ground style, sky, and tree density:
+ *   - sky: "flat" | "medium" | "full"
+ *   - ground: "none" | "flat" | "island"
+ *   - trees: "none" | "few"  | "many"
+ * 
+ * If scenery_complexity = "high", we expect:
+ *   ground = "island", trees = "many", sky = "full"
+ * If "medium", we get "flat", "few", "medium sky."
+ * If "low",   we get "none", "none", "flat sky," etc.
+ ***************************************************************/
 
-    // Store config parameters for ground undulation in the scene
+
+function createWorldScenery(scene, shadowGenerator, camera) {
+    console.log("Creating world scenery with graphics settings:", current_graphic_settings);
+
+    // Setup freq/amplitude for 'island' terrain (if used)
+    const xWavelength = 833;   
+    const zWavelength = 500;
     scene.groundConfig = {
         freqX: 1 / xWavelength,
         freqZ: 1 / zWavelength,
         amplitude: 500
     };
 
-    // Create the sky sphere behind/around everything
-    createSkySphere(scene, camera);
+    // 1) Sky - Based on complexity
+    if (current_graphic_settings.sky !== 'flat') {
+        // Create sphere + gradient
+        createSkySphere(scene, camera);
+        // Also enable some fog if not 'flat'
+        create_fog(scene);
+    } else {
+        // For 'flat' sky
+        scene.clearColor = new BABYLON.Color3(0.5, 0.6, 0.9);
+    }
 
-    create_fog(scene)
+    // 2) Ground based on complexity
+    if (current_graphic_settings.ground !== 'none') {
+        create_procedural_ground_texture(
+            scene,
+            scene.groundConfig,
+            shadowGenerator,
+            current_graphic_settings
+        );
+    }
 
-    // Create the segmented ground with custom vertex colors
-    create_procedural_ground_texture(scene, scene.groundConfig, shadowGenerator, current_graphic_settings);
-
-    // (Optional) create reference objects, trees, runway, etc.
+    // 3) Always create the control tower as a reference point
     create_control_tower(scene, shadowGenerator);
 
-    create_lighthouses(scene, shadowGenerator)
+    // 4) Create trees based on complexity
+    if (current_graphic_settings.trees !== 'none') {
+        // Trees will be created in create_procedural_ground_texture 
+        // based on the complexity setting
+    }
 
-    create_wind_turbines(scene, shadowGenerator)
+    // 5) Create additional objects based on complexity
+    if (current_graphic_settings.trees === 'many') {
+        // These are higher-complexity objects that should only appear
+        // on the 'high' setting
+        create_buildings(scene, shadowGenerator);
+        create_lighthouses(scene, shadowGenerator);
+        create_wind_turbines(scene, shadowGenerator);
+    } else if (current_graphic_settings.trees === 'few') {
+        // Medium complexity - add only buildings but fewer
+        create_buildings(scene, shadowGenerator, true); // Pass true to indicate medium complexity
+    }
 
+    // Create runway regardless of complexity
+    document.fonts.load('120px "ICAORWYID"').then(() => {
+        createRunway(scene, scene.groundConfig);
+    });
 
-
-    //createRunway(scene, scene.groundConfig)
-
-// Wait until the font is loaded
-document.fonts.load('120px "ICAORWYID"').then(() => {
-    // Now we know the font is available!
-    // -> Create or update your dynamic texture here
-    createRunway(scene, scene.groundConfig)
-});
-
-    
-
-    const buildings = create_buildings(scene, shadowGenerator )
-
-
-    // Enable dynamic sea generation (call this after creating your scene and camera)
-    enableDynamicSeaGeneration(scene, scene.activeCamera )
-
-
-
+    console.log("World scenery creation complete; complexity =", current_graphic_settings);
 }
-
-
-
-
-
-

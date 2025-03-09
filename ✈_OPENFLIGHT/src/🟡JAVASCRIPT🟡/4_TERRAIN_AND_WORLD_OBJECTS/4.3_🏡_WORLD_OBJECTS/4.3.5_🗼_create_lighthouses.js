@@ -222,25 +222,15 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 function create_lighthouses(scene, shadowGenerator) {
+    // Only create lighthouse if we're in high complexity mode
+    if (current_graphic_settings.trees !== 'many') {
+        console.log("Skipping lighthouses in low/medium complexity mode");
+        return;
+    }
 
-// Create the Morse tower at position (10,0,5) with 8 segments,
+    // Create the Morse tower at position
     const morseTower = createMorseTower(scene, shadowGenerator, {
-
-        // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
         basePosition: new BABYLON.Vector3(1971, 249, 955),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
@@ -253,8 +243,6 @@ function create_lighthouses(scene, shadowGenerator) {
     });
     
     const lighthouse = createMorseTower(scene, shadowGenerator, {
-    
-        // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
         basePosition: new BABYLON.Vector3(-1986, 25, -1380),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
@@ -264,5 +252,16 @@ function create_lighthouses(scene, shadowGenerator) {
         blinkUnit: 300,         // ms for a dot
         separationTime: 1000    // ms of pause after pattern
     });
-
 }
+
+
+
+
+
+
+
+
+
+
+
+

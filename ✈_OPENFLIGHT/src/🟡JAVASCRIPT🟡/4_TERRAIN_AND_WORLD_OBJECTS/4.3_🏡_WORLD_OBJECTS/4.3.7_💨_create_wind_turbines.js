@@ -195,63 +195,61 @@ function createWindTurbine({
 
 
 function create_wind_turbines(scene, shadowGenerator) {
+  // Only create turbines if we're in high complexity mode
+  if (current_graphic_settings.trees !== 'many') {
+      console.log("Skipping wind turbines in low/medium complexity mode");
+      return;
+  }
 
-// Create a wind turbine with base at (0,0,0), tower height 120,
-// light gray color, rotor speed 12 rpm, and nacelle oriented 45° from north.
-const turbine1 = createWindTurbine({
-  baseX: 1152,
-  baseY: 234,
-  baseZ: 785,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 12,
-  orientationAngle: 93,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
-
-
-const turbine2 = createWindTurbine({
-  baseX: 1222,
-  baseY: 249,
-  baseZ: 708,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 10,
-  orientationAngle: 95,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
-
-const turbine3 = createWindTurbine({
-  baseX: 1307,
-  baseY: 261,
-  baseZ: 639,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 13,
-  orientationAngle: 92,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
+  const turbine1 = createWindTurbine({
+      baseX: 1152,
+      baseY: 234,
+      baseZ: 785,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 12,
+      orientationAngle: 93,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
 
 
-const turbine4 = createWindTurbine({
-  baseX: 1473,
-  baseY: 271,
-  baseZ: 590,
-  height: 30,
-  color: new BABYLON.Color3(0.8, 0.8, 0.8),
-  rotationalSpeed: 12,
-  orientationAngle: 95,
-  scene: scene,
-  shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
-});
+  const turbine2 = createWindTurbine({
+      baseX: 1222,
+      baseY: 249,
+      baseZ: 708,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 10,
+      orientationAngle: 95,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
+
+  const turbine3 = createWindTurbine({
+      baseX: 1307,
+      baseY: 261,
+      baseZ: 639,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 13,
+      orientationAngle: 92,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
 
 
-
-
+  const turbine4 = createWindTurbine({
+      baseX: 1473,
+      baseY: 271,
+      baseZ: 590,
+      height: 30,
+      color: new BABYLON.Color3(0.8, 0.8, 0.8),
+      rotationalSpeed: 12,
+      orientationAngle: 95,
+      scene: scene,
+      shadowGenerator: shadowGenerator  // Pass your valid shadow generator here.
+  });
 }
-
 
   
