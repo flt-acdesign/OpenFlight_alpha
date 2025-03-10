@@ -20,45 +20,52 @@ function createWorldScenery(scene, shadowGenerator, camera) {
     };
 
     // Create the sky sphere behind/around everything
-    createSkySphere(scene, camera);
+    createSkySphere(scene, camera, scenery_complexity)
 
-    create_fog(scene)
+    create_fog(scene, scenery_complexity)
+
+
+
+    if (scenery_complexity > 0) {
 
     // Create the segmented ground with custom vertex colors
-    create_procedural_ground_texture(scene, scene.groundConfig, shadowGenerator, current_graphic_settings);
+    create_procedural_ground_texture(scene, scene.groundConfig, shadowGenerator, scenery_complexity);
 
-    // (Optional) create reference objects, trees, runway, etc.
-    create_control_tower(scene, shadowGenerator);
+    // Wait until the ICAO/OACI font is loaded
+    document.fonts.load('120px "ICAORWYID"').then(() => {
+        // Now we know the font is available!
+        // -> Create or update your dynamic texture here
+        createRunway(scene, scene.groundConfig, scenery_complexity)
+    });
 
-    create_lighthouses(scene, shadowGenerator)
+    create_control_tower(scene, shadowGenerator, scenery_complexity)
 
-    create_wind_turbines(scene, shadowGenerator)
+    if (scenery_complexity > 1) {
+
+        const buildings = create_buildings(scene, shadowGenerator, scenery_complexity )
+
+        if (scenery_complexity > 2) {
+
+    create_lighthouses(scene, shadowGenerator, scenery_complexity)
+
+    create_wind_turbines(scene, shadowGenerator, scenery_complexity)
 
 
 
-    //createRunway(scene, scene.groundConfig)
-
-// Wait until the font is loaded
-document.fonts.load('120px "ICAORWYID"').then(() => {
-    // Now we know the font is available!
-    // -> Create or update your dynamic texture here
-    createRunway(scene, scene.groundConfig)
-});
-
-    
-
-    const buildings = create_buildings(scene, shadowGenerator )
 
 
     // Enable dynamic sea generation (call this after creating your scene and camera)
-    enableDynamicSeaGeneration(scene, scene.activeCamera )
+    enableDynamicSeaGeneration(scene, scene.activeCamera , scenery_complexity)
+        }
+}
+    
+} else {
 
-
+    create_checkered_ground()
 
 }
 
-
-
+}
 
 
 

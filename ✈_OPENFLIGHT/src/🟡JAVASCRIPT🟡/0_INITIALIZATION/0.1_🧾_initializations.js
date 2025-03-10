@@ -8,14 +8,13 @@ let initial_altitude = 40
 let start_flight_data_recording_at = 5
 let finish_flight_data_recording_at = 10
 
-
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"
 
-
 let show_trajectory = "true"
 
-let scenery_complexity = "high"
+// 0 = nothing, 1 = low, 2 = medium or 3 = high
+let scenery_complexity = 3
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane

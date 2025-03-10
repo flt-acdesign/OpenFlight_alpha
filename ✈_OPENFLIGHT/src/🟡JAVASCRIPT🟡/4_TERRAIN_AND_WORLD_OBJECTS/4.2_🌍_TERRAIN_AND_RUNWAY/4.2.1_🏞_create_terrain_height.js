@@ -3,8 +3,17 @@
 /**
  * Compute the terrain height at (x,z).
  */
-function compute_terrain_height(x, z, freqX, freqZ, amplitude) {
-    // --- your terrain logic as before ---
+function compute_terrain_height(x, z, freqX, freqZ, amplitude, scenery_complexity) {
+    
+  
+  if (scenery_complexity < 2) {
+
+    return  14;
+
+  } else {
+  
+  
+  // --- your terrain logic as before ---
     let baseWave =
       (Math.sin(freqX * x * 1.1)) ** 3 *
       (Math.sin(freqZ * z * x / 1100)) ** 3 *
@@ -43,6 +52,7 @@ function compute_terrain_height(x, z, freqX, freqZ, amplitude) {
   
     return heightY + 14;
   }
+}
   
 
 /**
@@ -52,11 +62,11 @@ function compute_terrain_height(x, z, freqX, freqZ, amplitude) {
  */
 function compute_terrain_derivatives(x, z, freqX, freqZ, amplitude, step = 10) {
     // 1) Sample the terrain at 5 points
-    const fC = compute_terrain_height(x,        z,        freqX, freqZ, amplitude);  // center
-    const fXp = compute_terrain_height(x + step, z,        freqX, freqZ, amplitude);  // x+
-    const fXm = compute_terrain_height(x - step, z,        freqX, freqZ, amplitude);  // x-
-    const fZp = compute_terrain_height(x,        z + step, freqX, freqZ, amplitude);  // z+
-    const fZm = compute_terrain_height(x,        z - step, freqX, freqZ, amplitude);  // z-
+    const fC = compute_terrain_height(x,        z,        freqX, freqZ, amplitude, scenery_complexity);  // center
+    const fXp = compute_terrain_height(x + step, z,        freqX, freqZ, amplitude, scenery_complexity);  // x+
+    const fXm = compute_terrain_height(x - step, z,        freqX, freqZ, amplitude, scenery_complexity);  // x-
+    const fZp = compute_terrain_height(x,        z + step, freqX, freqZ, amplitude, scenery_complexity);  // z+
+    const fZm = compute_terrain_height(x,        z - step, freqX, freqZ, amplitude, scenery_complexity);  // z-
   
     // 2) First partial derivatives (central difference)
     const fx = (fXp - fXm) / (2 * step);
@@ -98,3 +108,87 @@ function compute_terrain_derivatives(x, z, freqX, freqZ, amplitude, step = 10) {
 
 
 
+
+/********************************************
+ * START of createGround()
+ ********************************************/
+function create_checkered_ground() {
+  window.ground = BABYLON.MeshBuilder.CreateGround(
+    "ground", 
+    { width: 15000, height: 15000 },
+    window.scene
+  );
+
+  const groundMat = new BABYLON.StandardMaterial("groundMat", window.scene);
+
+  // Create a dynamic texture for the checkerboard pattern.
+  const textureSize = 2048;
+  const dt = new BABYLON.DynamicTexture("groundDT", { width: textureSize, height: textureSize }, window.scene, false);
+  const ctx = dt.getContext();
+
+  const squaresCount = 10;
+  const tileSize = textureSize / squaresCount;
+  const midIndex = squaresCount / 2; // This divides the texture into 4 quadrants.
+
+  // Loop through each tile on the texture.
+  // Note: In canvas, j = 0 is the top row.
+  for (let i = 0; i < squaresCount; i++) {
+    for (let j = 0; j < squaresCount; j++) {
+      let colorPair;
+      let localI, localJ;
+
+      // Determine quadrant based on tile indices:
+      // - For horizontal (i): i < midIndex → left (x < 0), i >= midIndex → right (x > 0)
+      // - For vertical (j): j < midIndex → top (z > 0), j >= midIndex → bottom (z < 0)
+      if (i >= midIndex && j < midIndex) {
+        // Quadrant I: Right half, Top half (x > 0, z > 0) – Green shades.
+        colorPair = { even: "#c4e0af", odd: "#8ec269" };
+        localI = i - midIndex;
+        localJ = j;
+      } else if (i < midIndex && j < midIndex) {
+        // Quadrant II: Left half, Top half (x < 0, z > 0) – Yellow shades.
+        colorPair = { even: "#ffffcc", odd: "#ffd700" };
+        localI = i;
+        localJ = j;
+      } else if (i < midIndex && j >= midIndex) {
+        // Quadrant III: Left half, Bottom half (x < 0, z < 0) – Orange shades.
+        colorPair = { even: "#ffcc99", odd: "#ff9933" };
+        localI = i;
+        localJ = j - midIndex;
+      } else if (i >= midIndex && j >= midIndex) {
+        // Quadrant IV: Right half, Bottom half (x > 0, z < 0) – Pink shades.
+        colorPair = { even: "#f6c1d6", odd: "#f299b9" };
+        localI = i - midIndex;
+        localJ = j - midIndex;
+      }
+
+      // Apply a checkerboard pattern within the quadrant.
+      const fillColor = (localI + localJ) % 2 === 0 ? colorPair.even : colorPair.odd;
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+    }
+  }
+  dt.update();
+
+  // Set up the material using the dynamic texture.
+  groundMat.diffuseTexture = dt;
+  groundMat.diffuseTexture.uScale = squaresCount;
+  groundMat.diffuseTexture.vScale = squaresCount;
+  groundMat.diffuseTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
+  groundMat.diffuseTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
+  groundMat.diffuseTexture.anisotropicFilteringLevel = 16;
+  groundMat.diffuseTexture.samplingMode = BABYLON.Texture.NEAREST_SAMPLINGMODE;
+
+  window.ground.material = groundMat;
+  window.ground.isPickable = true;
+  window.ground.receiveShadows = true;
+
+  // Store initial ground position for reference.
+  window.groundY = 0;
+
+  // Create a separate transform node for ground projections (remains even if ground is hidden).
+  window.groundProjections = new BABYLON.TransformNode("groundProjections", window.scene);
+}
+/********************************************
+ * END of createGround()
+ ********************************************/

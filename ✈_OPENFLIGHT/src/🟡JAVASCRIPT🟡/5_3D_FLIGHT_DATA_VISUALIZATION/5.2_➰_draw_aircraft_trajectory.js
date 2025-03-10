@@ -62,7 +62,7 @@ function updateTrajectory(serverTime) {
         sphereColor = new BABYLON.Color3(1.0, 0.7, 0.85);
     } else {
         // green
-        sphereColor = new BABYLON.Color3(0.6, 1.0, 0.6);
+        sphereColor = new BABYLON.Color3(0.7, 1.0, 0.7);
     }
 
     trajectoryColorData.push([sphereColor.r, sphereColor.g, sphereColor.b, 1.0]);

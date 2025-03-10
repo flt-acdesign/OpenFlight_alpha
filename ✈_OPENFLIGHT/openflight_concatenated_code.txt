@@ -1,5 +1,5 @@
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OPENFLIGHT.jl
 ###########################################
 
 ###########################################
@@ -172,7 +172,7 @@ println("Total files processed: $(length(all_files))")
     <script src="./0_INITIALIZATION/0.2_📺_graphic_settings.js"></script>
 
     <!-- Websockets connection and code to transfer aircraft state to and from server -->
-    <script src="./1_AIRCRAFT_STATE_TRANSFER/1.1_🔁_exchange_aircraft_state_to_server.js"></script>
+    <script src="./1_AIRCRAFT_STATE_TRANSFER/1.1_🔁_exchange_aircraft_state_with_server.js"></script>
     
     <!-- Graphical User Interface (flight and control data)-->
     <script src="./2_GUI/2.1_📟_gui.js"></script> 
@@ -289,7 +289,7 @@ let show_velocity_vectors = "true"
 
 let show_trajectory = "true"
 
-let scenery_complexity = "high"
+let scenery_complexity = "low"
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
@@ -398,11 +398,11 @@ const current_graphic_settings = getGraphicSettings('high');
 
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\1_AIRCRAFT_STATE_TRANSFER\1.1_🔁_exchange_aircraft_state_to_server.js
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\1_AIRCRAFT_STATE_TRANSFER\1.1_🔁_exchange_aircraft_state_with_server.js
 ###########################################
 
 /***************************************************************
- * 1.1_🔁_exchange_aircraft_state_to_server.js
+ * 1.1_🔁_exchange_aircraft_state_with_server.js
  *
  * Manages the WebSocket connection with the Julia server, sending
  * and receiving the aircraft’s state. The main change is that
@@ -6462,61 +6462,52 @@ integration step, records flight data if within time window, then returns
 the updated aircraft state (plus "server_time") as JSON, but uses our
 internal `sim_time` for everything, NOT real wall-clock time.
 """
+###########################################
+# FILE: 3.2_🔁_Update_and_transfer_aircraft_state.jl
+###########################################
+
 function update_aircraft_state(
     aircraft_state_data::Dict{String,Any},
     aircraft_flight_physics_and_propulsive_data
 )
     try
-        ########################################################################
-        # 1) Parse incoming data into a 13-element state vector
-        ########################################################################
+        # 1) Build the 13-element state vector from the incoming JSON
         aircraft_current_state_vector = [
-            float(aircraft_state_data["x"]),   #  1) x
-            float(aircraft_state_data["y"]),   #  2) y
-            float(aircraft_state_data["z"]),   #  3) z
-
-            float(aircraft_state_data["vx"]),  #  4) Vx
-            float(aircraft_state_data["vy"]),  #  5) Vy
-            float(aircraft_state_data["vz"]),  #  6) Vz
-
-            float(aircraft_state_data["qx"]),  #  7) qx
-            float(aircraft_state_data["qy"]),  #  8) qy
-            float(aircraft_state_data["qz"]),  #  9) qz
-            float(aircraft_state_data["qw"]),  # 10) qw
-
-            float(aircraft_state_data["wx"]),  # 11) wx
-            float(aircraft_state_data["wy"]),  # 12) wy
-            float(aircraft_state_data["wz"])   # 13) wz
+            float(aircraft_state_data["x"]),
+            float(aircraft_state_data["y"]),
+            float(aircraft_state_data["z"]),
+            float(aircraft_state_data["vx"]),
+            float(aircraft_state_data["vy"]),
+            float(aircraft_state_data["vz"]),
+            float(aircraft_state_data["qx"]),
+            float(aircraft_state_data["qy"]),
+            float(aircraft_state_data["qz"]),
+            float(aircraft_state_data["qw"]),
+            float(aircraft_state_data["wx"]),
+            float(aircraft_state_data["wy"]),
+            float(aircraft_state_data["wz"])
         ]
 
-        ########################################################################
-        # 2) Parse control demands
-        ########################################################################
+        # 2) Control demands
         control_demand_vector = (
-            fx = float(aircraft_state_data["fx"]), 
+            fx = float(aircraft_state_data["fx"]),
             fy = float(aircraft_state_data["fy"]),
-
             roll_demand           = float(aircraft_state_data["roll_demand"]),
             pitch_demand          = float(aircraft_state_data["pitch_demand"]),
             yaw_demand            = float(aircraft_state_data["yaw_demand"]),
             thrust_setting_demand = float(aircraft_state_data["thrust_setting_demand"]),
-
             roll_demand_attained  = float(aircraft_state_data["roll_demand_attained"]),
             pitch_demand_attained = float(aircraft_state_data["pitch_demand_attained"]),
             yaw_demand_attained   = float(aircraft_state_data["yaw_demand_attained"]),
             thrust_attained       = float(aircraft_state_data["thrust_attained"])
         )
 
-        ########################################################################
-        # 3) Parse the *actual* deltaTime from the client & Advance sim_time
-        ########################################################################
+        # 3) Update global sim_time by the client-sent deltaTime
         deltaTime = float(aircraft_state_data["deltaTime"])
         global sim_time
         sim_time += deltaTime
 
-        ########################################################################
-        # 4) Perform Runge-Kutta integration
-        ########################################################################
+        # 4) Run 6-DOF integrator
         updated_aircraft_state_dictionary_for_JSON = Runge_Kutta_4_integrator(
             aircraft_current_state_vector,
             control_demand_vector,
@@ -6524,23 +6515,16 @@ function update_aircraft_state(
             aircraft_flight_physics_and_propulsive_data
         )
 
-        ########################################################################
-        # 5) Possibly record flight data if sim_time is in [start_rec..finish_rec]
-        ########################################################################
-        if (sim_time >= start_recording_sec && sim_time <= finish_recording_sec)
-            gather_flight_data(updated_aircraft_state_dictionary_for_JSON,
-                               sim_time,  # pass sim_time now
-                               df)
-        end
+        # 5) Record data **every time** – let the function handle intervals
+        gather_flight_data(
+            updated_aircraft_state_dictionary_for_JSON,
+            sim_time,
+            df
+        )
 
-        ########################################################################
-        # 6) Attach 'server_time' to the dictionary
-        ########################################################################
+        # 6) Attach 'server_time' so the client sees our sim_time
         updated_aircraft_state_dictionary_for_JSON["server_time"] = sim_time
 
-        ########################################################################
-        # 7) Return to the client
-        ########################################################################
         return updated_aircraft_state_dictionary_for_JSON
 
     catch e
@@ -6548,6 +6532,7 @@ function update_aircraft_state(
         return nothing
     end
 end
+
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.3_📈_record_and_save_flight_data.jl
@@ -6557,31 +6542,11 @@ end
 # FILE: 3.3_📈_record_and_save_flight_data.jl
 ###########################################
 
-
-# We'll use the same variable names that the front-end uses for pink spheres:
-#   start_flight_data_recording_at  &&  finish_flight_data_recording_at
-# These get populated in `✨_sync_mission_data_to_javascript.jl` (MISSION_DATA).
-# If you already have them as `start_recording_sec` / `finish_recording_sec`,
-# just rename them below to match.
-
-# We assume these are set globally via the mission YAML or similar:
-#    const start_flight_data_recording_at = MISSION_DATA["start_flight_data_recording_at"]
-#    const finish_flight_data_recording_at = MISSION_DATA["finish_flight_data_recording_at"]
-# In your codebase, they are currently called `start_recording_sec`, `finish_recording_sec`.
-# We rename them here for clarity.
-
-# ------------------------------------------------------------------------------
-# CSV Output Configuration
-# ------------------------------------------------------------------------------
-const DECIMAL_PLACES = 3  # Number of decimal places for rounding numerical values
-
-# Create a timestamp for the CSV filename
+const DECIMAL_PLACES = 3
 const TIMESTAMP = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
+csv_file = joinpath(project_dir, "📊_Flight_Test_Data",
+    "simulation_data_" * TIMESTAMP * ".csv")
 
-# Construct full path for CSV output file
-csv_file = joinpath(project_dir, "📊_Flight_Test_Data", "simulation_data_" * TIMESTAMP * ".csv")
-
-# Initialize DataFrame with typed columns to store flight simulation data
 df = DataFrame(
     time=Float64[],
     x=Float64[],  y=Float64[],  z=Float64[],
@@ -6591,28 +6556,22 @@ df = DataFrame(
     fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
     alpha_DEG=Float64[], beta_DEG=Float64[],
     pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
-    pitch_demand_attained=Float64[], roll_demand_attained=Float64[], yaw_demand_attained=Float64[],
+    pitch_demand_attained=Float64[], roll_demand_attained=Float64[],
+    yaw_demand_attained=Float64[],
     thrust_setting_demand=Float64[], thrust_attained=Float64[]
 )
 
-# A flag to ensure we only write the CSV once after the recording interval
+# Flag to ensure CSV is written exactly once
 has_written_to_csv = false
 
-"""
-    gather_flight_data(state_dict::Dict{String,Float64}, sim_time::Float64, df::DataFrame)
-
-Records the aircraft state into `df` only if sim_time is within the
-`[start_flight_data_recording_at .. finish_flight_data_recording_at]` interval.
-Once `sim_time` exceeds that interval, the CSV is written exactly once.
-"""
-function gather_flight_data(aircraft_state_data::Dict{String,Float64},
-                            current_sim_time::Float64,
-                            df::DataFrame)
-
-    # Make sure we can set the global write-once flag
+function gather_flight_data(
+    aircraft_state_data::Dict{String,Float64},
+    current_sim_time::Float64,
+    df::DataFrame
+)
     global has_written_to_csv
 
-    # 1) Collect data only during pink-sphere interval
+    # 1) Append data while within [start_recording_sec .. finish_recording_sec]
     if current_sim_time >= start_recording_sec &&
        current_sim_time <= finish_recording_sec
 
@@ -6655,14 +6614,13 @@ function gather_flight_data(aircraft_state_data::Dict{String,Float64},
         ))
     end
 
-    # 2) Once we pass the end of the pink-sphere interval, write the CSV if not done yet
+    # 2) If we're *past* the interval and haven’t written CSV yet, do it now
     if current_sim_time > finish_recording_sec && !has_written_to_csv
         CSV.write(csv_file, df)
         has_written_to_csv = true
         println("Flight data saved to CSV file: $(csv_file)")
     end
 end
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\4_Atmosphere_anemometry_and_constants\4.1_🎯_physical_constants.jl
