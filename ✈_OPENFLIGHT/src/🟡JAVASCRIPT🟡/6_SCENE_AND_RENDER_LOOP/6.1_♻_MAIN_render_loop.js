@@ -46,6 +46,17 @@ window.addEventListener("DOMContentLoaded", function () {
       updateInfo();
     }
 
+
+    /**
+    // Ensure consistent FOV for all cameras
+    scene.cameras.forEach(camera => {
+      if (camera.fov > 1.2) { // Check if FOV has expanded too much
+          camera.fov = 1.0; // Reset to default FOV
+      }
+  });
+  */
+
+
     // Render the scene
     scene.render();
   });

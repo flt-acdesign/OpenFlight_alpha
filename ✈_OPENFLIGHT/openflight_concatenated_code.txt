@@ -6538,9 +6538,41 @@ end
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.1_🤝_Establish_WebSockets_connection.jl
 ###########################################
 
+# Function to reset flight data recording state
+function reset_flight_data_recording()
+    global df = DataFrame(
+        time=Float64[],
+        x=Float64[],  y=Float64[],  z=Float64[],
+        vx=Float64[], vy=Float64[], vz=Float64[],
+        qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
+        wx=Float64[], wy=Float64[], wz=Float64[],
+        fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
+        alpha_DEG=Float64[], beta_DEG=Float64[],
+        pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
+        pitch_demand_attained=Float64[], roll_demand_attained=Float64[],
+        yaw_demand_attained=Float64[],
+        thrust_setting_demand=Float64[], thrust_attained=Float64[]
+    )
+    
+    global has_written_to_csv = false
+    
+    # Generate a new timestamp and CSV filename for this session
+    timestamp = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
+    global csv_file = joinpath(project_dir, "📊_Flight_Test_Data",
+        "simulation_data_" * timestamp * ".csv")
+        
+    println("Flight data recording reset with new CSV target: $csv_file")
+end
+
 # Main WebSocket connection handler function that processes incoming messages
 function websocket_handler(ws)
-    println("New WebSocket connection established")
+    # Reset simulation time when a new connection is established
+    global sim_time = 0.0
+    println("New WebSocket connection established - Simulation time reset to 0.0")
+    
+    # Reset flight data recording
+    reset_flight_data_recording()
+    
     try
         # Keep processing messages while the socket connection is open
         while !eof(ws.socket)
@@ -6593,9 +6625,9 @@ function establish_websockets_connection()
     end
 end
 
-
-
-
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
+###########################################
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
@@ -6700,7 +6732,6 @@ function update_aircraft_state(
     end
 end
 
-
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.3_📈_record_and_save_flight_data.jl
 ###########################################
@@ -6781,7 +6812,7 @@ function gather_flight_data(
         ))
     end
 
-    # 2) If we're *past* the interval and haven’t written CSV yet, do it now
+    # 2) If we're *past* the interval and haven't written CSV yet, do it now
     if current_sim_time > finish_recording_sec && !has_written_to_csv
         CSV.write(csv_file, df)
         has_written_to_csv = true

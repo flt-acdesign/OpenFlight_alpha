@@ -14,7 +14,7 @@ let show_velocity_vectors = "true"
 let show_trajectory = "true"
 
 // 0 = nothing, 1 = low, 2 = medium or 3 = high
-let scenery_complexity = 1
+let scenery_complexity = 3
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane

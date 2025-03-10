@@ -23,5 +23,5 @@ show_trajectory: "true"   # "true" or "false", to show the trajectory of the air
 
 # VISUALIZATION PARAMETERS
 
-scenery_complexity: 1   #  0 = nothing, 1 = low, 2 = medium or 3 = high
+scenery_complexity: 3   #  0 = nothing, 1 = low, 2 = medium or 3 = high
 

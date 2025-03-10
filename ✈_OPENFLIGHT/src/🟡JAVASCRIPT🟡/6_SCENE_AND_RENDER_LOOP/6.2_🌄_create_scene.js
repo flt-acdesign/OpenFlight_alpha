@@ -135,9 +135,34 @@ function logPickedCoordinates(point) {
 /**
  * Sets up the render loop for continuous updates
  * @param {BABYLON.Scene} scene - The scene to setup the render loop for
- */
+ 
 function setupRenderLoop(scene) {
     scene.onBeforeRenderObservable.add(() => {
         updateSkySphereDiameter(scene);
+    });
+}
+*/
+
+
+
+
+
+
+function setupRenderLoop(scene) {
+    const engine = scene.getEngine();
+    let previousTime = performance.now();
+    
+    scene.onBeforeRenderObservable.add(() => {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - previousTime) / 1000.0; // Convert to seconds
+        previousTime = currentTime;
+        
+        // Update sky with deltaTime factor
+        updateSkySphereDiameter(scene, scene.activeCamera, deltaTime);
+        
+        // Limit camera rotation speed based on deltaTime
+        if (scene.activeCamera && scene.activeCamera.angularSensibility) {
+            scene.activeCamera.angularSensibility = 1000 / deltaTime;
+        }
     });
 }
