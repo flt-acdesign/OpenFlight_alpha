@@ -2,8 +2,7 @@
 # FILE: ...\🟣JULIA🟣\1_Maths_and_Auxiliary_Functions\1.0_📚_Check_packages_and_websockets_port\✨_sync_mission_data_to_javascript.jl
 ###########################################
 
-# 1) Bring in YAML so we can load the mission file
-using YAML
+
 
 # 2) Mission file path
 mission_file = joinpath(@__DIR__, raw"../../../../", "default_mission.yaml")
@@ -12,9 +11,14 @@ println("Loading mission file from: $mission_file")
 # 3) Load mission data FIRST, before any includes
 MISSION_DATA = YAML.load_file(mission_file)
 
-###########################################
-# FILE: same module
-###########################################
+
+# Extract the user-chosen times:
+const start_recording_sec  = MISSION_DATA["start_flight_data_recording_at"]
+const finish_recording_sec = MISSION_DATA["finish_flight_data_recording_at"]
+
+println("Configured to record flight data only during: [$start_recording_sec .. $finish_recording_sec] seconds")
+
+
 
 """
     format_js_value(value)

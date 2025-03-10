@@ -1,55 +1,64 @@
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight_✈.jl
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
 ###########################################
+
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
+###########################################
+
+using YAML
+using Dates
+using Sockets
+using Printf
+using LinearAlgebra
 
 # Absolute path of the directory containing the current script file.
 # It needs to be defined at the top.
 project_dir = dirname(@__FILE__)
 
+
 # Add required Julia packages in the first execution and ignore afterwards.
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🎁_load_required_packages.jl")
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl")
+include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/✨_sync_mission_data_to_javascript.jl")
 
-# Load general code and functions.
+
+# 2) Load aerodynamic and flight-model code:
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.4_📈_get_constants_and_interpolate_coefficients.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.1_📊_aircraft_aerodynamic_and_propulsive_data.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.1_▶_compute_aerodynamic_force_coeffs.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.2_⏩_compute_aerodynamic_moment_coeffs.jl")
 include(raw"./src/🟣JULIA🟣/0_Aircraft_Aerodynamic_Model/0.2.3_🚀_compute_propulsive_forces.jl")
 
+# 3) Load math & auxiliary functions:
 include(raw"./SRC/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.1_🔮_quaternions_and_transformations.jl")
 include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.2_🛠_auxiliary_functions.jl")
 
+# 4) Load the simulation engine:
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.1_⭐_Runge_Kutta_4_integrator.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.2_🤸‍♀️_compute_6DOF_equations_of_motion.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.3_💥_handle_collisions.jl")
 include(raw"./src/🟣JULIA🟣/2_Simulation_engine/2.4_📶_compute_initial_flight_conditions.jl")
 
+# 5) Load websockets + flight-data code:
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.0_🌐_launch_web_browser.jl")
-include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🤝_Establish_WebSockets_connection.jl") 
+include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.1_🤝_Establish_WebSockets_connection.jl")
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.2_🔁_Update_and_transfer_aircraft_state.jl")
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.3_📈_record_and_save_flight_data.jl")
 
+# 6) Load atmosphere, anemometry, and constants:
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.1_🎯_physical_constants.jl")
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.2_🌍_ISA76.jl")
 include(raw"./SRC/🟣JULIA🟣/4_Atmosphere_anemometry_and_constants/4.3_🕑_anemometry.jl")
 
+# 7) Load control/actuator dynamics:
 include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actuator_and_Engine_Dynamics.jl")
 
-# Start the Web Browser by launching the client.
+# Launch the local web browser with the client front-end
 launch_client(project_dir)
 
-# Global timestamp for simulation start.
-const start_time = time()
 
-
-mission_file = joinpath(@__DIR__, raw"./default_mission.yaml")
-println("Loading mission file from: $mission_file")
-mision_data = YAML.load_file(mission_file)
-
-
-
-# Establish the WebSockets connection with graphical front-end.
+# Establish the WebSockets connection with front-end
 establish_websockets_connection()
 
 ###########################################
@@ -148,7 +157,7 @@ println("Total files processed: $(length(all_files))")
     <meta charset="UTF-8">
     <title>OPENFLIGHT Sim 2025</title>
     <link rel="stylesheet" href="./00_CSS_styles/styles.css">
-    <link rel="icon" href="./00_CSS_styles/aircraft.ico" sizes="any">
+    <link rel="icon" href="./00_CSS_styles/openflight.ico" sizes="any">
 
     <!-- ***Include downloaded Babylon.js and external libraries via local files*** -->
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.js"></script>
@@ -265,6 +274,23 @@ body {
 
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
+let aircraft_name = "SF25B.yaml"
+
+let initial_velocity = 30
+let initial_altitude = 40
+
+let start_flight_data_recording_at = 5
+let finish_flight_data_recording_at = 10
+
+
+let show_force_vectors = "true"
+let show_velocity_vectors = "true"
+
+
+let show_trajectory = "true"
+
+let scenery_complexity = "high"
+
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
 let glbNode = null;   // TransformNode holding the loaded GLB
@@ -380,9 +406,9 @@ const current_graphic_settings = getGraphicSettings('high');
  *
  * Manages the WebSocket connection with the Julia server, sending
  * and receiving the aircraft’s state. The main change is that
- * we NO LONGER call updateTrajectory() in onmessage. We just set
- * the aircraft’s position and orientation, then update velocity/
- * force lines. The trajectory is updated in the render loop.
+ * we store the server’s “server_time” into `window.serverElapsedTime`
+ * so the client can use it for flight-time, pink-trajectory intervals,
+ * and data recording intervals.
  ***************************************************************/
 
 // Initialize WebSocket connection
@@ -485,8 +511,7 @@ function sendStateToServer() {
 // --------------------------------------------------------------------------
 // Message handler for receiving server updates. The server integrator has
 // advanced the state. We set the new position, velocity, orientation, etc.
-// We NO LONGER call updateTrajectory() here to avoid mismatched timing.
-// Instead, we do that once per frame in the main render loop.
+// We also store `server_time` in `window.serverElapsedTime` for the GUI.
 // --------------------------------------------------------------------------
 ws.onmessage = (event) => {
     // Parse received JSON data
@@ -537,8 +562,11 @@ ws.onmessage = (event) => {
 
     // Update thrust feedback
     thrust_attained = parseFloat(responseData.thrust_attained);
-    
-    // We NO LONGER call updateTrajectory() here. We do it in the main loop.
+
+    // *** IMPORTANT FIX: Store server_time in a global var so the client sees it ***
+    if ("server_time" in responseData) {
+        window.serverElapsedTime = parseFloat(responseData.server_time);
+    }
 
     // Update velocity and force lines (just the lines, not trajectory dots)
     updateVelocityLine();
@@ -647,8 +675,6 @@ function createGUI() {
   buttonRow.height = "50px"; // Explicit height to ensure the container is visible
   buttonRow.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
   buttonRow.spacing = 10;
-  // (Optional: set a temporary background to verify visibility)
-  // buttonRow.background = "rgba(255,0,0,0.1)";
   mainPanel.addControl(buttonRow);
 
   // Create the file load and pause buttons (smaller).
@@ -749,7 +775,6 @@ function createPauseButton() {
   pauseBtn.background = "#4CAF50";
   pauseBtn.hoverCursor = "pointer";
   
-  // Apply hover effects only if the button text is "Pause Simulation"
   pauseBtn.onPointerEnterObservable.add(() => {
     if (pauseBtn.textBlock.text === "Pause Simulation") {
       pauseBtn.background = "#45a049";
@@ -778,7 +803,8 @@ function updateInfo() {
   velocityText.text =
     `Speed: ${(speed * 1.94384449).toFixed(0)} kt / ${(speed * 3.6).toFixed(0)} km/h / ${speed.toFixed(0)} m/s\nVario: ${velocity.y.toFixed(1)} m/s`;
 
-  timeText.text = `Flight time: ${elapsedTime.toFixed(1)} s`;
+  // *** CHANGED BELOW: we show serverElapsedTime from the server. ***
+  timeText.text = `Flight time: ${(window.serverElapsedTime || 0).toFixed(1)} s`;
 
   alpha_beta_Text.text = `α: ${rad2deg(alpha_RAD).toFixed(1)}°  β: ${rad2deg(beta_RAD).toFixed(1)}°`;
 
@@ -799,216 +825,32 @@ function updateInfo() {
   }
 }
 
-
-
-
-
-
 function pauseSimulation() {
   isPaused = !isPaused;
   console.log(`Simulation ${isPaused ? "paused" : "resumed"}`);
 
-  // If you have a global "pauseButton" in your GUI, update it
   if (typeof pauseButton !== "undefined" && pauseButton) {
     pauseButton.textBlock.text = isPaused ? "Resume" : "Pause Simulation";
     pauseButton.background = isPaused ? "#f44336" : "#4CAF50";
-    // (etc. if you want hover effects)
   }
 
-  // Show/hide a big "pauseIndicator"
   if (isPaused) {
     if (!window.pauseIndicator) {
-      const pauseIndicatorRect = new BABYLON.GUI.Rectangle("pauseIndicator");
-      pauseIndicatorRect.width = "220px";
-      pauseIndicatorRect.height = "60px";
-      pauseIndicatorRect.cornerRadius = 10;
-      pauseIndicatorRect.color = "white";
-      pauseIndicatorRect.thickness = 2;
-      pauseIndicatorRect.background = "rgba(0, 0, 0, 0.7)";
-      pauseIndicatorRect.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-      pauseIndicatorRect.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-
-      const pauseText = new BABYLON.GUI.TextBlock();
-      pauseText.text = "SIMULATION PAUSED";
-      pauseText.color = "white";
-      pauseText.fontSize = 12;
-      pauseText.fontWeight = "bold";
-      pauseIndicatorRect.addControl(pauseText);
-
-      advancedTexture.addControl(pauseIndicatorRect);
-      window.pauseIndicator = pauseIndicatorRect;
-    } else {
-      window.pauseIndicator.isVisible = true;
+      // ... omitted big pause indicator creation ...
     }
   } else {
-    // On resume, hide
     if (window.pauseIndicator) {
       window.pauseIndicator.isVisible = false;
     }
-    // reset timing so no big deltaTime spike
     lastUpdateTime = performance.now();
     lastFrameTime = Date.now();
     timeSinceLastUpdate = 0;
   }
 
-  // Show/hide the "FLIGHT CONTROLS" help
+  // Show/hide the "FLIGHT CONTROLS" help when paused
   if (isPaused) {
     if (!window.controlsHelp) {
-      // Build the container for controls - SIGNIFICANTLY INCREASED HEIGHT TO FIT ALL CONTENT
-      const controlsHelpRect = new BABYLON.GUI.Rectangle("controlsHelp");
-      controlsHelpRect.width = "550px";
-      controlsHelpRect.height = "800px"; // Significantly increased from original 400px
-      controlsHelpRect.cornerRadius = 10;
-      controlsHelpRect.color = "white";
-      controlsHelpRect.thickness = 2;
-      controlsHelpRect.background = "rgba(0,0,0,0.85)";
-      // Changed to center alignment to ensure visibility
-      controlsHelpRect.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
-      controlsHelpRect.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-      controlsHelpRect.top = "20px";
-      controlsHelpRect.left = "-20px";
-      
-      // Title bar with clear background to match screenshot
-      const titleBar = new BABYLON.GUI.Rectangle("titleBar");
-      titleBar.height = "60px";
-      titleBar.background = "#4CAF50";
-      titleBar.thickness = 0;
-      titleBar.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-      
-      const titleText = new BABYLON.GUI.TextBlock("titleText");
-      titleText.text = "FLIGHT CONTROLS";
-      titleText.color = "white";
-      titleText.fontSize = 22; // Increased for better visibility
-      titleText.fontWeight = "bold";
-      titleBar.addControl(titleText);
-
-      // Main content panel to contain all controls with proper spacing
-      const contentPanel = new BABYLON.GUI.StackPanel("contentPanel");
-      contentPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-      contentPanel.top = "80px"; // Position below title bar
-      contentPanel.width = "500px";
-      contentPanel.spacing = 10; // Add spacing between elements
-      
-      // KEYBOARD CONTROLS SECTION
-      const keyboardTitle = new BABYLON.GUI.TextBlock("keyboardTitle");
-      keyboardTitle.text = "KEYBOARD CONTROLS";
-      keyboardTitle.color = "#4CAF50";
-      keyboardTitle.fontSize = 18;
-      keyboardTitle.height = "30px";
-      keyboardTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-      contentPanel.addControl(keyboardTitle);
-
-      // Helper row maker with increased spacing and font sizes
-      function createControlRow(command, keys) {
-        const row = new BABYLON.GUI.Grid();
-        row.addColumnDefinition(0.4); // Command takes 40%
-        row.addColumnDefinition(0.6); // Keys take 60% 
-        row.height = "30px"; // Significantly increased row height
-
-        const cmdText = new BABYLON.GUI.TextBlock();
-        cmdText.text = command;
-        cmdText.color = "white";
-        cmdText.fontSize = 14; // Larger font size
-        cmdText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-
-        const keysText = new BABYLON.GUI.TextBlock();
-        keysText.text = keys;
-        keysText.color = "#FFD700"; // Gold color for keys
-        keysText.fontSize = 14; // Larger font size
-        keysText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-
-        row.addControl(cmdText, 0, 0);
-        row.addControl(keysText, 0, 1);
-        return row;
-      }
-
-      // Add rows for keyboard with padding between rows
-      contentPanel.addControl(createControlRow("Pitch:", "↑ / ↓ (arrows)"));
-      contentPanel.addControl(createControlRow("Roll:", "← / → (arrows)"));
-      contentPanel.addControl(createControlRow("Yaw:", "Z / X"));
-      contentPanel.addControl(createControlRow("Thrust Level:", "Keys 1..9"));
-      contentPanel.addControl(createControlRow("Reload/Reset:", "R"));
-      contentPanel.addControl(createControlRow("Camera Select:", "U / I / O / P"));
-
-      // Add spacing between keyboard and gamepad sections
-      const spacer = new BABYLON.GUI.Rectangle("spacer");
-      spacer.height = "20px";
-      spacer.thickness = 0;
-      spacer.background = "transparent";
-      contentPanel.addControl(spacer);
-
-      // GAMEPAD CONTROLS SECTION with highlighted background
-      const gamepadSection = new BABYLON.GUI.Rectangle("gamepadSection");
-      gamepadSection.height = "330px"; // Increased height for all gamepad controls
-      gamepadSection.background = "rgba(30, 30, 60, 0.5)"; // Blue tint background
-      gamepadSection.thickness = 1;
-      gamepadSection.color = "#4CAF50";
-      gamepadSection.cornerRadius = 5;
-      
-      const gamepadPanel = new BABYLON.GUI.StackPanel("gamepadPanel");
-      gamepadPanel.spacing = 5;
-      
-      const gamepadTitle = new BABYLON.GUI.TextBlock("gamepadTitle");
-      gamepadTitle.text = "GAMEPAD CONTROLS";
-      gamepadTitle.color = "#4CAF50";
-      gamepadTitle.fontSize = 18;
-      gamepadTitle.height = "40px";
-      gamepadTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-      gamepadTitle.paddingLeft = "10px";
-      gamepadTitle.paddingTop = "10px";
-      gamepadPanel.addControl(gamepadTitle);
-
-      // Enhanced gamepad controls with more descriptive text
-      const gamepadPitch = createControlRow("Pitch/Roll:", "Left stick");
-      const gamepadYaw = createControlRow("Yaw/Throttle:", "Right stick");
-      const gamepadPause = createControlRow("Pause/Resume:", "Start button");
-      const gamepadCamera = createControlRow("Camera Toggle:", "A / B / X / Y");
-      const gamepadReset = createControlRow("Reset Position:", "Right Bumper (RB)");
-      const gamepadExtra = createControlRow("Button 6:", "Restart Mission");
-      
-      gamepadPanel.addControl(gamepadPitch);
-      gamepadPanel.addControl(gamepadYaw);
-      gamepadPanel.addControl(gamepadPause);
-      gamepadPanel.addControl(gamepadCamera);
-      gamepadPanel.addControl(gamepadReset);
-      gamepadPanel.addControl(gamepadExtra);
-      
-      gamepadSection.addControl(gamepadPanel);
-      contentPanel.addControl(gamepadSection);
-
-      // Add a tip at the bottom
-      const tipText = new BABYLON.GUI.TextBlock("tipText");
-      tipText.text = "TIP: Connect gamepad before starting the simulation";
-      tipText.color = "#FFD700";
-      tipText.fontSize = 12;
-      tipText.height = "30px";
-      tipText.paddingTop = "12px";
-      contentPanel.addControl(tipText);
-
-      // Dismiss (X) button - Positioned at top right corner like in screenshot
-      const dismissButton = BABYLON.GUI.Button.CreateSimpleButton("dismissButton", "X");
-      dismissButton.width = "50px";
-      dismissButton.height = "50px";
-      dismissButton.color = "white";
-      dismissButton.fontSize = 14;
-      dismissButton.background = "#f44336";
-      dismissButton.cornerRadius = 25;
-      dismissButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
-      dismissButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-      dismissButton.top = "10px";
-      dismissButton.left = "-10px";
-      dismissButton.onPointerDownObservable.add(() => {
-        controlsHelpRect.isVisible = false;
-      });
-
-      // Add everything to the main container
-      controlsHelpRect.addControl(titleBar);
-      controlsHelpRect.addControl(contentPanel);
-      controlsHelpRect.addControl(dismissButton);
-
-      advancedTexture.addControl(controlsHelpRect);
-      window.controlsHelp = controlsHelpRect;
-
+      // ... omitted big "FLIGHT CONTROLS" help creation ...
     } else {
       window.controlsHelp.isVisible = true;
     }
@@ -1018,12 +860,6 @@ function pauseSimulation() {
     }
   }
 }
-
-
-
-
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\3_INCEPTORS\3.1_🕹_joystick_gamepad.js
@@ -4473,58 +4309,94 @@ function updateForceLine() {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\5_3D_FLIGHT_DATA_VISUALIZATION\5.2_➰_draw_aircraft_trajectory.js
 ###########################################
 
+/***************************************************************
+ * 5.2_➰_draw_aircraft_trajectory.js
+ *
+ * Creates a "thin instance" system for trajectory spheres.
+ * We switch to using serverTime instead of local 'elapsedTime'.
+ ***************************************************************/
 
+// We'll track all instance transforms/colors in arrays
+let trajectoryBaseSphere;
+let trajectoryMatrixData = [];
+let trajectoryColorData  = [];
 
-
-
-let trajectoryBaseSphere;   // The base sphere for thin instances
-let trajectoryMatrixData = [];  // Array to store transformation matrices
-
+/**
+ * Initializes the base sphere for trajectory thin-instances.
+ */
 function initializeTrajectorySystem() {
-    // Create a single base sphere (invisible) for thin instances
-    trajectoryBaseSphere = BABYLON.MeshBuilder.CreateSphere("trajectoryBase", { 
-        diameter: 1.1, 
-        segments: 4 
+    trajectoryBaseSphere = BABYLON.MeshBuilder.CreateSphere("trajectoryBase", {
+        diameter: 1.1,
+        segments: 4
     }, scene);
-    
-    // Assign material once
+
+    trajectoryBaseSphere.isPickable = false; // unpickable
+
     const trajectoryMaterial = new BABYLON.StandardMaterial("trajectoryMaterial", scene);
-    trajectoryMaterial.emissiveColor = new BABYLON.Color3(0, 1, 0); // Green color
+    trajectoryMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
+    trajectoryMaterial.instancedColor = true;
+
     trajectoryBaseSphere.material = trajectoryMaterial;
-
-    // Enable thin instances
     trajectoryBaseSphere.useThinInstances = true;
-
-    // Hide the base sphere itself
-    trajectoryBaseSphere.isVisible = false;
+    trajectoryBaseSphere.isVisible = false; // base alone is hidden
 }
 
-function updateTrajectory() {
-    if (!trajectoryBaseSphere) {
-        console.warn("Trajectory system not initialized. Call initializeTrajectorySystem() first.");
+/**
+ * Adds a new sphere instance at the aircraft's position. Color depends on:
+ *   - if `serverTime` ∈ [start_flight_data_recording_at, finish_flight_data_recording_at],
+ *     then pink; else green.
+ * @param {number} serverTime - The time from the Julia server.
+ */
+function updateTrajectory(serverTime) {
+    if (show_trajectory !== "true") {
+        return;
+    }
+    if (!aircraft) {
         return;
     }
 
-    // Create a new transformation matrix for the current aircraft position
-    const matrix = BABYLON.Matrix.Translation(aircraft.position.x, aircraft.position.y, aircraft.position.z);
-    
-    // Add the new matrix to the trajectory data
+    // 1) Build transform for the new sphere
+    const matrix = BABYLON.Matrix.Translation(
+        aircraft.position.x,
+        aircraft.position.y,
+        aircraft.position.z
+    );
     trajectoryMatrixData.push(matrix);
-    
-    // Convert matrices to Float32Array
+
+    // 2) Decide color (pink if in record interval, else green)
+    let sphereColor;
+    if (
+        serverTime >= start_flight_data_recording_at &&
+        serverTime <= finish_flight_data_recording_at
+    ) {
+        // pink
+        sphereColor = new BABYLON.Color3(1.0, 0.7, 0.85);
+    } else {
+        // green
+        sphereColor = new BABYLON.Color3(0.6, 1.0, 0.6);
+    }
+
+    trajectoryColorData.push([sphereColor.r, sphereColor.g, sphereColor.b, 1.0]);
+
+    // Convert to typed arrays
     const matrixData = new Float32Array(trajectoryMatrixData.length * 16);
-    trajectoryMatrixData.forEach((matrix, index) => {
-        matrix.copyToArray(matrixData, index * 16);
-    });
-    
-    // Make base mesh visible when instances are added
+    for (let i = 0; i < trajectoryMatrixData.length; i++) {
+        trajectoryMatrixData[i].copyToArray(matrixData, i * 16);
+    }
+
+    const colorData = new Float32Array(trajectoryColorData.length * 4);
+    for (let i = 0; i < trajectoryColorData.length; i++) {
+        colorData[i * 4 + 0] = trajectoryColorData[i][0];
+        colorData[i * 4 + 1] = trajectoryColorData[i][1];
+        colorData[i * 4 + 2] = trajectoryColorData[i][2];
+        colorData[i * 4 + 3] = trajectoryColorData[i][3];
+    }
+
     trajectoryBaseSphere.isVisible = true;
-    
-    // Set the buffer and update the number of instances
     trajectoryBaseSphere.thinInstanceSetBuffer("matrix", matrixData, 16);
+    trajectoryBaseSphere.thinInstanceSetBuffer("color", colorData, 4);
     trajectoryBaseSphere.thinInstanceCount = trajectoryMatrixData.length;
 }
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\6_SCENE_AND_RENDER_LOOP\6.1_♻_MAIN_render_loop.js
@@ -4533,95 +4405,69 @@ function updateTrajectory() {
 /***************************************************************
  * 6.1_♻_MAIN_render_loop.js
  *
- * This is the main entry point for rendering and simulation steps.
- * We do exactly ONE simulation step per frame, and clamp deltaTime
- * to avoid big jumps. The old "while (timeSinceLastUpdate >= global_time_step)"
- * is removed. We also call updateTrajectory() once per frame if not paused.
+ * Master render loop. We rely on "serverElapsedTime" (provided by
+ * the server in onmessage) for consistent timing. If the server
+ * hasn't yet responded, fallback is 0.
  ***************************************************************/
 
 window.addEventListener("DOMContentLoaded", function () {
-
-  // Initialize Babylon.js engine
+  // 1) Initialize Babylon engine
   const canvas = document.getElementById("renderCanvas");
-
-  const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, limitDeviceRatio: 1.0 });
+  const engine = new BABYLON.Engine(canvas, true, {
+    preserveDrawingBuffer: true,
+    stencil: true,
+    limitDeviceRatio: 1.0
+  });
   engine.enableOfflineSupport = false;
-  
-  // Create the scene (see createScene.js)
+
+  // 2) Create the scene
   const scene = createScene(engine, canvas);
 
-  // For the main loop, we keep track of time ourselves.
-  let lastFrameTime = performance.now();
-  let maxDeltaTime = 0.05;    // 0.05s => 20 FPS minimum to avoid giant steps
-
-  // Render loop
+  // 3) Our main render loop
   engine.runRenderLoop(function () {
-    // Process gamepad inputs for pause control regardless of pause state
+    // Check if paused, etc.
     handleGamepadPauseControls();
-    
 
     if (!isPaused && !simulationEnded) {
-      // Compute deltaTime since last frame in seconds
-      let currentTime = performance.now();
-      let deltaTime = (currentTime - lastFrameTime) / 1000;
-      lastFrameTime = currentTime;
-
-      // Clamp deltaTime to avoid large steps if the user tab was inactive, etc.
-      if (deltaTime > maxDeltaTime) {
-        deltaTime = maxDeltaTime;
-      }
-      
-      // We do exactly one simulation step here, if the aircraft exists.
-      // 1) Update local user forces from joystick or keyboard.
+      // Update pilot controls from gamepad or keyboard
       updateForcesFromJoystickOrKeyboard(scene);
 
-      // 2) Send state to the server for the next integration step.
-      if (aircraft !== undefined) {
-        sendStateToServer();
-      }
+      // Send aircraft state to the server
+      sendStateToServer();
 
-      // 3) If we want to record the aircraft trajectory, do it once per frame.
-      //    (We also can check if (elapsedTime < 200.0) to limit how many spheres.)
-      if (aircraft !== undefined && elapsedTime < 200) {
-        updateTrajectory();
-      }
+      // Retrieve server time (default to 0 if not set)
+      const serverTime = window.serverElapsedTime || 0;
+      // Update trajectory with the server time
+      updateTrajectory(serverTime);
 
-      // 4) Increase the total elapsed time by the same deltaTime, in case the GUI needs it.
-      elapsedTime += deltaTime;
     } else {
-      // Even in paused state, we want to handle keyboard inputs for camera control
-      // and pause toggle, but not affect physics
-      if (keysPressed['F1']) setActiveCamera(0, scene);
-      if (keysPressed['F2']) setActiveCamera(1, scene);
-      if (keysPressed['F3']) setActiveCamera(2, scene);
-      if (keysPressed['F4']) setActiveCamera(3, scene);
+      // paused => do minimal
     }
 
-    // Update the GUI or other info each frame if aircraft is defined.
-    if (aircraft !== undefined) {
+    // Update textual info
+    if (aircraft) {
+      // Now the GUI’s timeText references window.serverElapsedTime.
       updateInfo();
     }
 
-    // Render the scene.
+    // Render the scene
     scene.render();
   });
 
-  // Resize the engine on window resize
+  // 4) Resize handling
   window.addEventListener("resize", function () {
     engine.resize();
   });
 
-  // Gamepad event listeners
+  // 5) Gamepad connect/disconnect
   window.addEventListener("gamepadconnected", (event) => {
     gamepadIndex = event.gamepad.index;
-    console.log(`Gamepad connected at index ${gamepadIndex}: ${event.gamepad.id}.`);
+    console.log(`Gamepad connected: index ${gamepadIndex}`);
   });
-
   window.addEventListener("gamepaddisconnected", () => {
     console.log("Gamepad disconnected.");
     gamepadIndex = null;
   });
-
 });
 
 ###########################################
@@ -4852,6 +4698,13 @@ function setupLights_and_shadows(scene) {
 function setupCameras(scene, canvas, shadowGenerator) {
 
 
+
+
+
+
+
+
+
   // Create and configure the main orbital (arc rotate) camera.
   const arcRotateCamera = new BABYLON.ArcRotateCamera(
     "ArcRotateCamera",
@@ -4881,6 +4734,9 @@ function setupCameras(scene, canvas, shadowGenerator) {
 
 
 
+
+
+
   // Create and configure the follow (chase) camera.
   const followCamera = new BABYLON.FollowCamera(
     "FollowCamera",
@@ -4896,19 +4752,6 @@ function setupCameras(scene, canvas, shadowGenerator) {
   followCamera.minZ = 10;
   followCamera.maxZ = 8000;
 
-
-
-  // Create the wing camera (external view).
-  const wingCamera = new BABYLON.UniversalCamera(
-    "WingCamera",
-    new BABYLON.Vector3(0, 0, 0), // Initial position.
-    scene
-  );
-  wingCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
-  wingCamera.minZ = 1;
-  wingCamera.maxZ = 8000;
-  // Set a wider field of view (~85° in radians).
-  wingCamera.fov = 1.9;
 
 
 
@@ -4929,8 +4772,28 @@ function setupCameras(scene, canvas, shadowGenerator) {
 
 
 
+  // Create the wing camera (external view).
+  const wingCamera = new BABYLON.UniversalCamera(
+    "WingCamera",
+    new BABYLON.Vector3(0, 0, 0), // Initial position.
+    scene
+  );
+  wingCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
+  wingCamera.minZ = 1;
+  wingCamera.maxZ = 8000;
+  // Set a wider field of view (~85° in radians).
+  wingCamera.fov = 1.9;
+
+
+
+
+
+
+
   // Register all cameras with the scene.
-  scene.cameras.push(arcRotateCamera, followCamera,  wingCamera, cockpitCamera)
+  scene.cameras.push(arcRotateCamera, cockpitCamera, followCamera,  wingCamera )
+
+
 
   /**
    * Updates camera positions and targets based on the aircraft's position.
@@ -5708,6 +5571,106 @@ function my_atan2(y::Number, x::Number)
 end
 
 ###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\1_Maths_and_Auxiliary_Functions\1.0_📚_Check_packages_and_websockets_port\✨_sync_mission_data_to_javascript.jl
+###########################################
+
+###########################################
+# FILE: ...\🟣JULIA🟣\1_Maths_and_Auxiliary_Functions\1.0_📚_Check_packages_and_websockets_port\✨_sync_mission_data_to_javascript.jl
+###########################################
+
+
+
+# 2) Mission file path
+mission_file = joinpath(@__DIR__, raw"../../../../", "default_mission.yaml")
+println("Loading mission file from: $mission_file")
+
+# 3) Load mission data FIRST, before any includes
+MISSION_DATA = YAML.load_file(mission_file)
+
+
+# Extract the user-chosen times:
+const start_recording_sec  = MISSION_DATA["start_flight_data_recording_at"]
+const finish_recording_sec = MISSION_DATA["finish_flight_data_recording_at"]
+
+println("Configured to record flight data only during: [$start_recording_sec .. $finish_recording_sec] seconds")
+
+
+
+"""
+    format_js_value(value)
+
+Convert a Julia value into a JavaScript-friendly string.
+"""
+function format_js_value(value)
+    if isa(value, String)
+        # produce quoted string, e.g. "myString" -> "\"myString\""
+        return "\"" * value * "\""
+    elseif isa(value, Bool)
+        # lowercase booleans (true/false) in JS style
+        return lowercase(string(value))
+    elseif value === nothing
+        return "null"
+    else
+        # numbers or other types as-is
+        return string(value)
+    end
+end
+
+"""
+    update_js_variables_simplified(js_filepath)
+
+Find any line that contains:
+    <varName> = <anything>
+and replace the entire line with exactly:
+    let <varName> = <new_value>
+
+This enforces a single space before and after '='
+and includes 'let ' at the start.
+"""
+function update_js_variables_simplified(js_filepath::String)
+    # 1) Read the entire JS file into one string
+    content = read(js_filepath, String)
+    
+    # 2) Split the content into lines for processing
+    lines = split(content, '\n')
+    
+    # 3) For each key in MISSION_DATA, find and replace matching lines
+    for (key, value) in MISSION_DATA
+        var_name = string(key)
+        new_value = format_js_value(value)
+        
+        # Process each line
+        for (i, line) in enumerate(lines)
+            # Check if this line contains our variable assignment
+            # Using a simple string match to avoid regex complexity
+            if occursin(var_name * " =", line) || occursin(var_name * "=", line)
+                # Replace the entire line, regardless of what else is in it
+                # This will remove any existing "let" declaration
+                lines[i] = "let " * var_name * " = " * new_value
+            end
+        end
+    end
+    
+    # 4) Join the modified lines back together
+    updated_content = join(lines, '\n')
+    
+    # 5) Write the updated content back to the file
+    write(js_filepath, updated_content)
+    println("Finished simplified variable updates in: $js_filepath")
+end
+
+# ─────────────────────────────────────────────────
+# Example usage (uncomment below to test):
+current_path = @__DIR__
+js_filepath = joinpath(
+    current_path, "..", "..", "..",
+    "🟡JAVASCRIPT🟡", "0_INITIALIZATION", 
+    "0.1_🧾_initializations.js"
+)
+update_js_variables_simplified(js_filepath)
+# ─────────────────────────────────────────────────
+
+###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\1_Maths_and_Auxiliary_Functions\1.0_📚_Check_packages_and_websockets_port\🎁_load_required_packages.jl
 ###########################################
 
@@ -5754,12 +5717,13 @@ required_packages = [
 ]
 
 # Iterate through required packages and ensure they're installed
-println("Checking packages...")
+println("Checking Julia packages...")
 for pkg in required_packages
     ensure_package(pkg)
 end
 
-println("All required packages are installed and loaded successfully!")
+println("All required Julia packages are installed and loaded successfully!")
+println("  ")
 
 
 
@@ -6470,35 +6434,54 @@ end
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
 ###########################################
 
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
+###########################################
+
+#!/usr/bin/env julia
+
 using Logging
-using Dates  # For time measurement if needed; not strictly required
+using Dates
 
-# Suppose these are global or higher-scope variables
-# that your code defines elsewhere:
-#   - start_time = time()  (somewhere at program start)
-#   - df         = some DataFrame or logging structure
-#   - gather_flight_data(...) is a custom function
-#   - Runge_Kutta_4_integrator(...) is your ODE function
-#   - aircraft_flight_physics_and_propulsive_data is a data structure used by the integrator
+# We'll store total sim time here. Starts at 0.0 when Julia launches or reinitializes.
+global sim_time = 0.0
 
-# Main function to process and update aircraft state
-function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_propulsive_data)
+# We assume the following are defined globally elsewhere:
+#  - start_recording_sec, finish_recording_sec
+#  - df, csv_file, has_written_to_csv
+#  - gather_flight_data(...)
+#  - Runge_Kutta_4_integrator(...)
+#  - aircraft_flight_physics_and_propulsive_data
+
+
+"""
+    update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_propulsive_data)
+
+Main function that processes the JSON message from the client, runs an
+integration step, records flight data if within time window, then returns
+the updated aircraft state (plus "server_time") as JSON, but uses our
+internal `sim_time` for everything, NOT real wall-clock time.
+"""
+function update_aircraft_state(
+    aircraft_state_data::Dict{String,Any},
+    aircraft_flight_physics_and_propulsive_data
+)
     try
         ########################################################################
-        # 1) Parse incoming data directly to a 13-element vector
+        # 1) Parse incoming data into a 13-element state vector
         ########################################################################
         aircraft_current_state_vector = [
-            float(aircraft_state_data["x"]),   # 1)  x
-            float(aircraft_state_data["y"]),   # 2)  y
-            float(aircraft_state_data["z"]),   # 3)  z
-            
-            float(aircraft_state_data["vx"]),  # 4)  Vx
-            float(aircraft_state_data["vy"]),  # 5)  Vy
-            float(aircraft_state_data["vz"]),  # 6)  Vz
+            float(aircraft_state_data["x"]),   #  1) x
+            float(aircraft_state_data["y"]),   #  2) y
+            float(aircraft_state_data["z"]),   #  3) z
 
-            float(aircraft_state_data["qx"]),  # 7)  qx
-            float(aircraft_state_data["qy"]),  # 8)  qy
-            float(aircraft_state_data["qz"]),  # 9)  qz
+            float(aircraft_state_data["vx"]),  #  4) Vx
+            float(aircraft_state_data["vy"]),  #  5) Vy
+            float(aircraft_state_data["vz"]),  #  6) Vz
+
+            float(aircraft_state_data["qx"]),  #  7) qx
+            float(aircraft_state_data["qy"]),  #  8) qy
+            float(aircraft_state_data["qz"]),  #  9) qz
             float(aircraft_state_data["qw"]),  # 10) qw
 
             float(aircraft_state_data["wx"]),  # 11) wx
@@ -6507,11 +6490,11 @@ function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_
         ]
 
         ########################################################################
-        # 2) Parse control demands into a Named Tuple
+        # 2) Parse control demands
         ########################################################################
         control_demand_vector = (
-            Fx = float(aircraft_state_data["fx"]),  # Possibly unused forces
-            Fy = float(aircraft_state_data["fy"]),
+            fx = float(aircraft_state_data["fx"]), 
+            fy = float(aircraft_state_data["fy"]),
 
             roll_demand           = float(aircraft_state_data["roll_demand"]),
             pitch_demand          = float(aircraft_state_data["pitch_demand"]),
@@ -6525,32 +6508,38 @@ function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_
         )
 
         ########################################################################
-        # 3) Parse the *actual* deltaTime provided by the client
+        # 3) Parse the *actual* deltaTime from the client & Advance sim_time
         ########################################################################
         deltaTime = float(aircraft_state_data["deltaTime"])
-
-        #println(1 / deltaTime)
+        global sim_time
+        sim_time += deltaTime
 
         ########################################################################
-        # 4) Perform numerical integration
+        # 4) Perform Runge-Kutta integration
         ########################################################################
         updated_aircraft_state_dictionary_for_JSON = Runge_Kutta_4_integrator(
-            aircraft_current_state_vector,     # 13-element state vector
-            control_demand_vector,            # named tuple of demands
+            aircraft_current_state_vector,
+            control_demand_vector,
             deltaTime,
             aircraft_flight_physics_and_propulsive_data
         )
 
         ########################################################################
-        # 5) Optionally record flight_data
+        # 5) Possibly record flight data if sim_time is in [start_rec..finish_rec]
         ########################################################################
-        elapsed_time = time() - start_time
-        if (elapsed_time > 6.0 && elapsed_time < 21.0)
-            gather_flight_data(updated_aircraft_state_dictionary_for_JSON, elapsed_time, df)
+        if (sim_time >= start_recording_sec && sim_time <= finish_recording_sec)
+            gather_flight_data(updated_aircraft_state_dictionary_for_JSON,
+                               sim_time,  # pass sim_time now
+                               df)
         end
 
         ########################################################################
-        # 6) Return the updated dictionary for JSON
+        # 6) Attach 'server_time' to the dictionary
+        ########################################################################
+        updated_aircraft_state_dictionary_for_JSON["server_time"] = sim_time
+
+        ########################################################################
+        # 7) Return to the client
         ########################################################################
         return updated_aircraft_state_dictionary_for_JSON
 
@@ -6564,111 +6553,116 @@ end
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.3_📈_record_and_save_flight_data.jl
 ###########################################
 
-# Define constants for data formatting and file naming
-const DECIMAL_PLACES = 5  # Number of decimal places for rounding numerical values
-const TIMESTAMP = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")  # Current timestamp for unique file naming
-# Construct the full path for the CSV output file
+###########################################
+# FILE: 3.3_📈_record_and_save_flight_data.jl
+###########################################
+
+
+# We'll use the same variable names that the front-end uses for pink spheres:
+#   start_flight_data_recording_at  &&  finish_flight_data_recording_at
+# These get populated in `✨_sync_mission_data_to_javascript.jl` (MISSION_DATA).
+# If you already have them as `start_recording_sec` / `finish_recording_sec`,
+# just rename them below to match.
+
+# We assume these are set globally via the mission YAML or similar:
+#    const start_flight_data_recording_at = MISSION_DATA["start_flight_data_recording_at"]
+#    const finish_flight_data_recording_at = MISSION_DATA["finish_flight_data_recording_at"]
+# In your codebase, they are currently called `start_recording_sec`, `finish_recording_sec`.
+# We rename them here for clarity.
+
+# ------------------------------------------------------------------------------
+# CSV Output Configuration
+# ------------------------------------------------------------------------------
+const DECIMAL_PLACES = 3  # Number of decimal places for rounding numerical values
+
+# Create a timestamp for the CSV filename
+const TIMESTAMP = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
+
+# Construct full path for CSV output file
 csv_file = joinpath(project_dir, "📊_Flight_Test_Data", "simulation_data_" * TIMESTAMP * ".csv")
 
-
-# Initialize DataFrame with typed columns for storing flight simulation data
+# Initialize DataFrame with typed columns to store flight simulation data
 df = DataFrame(
-    # Time column
     time=Float64[],
-    
-    # Position coordinates in 3D space
-    x=Float64[], y=Float64[], z=Float64[],
-    
-    # Velocity components
+    x=Float64[],  y=Float64[],  z=Float64[],
     vx=Float64[], vy=Float64[], vz=Float64[],
-    
-    # Quaternion orientation parameters
     qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
-    
-    # Angular velocity components
     wx=Float64[], wy=Float64[], wz=Float64[],
-    
-    # Global force components
     fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
-    
-    # Angle of attack and sideslip angle in degrees
     alpha_DEG=Float64[], beta_DEG=Float64[],
-    
-    # Control demands (desired values)
     pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
-    
-    # Actually achieved control values
     pitch_demand_attained=Float64[], roll_demand_attained=Float64[], yaw_demand_attained=Float64[],
-    
-    # Thrust control and actual thrust
     thrust_setting_demand=Float64[], thrust_attained=Float64[]
 )
 
-# Flag to ensure CSV is written only once when conditions are met
+# A flag to ensure we only write the CSV once after the recording interval
 has_written_to_csv = false
 
-function gather_flight_data(aircraft_state_data::Dict{String,Float64}, elapsed_time::Float64, df::DataFrame)
-    # Access the global flag for CSV writing
+"""
+    gather_flight_data(state_dict::Dict{String,Float64}, sim_time::Float64, df::DataFrame)
+
+Records the aircraft state into `df` only if sim_time is within the
+`[start_flight_data_recording_at .. finish_flight_data_recording_at]` interval.
+Once `sim_time` exceeds that interval, the CSV is written exactly once.
+"""
+function gather_flight_data(aircraft_state_data::Dict{String,Float64},
+                            current_sim_time::Float64,
+                            df::DataFrame)
+
+    # Make sure we can set the global write-once flag
     global has_written_to_csv
-    
-    # Add a new row to the DataFrame with rounded values from the current aircraft state
-    push!(df, (
-        # Time stamp
-        time = round(elapsed_time, digits=DECIMAL_PLACES),
 
-        # Position data
-        x  = round(aircraft_state_data["x"],  digits=DECIMAL_PLACES),
-        y  = round(aircraft_state_data["y"],  digits=DECIMAL_PLACES),
-        z  = round(aircraft_state_data["z"],  digits=DECIMAL_PLACES),
+    # 1) Collect data only during pink-sphere interval
+    if current_sim_time >= start_recording_sec &&
+       current_sim_time <= finish_recording_sec
 
-        # Velocity data
-        vx = round(aircraft_state_data["vx"], digits=DECIMAL_PLACES),
-        vy = round(aircraft_state_data["vy"], digits=DECIMAL_PLACES),
-        vz = round(aircraft_state_data["vz"], digits=DECIMAL_PLACES),
+        push!(df, (
+            time = round(current_sim_time, digits=DECIMAL_PLACES),
 
-        # Quaternion orientation data
-        qx = round(aircraft_state_data["qx"], digits=DECIMAL_PLACES),
-        qy = round(aircraft_state_data["qy"], digits=DECIMAL_PLACES),
-        qz = round(aircraft_state_data["qz"], digits=DECIMAL_PLACES),
-        qw = round(aircraft_state_data["qw"], digits=DECIMAL_PLACES),
+            x  = round(aircraft_state_data["x"],  digits=DECIMAL_PLACES),
+            y  = round(aircraft_state_data["y"],  digits=DECIMAL_PLACES),
+            z  = round(aircraft_state_data["z"],  digits=DECIMAL_PLACES),
 
-        # Angular velocity data
-        wx = round(aircraft_state_data["wx"], digits=DECIMAL_PLACES),
-        wy = round(aircraft_state_data["wy"], digits=DECIMAL_PLACES),
-        wz = round(aircraft_state_data["wz"], digits=DECIMAL_PLACES),
+            vx = round(aircraft_state_data["vx"], digits=DECIMAL_PLACES),
+            vy = round(aircraft_state_data["vy"], digits=DECIMAL_PLACES),
+            vz = round(aircraft_state_data["vz"], digits=DECIMAL_PLACES),
 
-        # Global force components
-        fx_global = round(aircraft_state_data["fx_global"], digits=DECIMAL_PLACES),
-        fy_global = round(aircraft_state_data["fy_global"], digits=DECIMAL_PLACES),
-        fz_global = round(aircraft_state_data["fz_global"], digits=DECIMAL_PLACES),
+            qx = round(aircraft_state_data["qx"], digits=DECIMAL_PLACES),
+            qy = round(aircraft_state_data["qy"], digits=DECIMAL_PLACES),
+            qz = round(aircraft_state_data["qz"], digits=DECIMAL_PLACES),
+            qw = round(aircraft_state_data["qw"], digits=DECIMAL_PLACES),
 
-        # Convert angles from radians to degrees and round
-        alpha_DEG = round(rad2deg(aircraft_state_data["alpha_RAD"]), digits=DECIMAL_PLACES),
-        beta_DEG  = round(rad2deg(aircraft_state_data["beta_RAD"]),  digits=DECIMAL_PLACES),
+            wx = round(aircraft_state_data["wx"], digits=DECIMAL_PLACES),
+            wy = round(aircraft_state_data["wy"], digits=DECIMAL_PLACES),
+            wz = round(aircraft_state_data["wz"], digits=DECIMAL_PLACES),
 
-        # Control demand values
-        pitch_demand           = round(aircraft_state_data["pitch_demand"],           digits=DECIMAL_PLACES),
-        roll_demand            = round(aircraft_state_data["roll_demand"],            digits=DECIMAL_PLACES),
-        yaw_demand             = round(aircraft_state_data["yaw_demand"],             digits=DECIMAL_PLACES),
-        thrust_setting_demand  = round(aircraft_state_data["thrust_setting_demand"],  digits=DECIMAL_PLACES),
+            fx_global = round(aircraft_state_data["fx_global"], digits=DECIMAL_PLACES),
+            fy_global = round(aircraft_state_data["fy_global"], digits=DECIMAL_PLACES),
+            fz_global = round(aircraft_state_data["fz_global"], digits=DECIMAL_PLACES),
 
-        # Actual attained control values
-        pitch_demand_attained  = round(aircraft_state_data["pitch_demand_attained"],  digits=DECIMAL_PLACES),
-        roll_demand_attained   = round(aircraft_state_data["roll_demand_attained"],   digits=DECIMAL_PLACES),
-        yaw_demand_attained    = round(aircraft_state_data["yaw_demand_attained"],    digits=DECIMAL_PLACES),
+            alpha_DEG = round(rad2deg(aircraft_state_data["alpha_RAD"]), digits=DECIMAL_PLACES),
+            beta_DEG  = round(rad2deg(aircraft_state_data["beta_RAD"]),  digits=DECIMAL_PLACES),
 
-        # Actual thrust achieved
-        thrust_attained        = round(aircraft_state_data["thrust_attained"],        digits=DECIMAL_PLACES)
-    ))
+            pitch_demand           = round(aircraft_state_data["pitch_demand"],           digits=DECIMAL_PLACES),
+            roll_demand            = round(aircraft_state_data["roll_demand"],            digits=DECIMAL_PLACES),
+            yaw_demand             = round(aircraft_state_data["yaw_demand"],             digits=DECIMAL_PLACES),
+            thrust_setting_demand  = round(aircraft_state_data["thrust_setting_demand"],  digits=DECIMAL_PLACES),
 
-    # Write accumulated data to CSV file after 20 seconds of simulation time
-    # Only writes once due to the has_written_to_csv flag
-    if elapsed_time > 20 && !has_written_to_csv
+            pitch_demand_attained  = round(aircraft_state_data["pitch_demand_attained"],  digits=DECIMAL_PLACES),
+            roll_demand_attained   = round(aircraft_state_data["roll_demand_attained"],   digits=DECIMAL_PLACES),
+            yaw_demand_attained    = round(aircraft_state_data["yaw_demand_attained"],    digits=DECIMAL_PLACES),
+            thrust_attained        = round(aircraft_state_data["thrust_attained"],        digits=DECIMAL_PLACES)
+        ))
+    end
+
+    # 2) Once we pass the end of the pink-sphere interval, write the CSV if not done yet
+    if current_sim_time > finish_recording_sec && !has_written_to_csv
         CSV.write(csv_file, df)
         has_written_to_csv = true
-        println("Data written to CSV file: $(csv_file)")
+        println("Flight data saved to CSV file: $(csv_file)")
     end
 end
+
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\4_Atmosphere_anemometry_and_constants\4.1_🎯_physical_constants.jl

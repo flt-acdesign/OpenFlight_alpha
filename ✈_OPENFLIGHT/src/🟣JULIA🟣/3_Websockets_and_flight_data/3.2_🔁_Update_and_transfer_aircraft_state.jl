@@ -1,85 +1,94 @@
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
+###########################################
+
+#!/usr/bin/env julia
+
 using Logging
-using Dates  # For time measurement if needed; not strictly required
+using Dates
 
-# Suppose these are global or higher-scope variables
-# that your code defines elsewhere:
-#   - start_time = time()  (somewhere at program start)
-#   - df         = some DataFrame or logging structure
-#   - gather_flight_data(...) is a custom function
-#   - Runge_Kutta_4_integrator(...) is your ODE function
-#   - aircraft_flight_physics_and_propulsive_data is a data structure used by the integrator
+# We'll store total sim time here. Starts at 0.0 when Julia launches or reinitializes.
+global sim_time = 0.0
 
-# Main function to process and update aircraft state
-function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_propulsive_data)
+# We assume the following are defined globally elsewhere:
+#  - start_recording_sec, finish_recording_sec
+#  - df, csv_file, has_written_to_csv
+#  - gather_flight_data(...)
+#  - Runge_Kutta_4_integrator(...)
+#  - aircraft_flight_physics_and_propulsive_data
+
+
+"""
+    update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_propulsive_data)
+
+Main function that processes the JSON message from the client, runs an
+integration step, records flight data if within time window, then returns
+the updated aircraft state (plus "server_time") as JSON, but uses our
+internal `sim_time` for everything, NOT real wall-clock time.
+"""
+###########################################
+# FILE: 3.2_🔁_Update_and_transfer_aircraft_state.jl
+###########################################
+
+function update_aircraft_state(
+    aircraft_state_data::Dict{String,Any},
+    aircraft_flight_physics_and_propulsive_data
+)
     try
-        ########################################################################
-        # 1) Parse incoming data directly to a 13-element vector
-        ########################################################################
+        # 1) Build the 13-element state vector from the incoming JSON
         aircraft_current_state_vector = [
-            float(aircraft_state_data["x"]),   # 1)  x
-            float(aircraft_state_data["y"]),   # 2)  y
-            float(aircraft_state_data["z"]),   # 3)  z
-            
-            float(aircraft_state_data["vx"]),  # 4)  Vx
-            float(aircraft_state_data["vy"]),  # 5)  Vy
-            float(aircraft_state_data["vz"]),  # 6)  Vz
-
-            float(aircraft_state_data["qx"]),  # 7)  qx
-            float(aircraft_state_data["qy"]),  # 8)  qy
-            float(aircraft_state_data["qz"]),  # 9)  qz
-            float(aircraft_state_data["qw"]),  # 10) qw
-
-            float(aircraft_state_data["wx"]),  # 11) wx
-            float(aircraft_state_data["wy"]),  # 12) wy
-            float(aircraft_state_data["wz"])   # 13) wz
+            float(aircraft_state_data["x"]),
+            float(aircraft_state_data["y"]),
+            float(aircraft_state_data["z"]),
+            float(aircraft_state_data["vx"]),
+            float(aircraft_state_data["vy"]),
+            float(aircraft_state_data["vz"]),
+            float(aircraft_state_data["qx"]),
+            float(aircraft_state_data["qy"]),
+            float(aircraft_state_data["qz"]),
+            float(aircraft_state_data["qw"]),
+            float(aircraft_state_data["wx"]),
+            float(aircraft_state_data["wy"]),
+            float(aircraft_state_data["wz"])
         ]
 
-        ########################################################################
-        # 2) Parse control demands into a Named Tuple
-        ########################################################################
+        # 2) Control demands
         control_demand_vector = (
-            Fx = float(aircraft_state_data["fx"]),  # Possibly unused forces
-            Fy = float(aircraft_state_data["fy"]),
-
+            fx = float(aircraft_state_data["fx"]),
+            fy = float(aircraft_state_data["fy"]),
             roll_demand           = float(aircraft_state_data["roll_demand"]),
             pitch_demand          = float(aircraft_state_data["pitch_demand"]),
             yaw_demand            = float(aircraft_state_data["yaw_demand"]),
             thrust_setting_demand = float(aircraft_state_data["thrust_setting_demand"]),
-
             roll_demand_attained  = float(aircraft_state_data["roll_demand_attained"]),
             pitch_demand_attained = float(aircraft_state_data["pitch_demand_attained"]),
             yaw_demand_attained   = float(aircraft_state_data["yaw_demand_attained"]),
             thrust_attained       = float(aircraft_state_data["thrust_attained"])
         )
 
-        ########################################################################
-        # 3) Parse the *actual* deltaTime provided by the client
-        ########################################################################
+        # 3) Update global sim_time by the client-sent deltaTime
         deltaTime = float(aircraft_state_data["deltaTime"])
+        global sim_time
+        sim_time += deltaTime
 
-        #println(1 / deltaTime)
-
-        ########################################################################
-        # 4) Perform numerical integration
-        ########################################################################
+        # 4) Run 6-DOF integrator
         updated_aircraft_state_dictionary_for_JSON = Runge_Kutta_4_integrator(
-            aircraft_current_state_vector,     # 13-element state vector
-            control_demand_vector,            # named tuple of demands
+            aircraft_current_state_vector,
+            control_demand_vector,
             deltaTime,
             aircraft_flight_physics_and_propulsive_data
         )
 
-        ########################################################################
-        # 5) Optionally record flight_data
-        ########################################################################
-        elapsed_time = time() - start_time
-        if (elapsed_time > 6.0 && elapsed_time < 21.0)
-            gather_flight_data(updated_aircraft_state_dictionary_for_JSON, elapsed_time, df)
-        end
+        # 5) Record data **every time** – let the function handle intervals
+        gather_flight_data(
+            updated_aircraft_state_dictionary_for_JSON,
+            sim_time,
+            df
+        )
 
-        ########################################################################
-        # 6) Return the updated dictionary for JSON
-        ########################################################################
+        # 6) Attach 'server_time' so the client sees our sim_time
+        updated_aircraft_state_dictionary_for_JSON["server_time"] = sim_time
+
         return updated_aircraft_state_dictionary_for_JSON
 
     catch e
@@ -87,3 +96,4 @@ function update_aircraft_state(aircraft_state_data, aircraft_flight_physics_and_
         return nothing
     end
 end
+

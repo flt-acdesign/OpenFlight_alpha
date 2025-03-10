@@ -5,10 +5,14 @@ let aircraft_name = "SF25B.yaml"
 let initial_velocity = 30
 let initial_altitude = 40
 
-let start_flight_data_recording_at = 6
-let finish_flight_data_recording_at = 9
+let start_flight_data_recording_at = 5
+let finish_flight_data_recording_at = 10
+
+
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"
+
+
 let show_trajectory = "true"
 
 let scenery_complexity = "high"

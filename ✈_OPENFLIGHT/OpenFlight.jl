@@ -53,8 +53,6 @@ include(raw"./src/🟣JULIA🟣/5_Control_Laws_and_Systems_Dynamics/5.1_➰_Actu
 # Launch the local web browser with the client front-end
 launch_client(project_dir)
 
-# Global timestamp for simulation start
-const start_time = time()
 
 # Establish the WebSockets connection with front-end
 establish_websockets_connection()

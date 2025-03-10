@@ -3,9 +3,9 @@
  *
  * Manages the WebSocket connection with the Julia server, sending
  * and receiving the aircraft’s state. The main change is that
- * we NO LONGER call updateTrajectory() in onmessage. We just set
- * the aircraft’s position and orientation, then update velocity/
- * force lines. The trajectory is updated in the render loop.
+ * we store the server’s “server_time” into `window.serverElapsedTime`
+ * so the client can use it for flight-time, pink-trajectory intervals,
+ * and data recording intervals.
  ***************************************************************/
 
 // Initialize WebSocket connection
@@ -108,8 +108,7 @@ function sendStateToServer() {
 // --------------------------------------------------------------------------
 // Message handler for receiving server updates. The server integrator has
 // advanced the state. We set the new position, velocity, orientation, etc.
-// We NO LONGER call updateTrajectory() here to avoid mismatched timing.
-// Instead, we do that once per frame in the main render loop.
+// We also store `server_time` in `window.serverElapsedTime` for the GUI.
 // --------------------------------------------------------------------------
 ws.onmessage = (event) => {
     // Parse received JSON data
@@ -160,8 +159,11 @@ ws.onmessage = (event) => {
 
     // Update thrust feedback
     thrust_attained = parseFloat(responseData.thrust_attained);
-    
-    // We NO LONGER call updateTrajectory() here. We do it in the main loop.
+
+    // *** IMPORTANT FIX: Store server_time in a global var so the client sees it ***
+    if ("server_time" in responseData) {
+        window.serverElapsedTime = parseFloat(responseData.server_time);
+    }
 
     // Update velocity and force lines (just the lines, not trajectory dots)
     updateVelocityLine();

@@ -1,52 +1,88 @@
+/***************************************************************
+ * 5.2_➰_draw_aircraft_trajectory.js
+ *
+ * Creates a "thin instance" system for trajectory spheres.
+ * We switch to using serverTime instead of local 'elapsedTime'.
+ ***************************************************************/
 
+// We'll track all instance transforms/colors in arrays
+let trajectoryBaseSphere;
+let trajectoryMatrixData = [];
+let trajectoryColorData  = [];
 
-
-
-let trajectoryBaseSphere;   // The base sphere for thin instances
-let trajectoryMatrixData = [];  // Array to store transformation matrices
-
+/**
+ * Initializes the base sphere for trajectory thin-instances.
+ */
 function initializeTrajectorySystem() {
-    // Create a single base sphere (invisible) for thin instances
-    trajectoryBaseSphere = BABYLON.MeshBuilder.CreateSphere("trajectoryBase", { 
-        diameter: 1.1, 
-        segments: 4 
+    trajectoryBaseSphere = BABYLON.MeshBuilder.CreateSphere("trajectoryBase", {
+        diameter: 1.1,
+        segments: 4
     }, scene);
-    
-    // Assign material once
+
+    trajectoryBaseSphere.isPickable = false; // unpickable
+
     const trajectoryMaterial = new BABYLON.StandardMaterial("trajectoryMaterial", scene);
-    trajectoryMaterial.emissiveColor = new BABYLON.Color3(0, 1, 0); // Green color
+    trajectoryMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
+    trajectoryMaterial.instancedColor = true;
+
     trajectoryBaseSphere.material = trajectoryMaterial;
-
-    // Enable thin instances
     trajectoryBaseSphere.useThinInstances = true;
-
-    // Hide the base sphere itself
-    trajectoryBaseSphere.isVisible = false;
+    trajectoryBaseSphere.isVisible = false; // base alone is hidden
 }
 
-function updateTrajectory() {
-    if (!trajectoryBaseSphere) {
-        console.warn("Trajectory system not initialized. Call initializeTrajectorySystem() first.");
+/**
+ * Adds a new sphere instance at the aircraft's position. Color depends on:
+ *   - if `serverTime` ∈ [start_flight_data_recording_at, finish_flight_data_recording_at],
+ *     then pink; else green.
+ * @param {number} serverTime - The time from the Julia server.
+ */
+function updateTrajectory(serverTime) {
+    if (show_trajectory !== "true") {
+        return;
+    }
+    if (!aircraft) {
         return;
     }
 
-    // Create a new transformation matrix for the current aircraft position
-    const matrix = BABYLON.Matrix.Translation(aircraft.position.x, aircraft.position.y, aircraft.position.z);
-    
-    // Add the new matrix to the trajectory data
+    // 1) Build transform for the new sphere
+    const matrix = BABYLON.Matrix.Translation(
+        aircraft.position.x,
+        aircraft.position.y,
+        aircraft.position.z
+    );
     trajectoryMatrixData.push(matrix);
-    
-    // Convert matrices to Float32Array
+
+    // 2) Decide color (pink if in record interval, else green)
+    let sphereColor;
+    if (
+        serverTime >= start_flight_data_recording_at &&
+        serverTime <= finish_flight_data_recording_at
+    ) {
+        // pink
+        sphereColor = new BABYLON.Color3(1.0, 0.7, 0.85);
+    } else {
+        // green
+        sphereColor = new BABYLON.Color3(0.6, 1.0, 0.6);
+    }
+
+    trajectoryColorData.push([sphereColor.r, sphereColor.g, sphereColor.b, 1.0]);
+
+    // Convert to typed arrays
     const matrixData = new Float32Array(trajectoryMatrixData.length * 16);
-    trajectoryMatrixData.forEach((matrix, index) => {
-        matrix.copyToArray(matrixData, index * 16);
-    });
-    
-    // Make base mesh visible when instances are added
+    for (let i = 0; i < trajectoryMatrixData.length; i++) {
+        trajectoryMatrixData[i].copyToArray(matrixData, i * 16);
+    }
+
+    const colorData = new Float32Array(trajectoryColorData.length * 4);
+    for (let i = 0; i < trajectoryColorData.length; i++) {
+        colorData[i * 4 + 0] = trajectoryColorData[i][0];
+        colorData[i * 4 + 1] = trajectoryColorData[i][1];
+        colorData[i * 4 + 2] = trajectoryColorData[i][2];
+        colorData[i * 4 + 3] = trajectoryColorData[i][3];
+    }
+
     trajectoryBaseSphere.isVisible = true;
-    
-    // Set the buffer and update the number of instances
     trajectoryBaseSphere.thinInstanceSetBuffer("matrix", matrixData, 16);
+    trajectoryBaseSphere.thinInstanceSetBuffer("color", colorData, 4);
     trajectoryBaseSphere.thinInstanceCount = trajectoryMatrixData.length;
 }
-

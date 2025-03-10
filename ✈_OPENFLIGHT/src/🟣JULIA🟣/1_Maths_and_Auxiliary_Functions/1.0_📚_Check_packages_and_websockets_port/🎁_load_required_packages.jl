@@ -41,12 +41,13 @@ required_packages = [
 ]
 
 # Iterate through required packages and ensure they're installed
-println("Checking packages...")
+println("Checking Julia packages...")
 for pkg in required_packages
     ensure_package(pkg)
 end
 
-println("All required packages are installed and loaded successfully!")
+println("All required Julia packages are installed and loaded successfully!")
+println("  ")
 
 
 
