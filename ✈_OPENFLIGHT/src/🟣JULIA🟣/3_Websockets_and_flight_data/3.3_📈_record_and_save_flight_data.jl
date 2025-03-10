@@ -74,7 +74,7 @@ function gather_flight_data(
         ))
     end
 
-    # 2) If we're *past* the interval and haven’t written CSV yet, do it now
+    # 2) If we're *past* the interval and haven't written CSV yet, do it now
     if current_sim_time > finish_recording_sec && !has_written_to_csv
         CSV.write(csv_file, df)
         has_written_to_csv = true

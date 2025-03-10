@@ -1,6 +1,38 @@
+# Function to reset flight data recording state
+function reset_flight_data_recording()
+    global df = DataFrame(
+        time=Float64[],
+        x=Float64[],  y=Float64[],  z=Float64[],
+        vx=Float64[], vy=Float64[], vz=Float64[],
+        qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
+        wx=Float64[], wy=Float64[], wz=Float64[],
+        fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
+        alpha_DEG=Float64[], beta_DEG=Float64[],
+        pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
+        pitch_demand_attained=Float64[], roll_demand_attained=Float64[],
+        yaw_demand_attained=Float64[],
+        thrust_setting_demand=Float64[], thrust_attained=Float64[]
+    )
+    
+    global has_written_to_csv = false
+    
+    # Generate a new timestamp and CSV filename for this session
+    timestamp = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
+    global csv_file = joinpath(project_dir, "📊_Flight_Test_Data",
+        "simulation_data_" * timestamp * ".csv")
+        
+    println("Flight data recording reset with new CSV target: $csv_file")
+end
+
 # Main WebSocket connection handler function that processes incoming messages
 function websocket_handler(ws)
-    println("New WebSocket connection established")
+    # Reset simulation time when a new connection is established
+    global sim_time = 0.0
+    println("New WebSocket connection established - Simulation time reset to 0.0")
+    
+    # Reset flight data recording
+    reset_flight_data_recording()
+    
     try
         # Keep processing messages while the socket connection is open
         while !eof(ws.socket)
@@ -52,7 +84,3 @@ function establish_websockets_connection()
         sleep(.1)
     end
 end
-
-
-
-
