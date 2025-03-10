@@ -165,7 +165,16 @@ ws.onmessage = (event) => {
         window.serverElapsedTime = parseFloat(responseData.server_time);
     }
 
+
+
+
+
     // Update velocity and force lines (just the lines, not trajectory dots)
-    updateVelocityLine();
-    updateForceLine();
+    if (show_velocity_vectors == "true") {
+    updateVelocityLine()
+    }
+
+    if (show_force_vectors == "true") {
+    updateForceLine()
+    }
 };
