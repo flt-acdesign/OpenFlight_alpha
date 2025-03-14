@@ -13,7 +13,7 @@ initial_altitude: 40  # Initial altitude in m
 # FLIGHT TEST PARAMETERS
 
 start_flight_data_recording_at:  5    # start recording in seconds after start of flight
-finish_flight_data_recording_at: 10    # finish recording in seconds
+finish_flight_data_recording_at: 100    # finish recording in seconds
 
 show_force_vectors: "true"
 show_velocity_vectors: "true"
@@ -23,5 +23,5 @@ show_trajectory: "true"   # "true" or "false", to show the trajectory of the air
 
 # VISUALIZATION PARAMETERS
 
-scenery_complexity: 3   #  0 = nothing, 1 = low, 2 = medium or 3 = high
+scenery_complexity: 0   #  0 = nothing, 1 = low, 2 = medium or 3 = high
 

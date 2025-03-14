@@ -2,12 +2,6 @@
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
 ###########################################
 
-using YAML
-using Dates
-using Sockets
-using Printf
-using LinearAlgebra
-
 # Absolute path of the directory containing the current script file.
 # It needs to be defined at the top.
 project_dir = dirname(@__FILE__)
