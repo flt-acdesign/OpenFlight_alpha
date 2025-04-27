@@ -4,24 +4,46 @@
     <title>Flight Data Visualization</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        .file-input-container {
-            text-align: center;
-            margin: 20px;
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+        .container {
             padding: 20px;
+        }
+        .file-input-container, .controls-container {
+            text-align: center;
+            margin: 20px auto; /* Center align and add auto margin */
+            padding: 15px; /* Adjusted padding */
             border: 2px dashed #ccc;
             border-radius: 10px;
+            max-width: 900px; /* Adjusted width */
         }
+        .controls-container label, .controls-container input, .controls-container button {
+             margin: 5px 8px; /* Adjusted margin */
+             padding: 8px;
+             font-size: 14px;
+             vertical-align: middle; /* Align items vertically */
+        }
+         .controls-container input[type="number"] {
+             width: 90px; /* Slightly narrower width */
+         }
         .plot-container {
-            width: 100%;
-            height: 500px;
-            margin: 20px 0;
+            width: 100%; /* Plots take full width available */
+            /* Height is now set via Plotly layout */
+            margin: 20px 0; /* Add margin top/bottom */
         }
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            /* Single column layout */
+            grid-template-columns: 1fr;
+            gap: 30px; /* Increased gap */
             padding: 20px;
-            display: none;
+            display: none; /* Initially hidden */
+            width: 100%; /* Ensure grid takes full width */
+            box-sizing: border-box; /* Include padding in width calculation */
         }
         h1 {
             text-align: center;
@@ -32,233 +54,308 @@
             text-align: center;
             font-size: 1.2em;
             color: #666;
+            margin-top: 20px;
         }
-        .custom-file-input {
-            padding: 10px 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+        .custom-button {
+             padding: 10px 20px;
+             background: #007bff;
+             color: white;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             font-size: 16px;
+             transition: background-color 0.2s ease;
+             vertical-align: middle; /* Align items vertically */
         }
-        .custom-file-input:hover {
+         .custom-button:hover {
+            background: #0056b3;
+         }
+
+        /* Hide default file input */
+        input[type="file"] {
+           display: none;
+        }
+        /* Style the custom label acting as button */
+        .file-label {
+             padding: 10px 20px;
+             background: #4CAF50;
+             color: white;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             font-size: 16px;
+             display: inline-block; /* Align properly with text */
+             margin-bottom: 10px;
+        }
+        .file-label:hover {
             background: #45a049;
         }
+        #fileName {
+            margin-left: 15px;
+            font-style: italic;
+            color: #555;
+        }
+
     </style>
 </head>
 <body>
-    <h1>Flight Data Visualization</h1>
-    
-    <div class="file-input-container">
-        <input type="file" 
-               id="csvFile" 
-               accept=".csv"
-               class="custom-file-input"
-               onchange="handleFileSelect(event)">
-        <p>Select a CSV file to visualize the flight data</p>
-    </div>
-    
-    <div id="loading">Loading and processing data...</div>
+    <div class="container">
+        <h1>Flight Data Visualization</h1>
 
-    <div class="grid-container" id="plotGrid">
-        <div id="positionPlot" class="plot-container"></div>
-        <div id="velocityPlot" class="plot-container"></div>
-        <div id="quaternionPlot" class="plot-container"></div>
-        <div id="angularVelocityPlot" class="plot-container"></div>
-        <div id="forcePlot" class="plot-container"></div>
-        <div id="anglePlot" class="plot-container"></div>
-        <div id="pitchPlot" class="plot-container"></div>
-        <div id="rollPlot" class="plot-container"></div>
-        <div id="yawPlot" class="plot-container"></div>
+        <div class="file-input-container">
+             <label for="csvFile" class="file-label">Choose CSV File</label>
+             <input type="file"
+                   id="csvFile"
+                   accept=".csv"
+                   onchange="handleFileSelect(event)">
+             <span id="fileName">No file selected</span>
+             <p>Select a CSV file to visualize the flight data</p>
+        </div>
+
+        <div class="controls-container" id="plotControls" style="display: none;"> <label for="startTime">Start Time (s):</label>
+             <input type="number" id="startTime" step="any" placeholder="Start">
+
+             <label for="endTime">End Time (s):</label>
+             <input type="number" id="endTime" step="any" placeholder="End">
+
+             <label for="graphHeight">Graph Height (px):</label>
+             <input type="number" id="graphHeight" step="10" value="500" placeholder="Height">
+
+             <button id="updateButton" class="custom-button">Update Plot</button>
+        </div>
+
+        <div id="loading">Loading and processing data...</div>
+
+        <div class="grid-container" id="plotGrid">
+            <div id="positionPlot" class="plot-container"></div>
+            <div id="velocityPlot" class="plot-container"></div>
+            <div id="quaternionPlot" class="plot-container"></div>
+            <div id="angularVelocityPlot" class="plot-container"></div>
+            <div id="forcePlot" class="plot-container"></div>
+            <div id="anglePlot" class="plot-container"></div>
+            <div id="pitchPlot" class="plot-container"></div>
+            <div id="rollPlot" class="plot-container"></div>
+            <div id="yawPlot" class="plot-container"></div>
+        </div>
     </div>
 
     <script>
+        // Store original parsed data globally
+        let originalData = null;
+        const plotDivIds = ['positionPlot', 'velocityPlot', 'quaternionPlot', 'angularVelocityPlot',
+                            'forcePlot', 'anglePlot', 'pitchPlot', 'rollPlot', 'yawPlot'];
+        const DEFAULT_GRAPH_HEIGHT = 500;
+
         async function handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
+                document.getElementById('fileName').textContent = file.name; // Show file name
                 document.getElementById('loading').style.display = 'block';
+                document.getElementById('plotGrid').style.display = 'none'; // Hide grid while loading
+                document.getElementById('plotControls').style.display = 'none'; // Hide controls
+                originalData = null; // Reset data
+
                 const reader = new FileReader();
-                
+
                 reader.onload = function(e) {
                     const text = e.target.result;
-                    processData(text);
+                    // Use setTimeout to allow the UI to update (show loading message)
+                    setTimeout(() => processData(text), 10);
                 };
-                
+
                 reader.readAsText(file);
+            } else {
+                 document.getElementById('fileName').textContent = 'No file selected';
             }
         }
 
         function processData(csvText) {
             const rows = csvText.split('\n').slice(1); // Skip header
-            
-            const time = [], x = [], y = [], z = [];
-            const vx = [], vy = [], vz = [];
-            const qx = [], qy = [], qz = [], qw = [];
-            const wx = [], wy = [], wz = [];
-            const fx = [], fy = [], fz = [];
-            const alpha = [], beta = [];
-            const pitch_demand = [], roll_demand = [], yaw_demand = [];
-            const pitch_attained = [], roll_attained = [], yaw_attained = [];
+
+            const data = {
+                time: [], x: [], y: [], z: [], vx: [], vy: [], vz: [],
+                qx: [], qy: [], qz: [], qw: [], wx: [], wy: [], wz: [],
+                fx: [], fy: [], fz: [], alpha: [], beta: [],
+                pitch_demand: [], roll_demand: [], yaw_demand: [],
+                pitch_attained: [], roll_attained: [], yaw_attained: []
+            };
 
             rows.forEach(row => {
                 if (row.trim()) {
                     const columns = row.split(',');
-                    time.push(parseFloat(columns[0]));
-                    x.push(parseFloat(columns[1]));
-                    y.push(parseFloat(columns[2]));
-                    z.push(parseFloat(columns[3]));
-                    vx.push(parseFloat(columns[4]));
-                    vy.push(parseFloat(columns[5]));
-                    vz.push(parseFloat(columns[6]));
-                    qx.push(parseFloat(columns[7]));
-                    qy.push(parseFloat(columns[8]));
-                    qz.push(parseFloat(columns[9]));
-                    qw.push(parseFloat(columns[10]));
-                    wx.push(parseFloat(columns[11]));
-                    wy.push(parseFloat(columns[12]));
-                    wz.push(parseFloat(columns[13]));
-                    fx.push(parseFloat(columns[14]));
-                    fy.push(parseFloat(columns[15]));
-                    fz.push(parseFloat(columns[16]));
-                    alpha.push(parseFloat(columns[17]));
-                    beta.push(parseFloat(columns[18]));
-                    pitch_demand.push(parseFloat(columns[19]));
-                    roll_demand.push(parseFloat(columns[20]));
-                    yaw_demand.push(parseFloat(columns[21]));
-                    pitch_attained.push(parseFloat(columns[22]));
-                    roll_attained.push(parseFloat(columns[23]));
-                    yaw_attained.push(parseFloat(columns[24]));
+                    if (columns.length >= 25) {
+                        try {
+                            data.time.push(parseFloat(columns[0]));
+                            data.x.push(parseFloat(columns[1]));
+                            data.y.push(parseFloat(columns[2]));
+                            data.z.push(parseFloat(columns[3]));
+                            data.vx.push(parseFloat(columns[4]));
+                            data.vy.push(parseFloat(columns[5]));
+                            data.vz.push(parseFloat(columns[6]));
+                            data.qx.push(parseFloat(columns[7]));
+                            data.qy.push(parseFloat(columns[8]));
+                            data.qz.push(parseFloat(columns[9]));
+                            data.qw.push(parseFloat(columns[10]));
+                            data.wx.push(parseFloat(columns[11]));
+                            data.wy.push(parseFloat(columns[12]));
+                            data.wz.push(parseFloat(columns[13]));
+                            data.fx.push(parseFloat(columns[14]));
+                            data.fy.push(parseFloat(columns[15]));
+                            data.fz.push(parseFloat(columns[16]));
+                            data.alpha.push(parseFloat(columns[17]));
+                            data.beta.push(parseFloat(columns[18]));
+                            data.pitch_demand.push(parseFloat(columns[19]));
+                            data.roll_demand.push(parseFloat(columns[20]));
+                            data.yaw_demand.push(parseFloat(columns[21]));
+                            data.pitch_attained.push(parseFloat(columns[22]));
+                            data.roll_attained.push(parseFloat(columns[23]));
+                            data.yaw_attained.push(parseFloat(columns[24]));
+                        } catch (e) {
+                            console.warn("Skipping row due to parsing error:", row, e);
+                        }
+                    } else {
+                        // console.warn("Skipping malformed row:", row);
+                    }
                 }
             });
 
-            // Position Plot
-            const positionPlot = {
-                traces: [
-                    { y: x, name: 'X Position' },
-                    { y: y, name: 'Y Position' },
-                    { y: z, name: 'Z Position' }
-                ],
-                layout: { title: 'Position vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Position' } }
-            };
+             // Check if data was parsed
+            if (data.time.length === 0) {
+                alert("Could not parse any valid data from the file. Please ensure it's a valid CSV with the expected structure and numeric data.");
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('plotControls').style.display = 'none'; // Keep controls hidden
+                return;
+            }
 
-            // Velocity Plot
-            const velocityPlot = {
-                traces: [
-                    { y: vx, name: 'X Velocity' },
-                    { y: vy, name: 'Y Velocity' },
-                    { y: vz, name: 'Z Velocity' }
-                ],
-                layout: { title: 'Velocity vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Velocity' } }
-            };
+            originalData = data; // Store parsed data
 
-            // Quaternion Plot
-            const quaternionPlot = {
-                traces: [
-                    { y: qx, name: 'qx' },
-                    { y: qy, name: 'qy' },
-                    { y: qz, name: 'qz' },
-                    { y: qw, name: 'qw' }
-                ],
-                layout: { title: 'Quaternion vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Quaternion' } }
-            };
+            // Set default time range in inputs
+            document.getElementById('startTime').value = originalData.time[0];
+            document.getElementById('endTime').value = originalData.time[originalData.time.length - 1];
+            // Set default height
+            document.getElementById('graphHeight').value = DEFAULT_GRAPH_HEIGHT;
 
-            // Angular Velocity Plot
-            const angularVelocityPlot = {
-                traces: [
-                    { y: wx, name: 'ωx' },
-                    { y: wy, name: 'ωy' },
-                    { y: wz, name: 'ωz' }
-                ],
-                layout: { title: 'Angular Velocity vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Angular Velocity' } }
-            };
 
-            // Force Plot
-            const forcePlot = {
-                traces: [
-                    { y: fx, name: 'Fx' },
-                    { y: fy, name: 'Fy' },
-                    { y: fz, name: 'Fz' }
-                ],
-                layout: { title: 'Forces vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Force' } }
-            };
+            document.getElementById('loading').style.display = 'none'; // Hide loading message
+            document.getElementById('plotControls').style.display = 'block'; // Show controls
+            document.getElementById('plotGrid').style.display = 'grid'; // Show grid container
 
-            // Angle Plot
-            const anglePlot = {
-                traces: [
-                    { y: alpha, name: 'Alpha' },
-                    { y: beta, name: 'Beta' }
-                ],
-                layout: { title: 'Angles vs Time', xaxis: { title: 'Time (s)' }, yaxis: { title: 'Angle (deg)' } }
-            };
-
-            // Pitch Plot
-            const pitchPlot = {
-                traces: [
-                    { y: pitch_demand, name: 'Pitch Demand', line: { dash: 'dash' } },
-                    { y: pitch_attained, name: 'Pitch Attained' }
-                ],
-                layout: { 
-                    title: 'Pitch vs Time', 
-                    xaxis: { title: 'Time (s)' }, 
-                    yaxis: { title: 'Pitch (deg)' }
-                }
-            };
-
-            // Roll Plot
-            const rollPlot = {
-                traces: [
-                    { y: roll_demand, name: 'Roll Demand', line: { dash: 'dash' } },
-                    { y: roll_attained, name: 'Roll Attained' }
-                ],
-                layout: { 
-                    title: 'Roll vs Time', 
-                    xaxis: { title: 'Time (s)' }, 
-                    yaxis: { title: 'Roll (deg)' }
-                }
-            };
-
-            // Yaw Plot
-            const yawPlot = {
-                traces: [
-                    { y: yaw_demand, name: 'Yaw Demand', line: { dash: 'dash' } },
-                    { y: yaw_attained, name: 'Yaw Attained' }
-                ],
-                layout: { 
-                    title: 'Yaw vs Time', 
-                    xaxis: { title: 'Time (s)' }, 
-                    yaxis: { title: 'Yaw (deg)' }
-                }
-            };
-
-            // Create all plots
-            const plots = [positionPlot, velocityPlot, quaternionPlot, angularVelocityPlot, 
-                          forcePlot, anglePlot, pitchPlot, rollPlot, yawPlot];
-            const divIds = ['positionPlot', 'velocityPlot', 'quaternionPlot', 'angularVelocityPlot', 
-                           'forcePlot', 'anglePlot', 'pitchPlot', 'rollPlot', 'yawPlot'];
-
-            document.getElementById('plotGrid').style.display = 'grid';
-            
-            plots.forEach((plot, index) => {
-                const traces = plot.traces.map(trace => ({
-                    x: time,
-                    y: trace.y,
-                    name: trace.name,
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: trace.line || {}  // Add line style if specified
-                }));
-
-                Plotly.newPlot(divIds[index], traces, {
-                    ...plot.layout,
-                    showlegend: true,
-                    legend: { x: 1, xanchor: 'right', y: 1 },
-                    margin: { l: 50, r: 50, t: 50, b: 50 }
-                });
-            });
-
-            document.getElementById('loading').style.display = 'none';
+            updatePlots(); // Perform initial plot
         }
+
+        function updatePlots() {
+             if (!originalData) {
+                 alert("No data loaded. Please select a file first.");
+                 return;
+             }
+
+             const startTimeInput = document.getElementById('startTime');
+             const endTimeInput = document.getElementById('endTime');
+             const heightInput = document.getElementById('graphHeight'); // Get height input element
+
+             // Use parseFloat, provide defaults if empty or invalid
+             let startTime = parseFloat(startTimeInput.value);
+             let endTime = parseFloat(endTimeInput.value);
+             let plotHeight = parseInt(heightInput.value); // Parse integer height
+
+             // Default to full time range if inputs are invalid
+             if (isNaN(startTime)) startTime = originalData.time[0];
+             if (isNaN(endTime)) endTime = originalData.time[originalData.time.length - 1];
+
+             // Default height if input is invalid or non-positive
+             if (isNaN(plotHeight) || plotHeight <= 50) { // Added minimum height check
+                 plotHeight = DEFAULT_GRAPH_HEIGHT; // Use default height
+                 heightInput.value = plotHeight; // Update input field with default
+             }
+
+
+             // Ensure start <= end
+             if (startTime > endTime) {
+                 [startTime, endTime] = [endTime, startTime]; // Swap them
+                 startTimeInput.value = startTime; // Update input fields
+                 endTimeInput.value = endTime;
+             }
+
+             // Filter data based on time range
+             const filteredData = {};
+             const indices = [];
+             originalData.time.forEach((t, index) => {
+                 if (t >= startTime && t <= endTime) {
+                     indices.push(index);
+                 }
+             });
+
+             if (indices.length === 0) {
+                alert("No data points found in the specified time range.");
+                plotDivIds.forEach(id => Plotly.purge(id)); // Clear plots
+                return;
+             }
+
+             // Create filtered arrays for all data keys
+             for (const key in originalData) {
+                 if (originalData.hasOwnProperty(key)) { // Ensure it's own property
+                     filteredData[key] = indices.map(index => originalData[key][index]);
+                 }
+             }
+
+             // Define plot configurations (could be moved outside if static)
+              const plotConfigs = [
+                { id: 'positionPlot', traces: [{y: filteredData.x, name: 'X'}, {y: filteredData.y, name: 'Y'}, {y: filteredData.z, name: 'Z'}], layout: { title: 'Position', yaxis: { title: 'Position (m)' } } },
+                { id: 'velocityPlot', traces: [{y: filteredData.vx, name: 'Vx'}, {y: filteredData.vy, name: 'Vy'}, {y: filteredData.vz, name: 'Vz'}], layout: { title: 'Velocity', yaxis: { title: 'Velocity (m/s)' } } },
+                { id: 'quaternionPlot', traces: [{y: filteredData.qx, name: 'qx'}, {y: filteredData.qy, name: 'qy'}, {y: filteredData.qz, name: 'qz'}, {y: filteredData.qw, name: 'qw'}], layout: { title: 'Quaternion', yaxis: { title: 'Quaternion' } } },
+                { id: 'angularVelocityPlot', traces: [{y: filteredData.wx, name: 'ωx'}, {y: filteredData.wy, name: 'ωy'}, {y: filteredData.wz, name: 'ωz'}], layout: { title: 'Angular Velocity', yaxis: { title: 'Angular Velocity (rad/s)' } } },
+                { id: 'forcePlot', traces: [{y: filteredData.fx, name: 'Fx'}, {y: filteredData.fy, name: 'Fy'}, {y: filteredData.fz, name: 'Fz'}], layout: { title: 'Forces', yaxis: { title: 'Force (N)' } } },
+                { id: 'anglePlot', traces: [{y: filteredData.alpha, name: 'Alpha'}, {y: filteredData.beta, name: 'Beta'}], layout: { title: 'Angles', yaxis: { title: 'Angle (deg)' } } },
+                { id: 'pitchPlot', traces: [{y: filteredData.pitch_demand, name: 'Demand', line: { dash: 'dash' }}, {y: filteredData.pitch_attained, name: 'Attained'}], layout: { title: 'Pitch', yaxis: { title: 'Pitch (deg)' } } },
+                { id: 'rollPlot', traces: [{y: filteredData.roll_demand, name: 'Demand', line: { dash: 'dash' }}, {y: filteredData.roll_attained, name: 'Attained'}], layout: { title: 'Roll', yaxis: { title: 'Roll (deg)' } } },
+                { id: 'yawPlot', traces: [{y: filteredData.yaw_demand, name: 'Demand', line: { dash: 'dash' }}, {y: filteredData.yaw_attained, name: 'Attained'}], layout: { title: 'Yaw', yaxis: { title: 'Yaw (deg)' } } }
+             ];
+
+
+             // Update all plots using Plotly.react
+             plotConfigs.forEach(config => {
+                 const traces = config.traces.map(trace => ({
+                     x: filteredData.time, // Use filtered time for x-axis
+                     y: trace.y,
+                     name: trace.name,
+                     type: 'scatter',
+                     mode: 'lines',
+                     line: trace.line || {}
+                 }));
+
+                 const layout = {
+                     ...config.layout, // Base layout from config
+                     height: plotHeight, // *** Set the plot height ***
+                     xaxis: { title: 'Time (s)' }, // Add x-axis title here
+                     showlegend: true,
+                     legend: { x: 1, xanchor: 'right', y: 1 },
+                     margin: { l: 60, r: 30, t: 50, b: 50 },
+                     autosize: true // Keep for width responsiveness
+                 };
+
+                 const plotDiv = document.getElementById(config.id);
+                 if (plotDiv) {
+                    Plotly.react(config.id, traces, layout, {responsive: true}); // Use react for efficiency
+                 } else {
+                    console.error("Target div not found:", config.id);
+                 }
+             });
+        }
+
+        // Attach event listener to the Update button
+        document.getElementById('updateButton').addEventListener('click', updatePlots);
+
+        // Add event listener for window resize to redraw plots (mainly for width)
+        window.addEventListener('resize', () => {
+            plotDivIds.forEach(id => {
+                const plotDiv = document.getElementById(id);
+                 // Check if plot exists (check for _fullLayout property)
+                if (plotDiv && plotDiv._fullLayout) {
+                    Plotly.Plots.resize(plotDiv);
+                }
+            });
+        });
+
     </script>
 </body>
 </html>

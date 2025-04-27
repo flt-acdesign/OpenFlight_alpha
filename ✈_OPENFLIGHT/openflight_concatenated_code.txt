@@ -1,16 +1,10 @@
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OPENFLIGHT.jl
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
 ###########################################
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\OpenFlight.jl
 ###########################################
-
-using YAML
-using Dates
-using Sockets
-using Printf
-using LinearAlgebra
 
 # Absolute path of the directory containing the current script file.
 # It needs to be defined at the top.
@@ -151,6 +145,8 @@ println("Total files processed: $(length(all_files))")
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\✅_front_end_and_client.html
 ###########################################
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -159,36 +155,27 @@ println("Total files processed: $(length(all_files))")
     <link rel="stylesheet" href="./00_CSS_styles/styles.css">
     <link rel="icon" href="./00_CSS_styles/openflight.ico" sizes="any">
 
-    <!-- ***Include downloaded Babylon.js and external libraries via local files*** -->
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.js"></script>
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon_GUI.js"></script>
-    <script src="./🛑_EXTERNAL_LIBRARIES/babylonjs.loaders.min.js"></script>
+    <script src="./🛑_EXTERNAL_LIBRARIES/babylonjs.loaders.min.js"></script> 
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.customMaterial.min.js"></script>
     <script src="./🛑_EXTERNAL_LIBRARIES/cannon.js"></script>
-    <!-- ************************************************************************** -->
 
-    <!-- Initialize global variables and aircraft state -->
     <script src="./0_INITIALIZATION/0.1_🧾_initializations.js"></script>
 
-    <!-- Websockets connection and code to transfer aircraft state to and from server -->
     <script src="./1_AIRCRAFT_STATE_TRANSFER/1.1_🔁_exchange_aircraft_state_with_server.js"></script>
     
-    <!-- Graphical User Interface (flight and control data)-->
     <script src="./2_GUI/2.1_📟_gui.js"></script> 
 
-    <!-- Inceptor (gamepad or joystick) -->
     <script src="./3_INCEPTORS/3.1_🕹_joystick_gamepad.js"></script>
 
-    <!-- CREATE WORLD SCENERY, OBJECTS AND AIRCRAFT -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.1_🌍_create_world_scenery.js"></script>
 
-    <!-- Create terrain and runway -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.1_🏞_create_terrain_height.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.2_🗺_create_terrain_texture.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.3_🎹_create_runway.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.4_🌖_create_sky_sphere_and_fog.js"></script>
     
-    <!-- World Objects for scenery -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.1_🏠_generic_house_constructor.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.2_⛽_create_control_tower.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.3_🌲_create_trees.js"></script>
@@ -197,14 +184,12 @@ println("Total files processed: $(length(all_files))")
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.6._💡_blinking_light_constructor.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.7_💨_create_wind_turbines.js"></script>
     
-    <!-- Create aircraft default model or load external geometry in GLB format -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.4_✈_AIRCRAFT_GEOMETRY/4.1_✈_default_aircraft_model.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.4_✈_AIRCRAFT_GEOMETRY/4.3_🔼_import_parameters_for_glb_aircraft.js"></script>
 
     <script src="./5_3D_FLIGHT_DATA_VISUALIZATION/5.1_📐_draw_forces_and_velocities.js"></script>
     <script src="./5_3D_FLIGHT_DATA_VISUALIZATION/5.2_➰_draw_aircraft_trajectory.js"></script>
 
-    <!-- Start render loop and create the world -->
     <script src="./6_SCENE_AND_RENDER_LOOP/6.1_♻_MAIN_render_loop.js"></script>
     <script src="./6_SCENE_AND_RENDER_LOOP/6.2_🌄_create_scene.js"></script>
     <script src="./6_SCENE_AND_RENDER_LOOP/6.3_💡_create_lights_and_shadows.js"></script>
@@ -212,19 +197,17 @@ println("Total files processed: $(length(all_files))")
 
 </head>
 <body>
-
     <input
-  type="file"
-  id="fileInput"
-  accept=".glb"
-  style="display: none;"
-/>
+        type="file"
+        id="fileInput"
+        accept=".glb"
+        style="display: none;" 
+    />
 
     <canvas id="renderCanvas"></canvas>
 
 </body>
 </html>
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\00_CSS_styles\styles.css
@@ -271,15 +254,17 @@ body {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\0_INITIALIZATION\0.1_🧾_initializations.js
 ###########################################
 
+
+
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
 let aircraft_name = "SF25B.yaml"
 
 let initial_velocity = 30
-let initial_altitude = 40
+let initial_altitude = 400
 
 let start_flight_data_recording_at = 5
-let finish_flight_data_recording_at = 10
+let finish_flight_data_recording_at = 100
 
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"
@@ -287,7 +272,9 @@ let show_velocity_vectors = "true"
 let show_trajectory = "true"
 
 // 0 = nothing, 1 = low, 2 = medium or 3 = high
-let scenery_complexity = 1
+let scenery_complexity = 0
+
+let enable_glow_effect = false;
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
@@ -344,7 +331,6 @@ let positionText, velocityText, forceText, angularVelocityText, momentText, time
 let joystickAxes = [0, 0, 0, 0];
 
 let joystickButtons = [];
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\1_AIRCRAFT_STATE_TRANSFER\1.1_🔁_exchange_aircraft_state_with_server.js
@@ -535,6 +521,8 @@ ws.onmessage = (event) => {
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\2_GUI\2.1_📟_gui.js
 ###########################################
 
+
+
 // ------------------------------------------------------------
 // GUI Creation Functions
 // ------------------------------------------------------------
@@ -693,29 +681,35 @@ function createFileLoadButton() {
     fileLoadButton.background = "#6C757D";
   });
 
+  // Action: Trigger the hidden file input when the GUI button is clicked.
   fileLoadButton.onPointerUpObservable.add(() => {
     const fileInput = document.getElementById("fileInput");
     if (fileInput) {
-      fileInput.click();
+      fileInput.click(); // Programmatically click the hidden input
     } else {
       console.error("fileInput element not found in the DOM!");
     }
   });
 
-  // Setup file input event listener.
+  // MODIFIED: Setup file input event listener (now in setup_GLB_model_transformations.js)
+  // Remove the original event listener here, as it's handled in setup_GLB_model_transformations.js
+  // We still need the button to trigger the click, but the file handling logic is centralized elsewhere.
+  /*
   const fileInput = document.getElementById("fileInput");
   if (fileInput) {
     fileInput.addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (file) {
         console.log("Selected .glb file:", file.name);
-        // TODO: Load the .glb file into Babylon.
+        // REMOVED: Loading logic is now handled by the listener in setup_GLB_model_transformations.js
       }
     });
   }
+  */
 
   return fileLoadButton;
 }
+
 
 /**
  * Creates and returns a pause button.
@@ -752,6 +746,8 @@ function createPauseButton() {
  * Updates all GUI information elements with compact, formatted text.
  */
 function updateInfo() {
+    if (!aircraft) return; // Don't update if aircraft isn't created yet
+
   // Update location and altitude on separate lines.
   positionText.text =
     `Location: N:${(-aircraft.position.z).toFixed(0)} | E:${(-aircraft.position.x).toFixed(0)}\nAlt: ${(3.2808399 * aircraft.position.y).toFixed(0)} ft / ${aircraft.position.y.toFixed(0)} m`;
@@ -794,45 +790,31 @@ function pauseSimulation() {
     // (etc. if you want hover effects)
   }
 
-  // Show/hide a big "pauseIndicator"
+  // Show/hide a big "pauseIndicator" (Optional, currently commented out)
+  /*
   if (isPaused) {
     if (!window.pauseIndicator) {
-      /**
-      const pauseIndicatorRect = new BABYLON.GUI.Rectangle("pauseIndicator");
-      pauseIndicatorRect.width = "220px";
-      pauseIndicatorRect.height = "60px";
-      pauseIndicatorRect.cornerRadius = 10;
-      pauseIndicatorRect.color = "white";
-      pauseIndicatorRect.thickness = 2;
-      pauseIndicatorRect.background = "rgba(0, 0, 0, 0.7)";
-      pauseIndicatorRect.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-      pauseIndicatorRect.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-
-      const pauseText = new BABYLON.GUI.TextBlock();
-      pauseText.text = "SIMULATION PAUSED";
-      pauseText.color = "white";
-      pauseText.fontSize = 12;
-      pauseText.fontWeight = "bold";
-      //pauseIndicatorRect.addControl(pauseText);
-
-      advancedTexture.addControl(pauseIndicatorRect);
-      window.pauseIndicator = pauseIndicatorRect;
-      */
+       // Create pause indicator rectangle and text...
     } else {
-      //window.pauseIndicator.isVisible = true;
+      window.pauseIndicator.isVisible = true;
     }
   } else {
-    // On resume, hide
-    if (window.pauseIndicator) {
-      window.pauseIndicator.isVisible = false;
-    }
-    // reset timing so no big deltaTime spike
-    lastUpdateTime = performance.now();
-    lastFrameTime = Date.now();
-    timeSinceLastUpdate = 0;
+     // On resume, hide
+     if (window.pauseIndicator) {
+       window.pauseIndicator.isVisible = false;
+     }
+  }
+  */
+
+  // On resume, reset timing to avoid large deltaTime spikes
+  if (!isPaused) {
+     lastUpdateTime = performance.now();
+     lastFrameTime = Date.now();
+     timeSinceLastUpdate = 0;
   }
 
-  // Show/hide the "FLIGHT CONTROLS" help
+
+  // Show/hide the "FLIGHT CONTROLS" help panel
   if (isPaused) {
     if (!window.controlsHelp) {
       // Build the container for controls - SIGNIFICANTLY INCREASED HEIGHT TO FIT ALL CONTENT
@@ -1529,82 +1511,80 @@ function compute_terrain_derivatives(x, z, freqX, freqZ, amplitude, step = 10) {
  * START of createGround()
  ********************************************/
 function create_checkered_ground() {
-  window.ground = BABYLON.MeshBuilder.CreateGround(
-    "ground", 
-    { width: 15000, height: 15000 },
-    window.scene
-  );
+  // ---------- configuration -------------------------------------------------
+  const boardSize     = 15_000;          // total width/height of the board (world units)
+  const squaresCount  = 30;              // tiles per side (must be even for 4 equal quadrants)
+  const tileSize      = boardSize / squaresCount;
+  const midIndex      = squaresCount / 2;  // centre line index
+  // --------------------------------------------------------------------------
 
-  const groundMat = new BABYLON.StandardMaterial("groundMat", window.scene);
+  // A parent node keeps the board together and plays the role of `window.ground`.
+  const boardRoot = new BABYLON.TransformNode("groundRoot", window.scene);
+  window.ground   = boardRoot;           // preserve external references
+  window.groundY  = 0;                   // compatibility with your old code
 
-  // Create a dynamic texture for the checkerboard pattern.
-  const textureSize = 2048;
-  const dt = new BABYLON.DynamicTexture("groundDT", { width: textureSize, height: textureSize }, window.scene, false);
-  const ctx = dt.getContext();
+  // Container for coloured materials so we reuse (not recreate) identical ones.
+  const matCache = {};
+  const getMat = (hex) => {
+    if (!matCache[hex]) {
+      const m = new BABYLON.StandardMaterial(`mat_${hex}`, window.scene);
+      m.diffuseColor  = BABYLON.Color3.FromHexString(hex);
+      m.specularColor = BABYLON.Color3.Black();   // no shine
+      matCache[hex] = m;
+    }
+    return matCache[hex];
+  };
 
-  const squaresCount = 10;
-  const tileSize = textureSize / squaresCount;
-  const midIndex = squaresCount / 2; // This divides the texture into 4 quadrants.
+  // --------------------------------------------------------------------------
+  // Build the tiled ground – a single CreateGround per square.
+  // --------------------------------------------------------------------------
+  for (let i = 0; i < squaresCount; ++i) {
+    for (let j = 0; j < squaresCount; ++j) {
+      // ----- quadrant logic (same colours as before) -------------------------
+      let colorPair, localI, localJ;
 
-  // Loop through each tile on the texture.
-  // Note: In canvas, j = 0 is the top row.
-  for (let i = 0; i < squaresCount; i++) {
-    for (let j = 0; j < squaresCount; j++) {
-      let colorPair;
-      let localI, localJ;
-
-      // Determine quadrant based on tile indices:
-      // - For horizontal (i): i < midIndex → left (x < 0), i >= midIndex → right (x > 0)
-      // - For vertical (j): j < midIndex → top (z > 0), j >= midIndex → bottom (z < 0)
-      if (i >= midIndex && j < midIndex) {
-        // Quadrant I: Right half, Top half (x > 0, z > 0) – Green shades.
+      if (i >= midIndex && j <  midIndex) {          // Quadrant I (x>0, z>0) – greens
         colorPair = { even: "#c4e0af", odd: "#8ec269" };
-        localI = i - midIndex;
-        localJ = j;
-      } else if (i < midIndex && j < midIndex) {
-        // Quadrant II: Left half, Top half (x < 0, z > 0) – Yellow shades.
+        localI = i - midIndex;  localJ = j;
+      } else if (i <  midIndex && j <  midIndex) {   // Quadrant II (x<0, z>0) – yellows
         colorPair = { even: "#ffffcc", odd: "#ffd700" };
-        localI = i;
-        localJ = j;
-      } else if (i < midIndex && j >= midIndex) {
-        // Quadrant III: Left half, Bottom half (x < 0, z < 0) – Orange shades.
+        localI = i;            localJ = j;
+      } else if (i <  midIndex && j >= midIndex) {   // Quadrant III (x<0, z<0) – oranges
         colorPair = { even: "#ffcc99", odd: "#ff9933" };
-        localI = i;
-        localJ = j - midIndex;
-      } else if (i >= midIndex && j >= midIndex) {
-        // Quadrant IV: Right half, Bottom half (x > 0, z < 0) – Pink shades.
+        localI = i;            localJ = j - midIndex;
+      } else {                                       // Quadrant IV (x>0, z<0) – pinks
         colorPair = { even: "#f6c1d6", odd: "#f299b9" };
-        localI = i - midIndex;
-        localJ = j - midIndex;
+        localI = i - midIndex;  localJ = j - midIndex;
       }
 
-      // Apply a checkerboard pattern within the quadrant.
-      const fillColor = (localI + localJ) % 2 === 0 ? colorPair.even : colorPair.odd;
-      ctx.fillStyle = fillColor;
-      ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+      const hex    = (localI + localJ) % 2 === 0 ? colorPair.even : colorPair.odd;
+      const mat    = getMat(hex);
+
+      // ----- create the tile -------------------------------------------------
+      const tile = BABYLON.MeshBuilder.CreateGround(
+        `tile_${i}_${j}`,
+        { width: tileSize, height: tileSize },
+        window.scene
+      );
+      tile.material       = mat;
+      tile.receiveShadows = true;
+      tile.isPickable     = true;
+
+      // Centre the board on (0,0) in world space.
+      tile.position.x = (i + 0.5) * tileSize - boardSize / 2;
+      tile.position.z = (j + 0.5) * tileSize - boardSize / 2;
+      tile.parent     = boardRoot;   // keep hierarchy tidy
     }
   }
-  dt.update();
 
-  // Set up the material using the dynamic texture.
-  groundMat.diffuseTexture = dt;
-  groundMat.diffuseTexture.uScale = squaresCount;
-  groundMat.diffuseTexture.vScale = squaresCount;
-  groundMat.diffuseTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
-  groundMat.diffuseTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
-  groundMat.diffuseTexture.anisotropicFilteringLevel = 16;
-  groundMat.diffuseTexture.samplingMode = BABYLON.Texture.NEAREST_SAMPLINGMODE;
-
-  window.ground.material = groundMat;
-  window.ground.isPickable = true;
-  window.ground.receiveShadows = true;
-
-  // Store initial ground position for reference.
-  window.groundY = 0;
-
-  // Create a separate transform node for ground projections (remains even if ground is hidden).
+  // A separate node for projection helpers, as in the original version.
   window.groundProjections = new BABYLON.TransformNode("groundProjections", window.scene);
 }
+
+
+
+
+
 /********************************************
  * END of createGround()
  ********************************************/
@@ -2473,7 +2453,8 @@ runway.physicsImpostor = new BABYLON.PhysicsImpostor(
         lightRange: 25,
         blinkInterval: 250,
         lightIntensity: 2,
-        glowIntensity: 1.5
+        glowIntensity: 1.5,
+        createPointLight: false
     });
 
     const blinkingSphere_18 = createBlinkingSphere(scene, 0, 14.5, -585, {
@@ -2482,7 +2463,8 @@ runway.physicsImpostor = new BABYLON.PhysicsImpostor(
         lightRange: 25,
         blinkInterval: 250,
         lightIntensity: 2,
-        glowIntensity: 1.5
+        glowIntensity: 1.5,
+        createPointLight: false
     });
 }
 
@@ -2944,7 +2926,8 @@ function create_control_tower(scene, shadowGenerator) {
             lightRange: 10,                           // 10 units light radius
             blinkInterval: 1000,                      // 1 second interval
             lightIntensity: 1,                        // Normal light intensity
-            glowIntensity: 1                          // Normal glow intensity
+            glowIntensity: 1,                          // Normal glow intensity
+            createPointLight: false
         }
     );
     // Return the blinking sphere controller in case we need to dispose it later
@@ -3224,30 +3207,29 @@ function create_buildings(scene, shadowGenerator) {
 
 
 
-
 /***************************************************************
  * Creates a cylindrical tower with alternating white/red segments.
  * On top is a blinking sphere whose pattern follows the specified
- * Morse code. 
+ * Morse code.
  *
  * Parameters:
- *   - scene: The Babylon.js scene object.
- *   - shadowGenerator: (Optional) a ShadowGenerator to add the tower
- *                     and sphere as shadow casters.
- *   - options: An object with the following properties:
- *       basePosition: (BABYLON.Vector3) Base position of the tower.
- *       towerHeightInSegments: (number) number of cylindrical segments.
- *       segmentHeight: (number) height of each cylindrical segment.
- *       towerRadius: (number) radius for each cylinder.
- *       topSphereDiameter: (number) diameter of the blinking sphere.
- *       morseCode: (string) e.g. "...---..." (SOS).
- *       blinkUnit: (number) ms for a 'dot' duration.
- *       separationTime: (number) ms of quiet time after entire pattern repeats.
- *       conicity: (number) ratio of the diameter of the top of the tower to the diameter of the base (default: 1).
+ * - scene: The Babylon.js scene object.
+ * - shadowGenerator: (Optional) a ShadowGenerator to add the tower
+ * and sphere as shadow casters.
+ * - options: An object with the following properties:
+ * basePosition: (BABYLON.Vector3) Base position of the tower.
+ * towerHeightInSegments: (number) number of cylindrical segments.
+ * segmentHeight: (number) height of each cylindrical segment.
+ * towerRadius: (number) radius for each cylinder.
+ * topSphereDiameter: (number) diameter of the blinking sphere.
+ * morseCode: (string) e.g. "...---..." (SOS).
+ * blinkUnit: (number) ms for a 'dot' duration.
+ * separationTime: (number) ms of quiet time after entire pattern repeats.
+ * conicity: (number) ratio of the diameter of the top of the tower to the diameter of the base (default: 1).
  *
  * Returns:
- *   An object with references to the blinking sphere, light, glowLayer, and a
- *   dispose() function if you need to remove them later.
+ * An object with references to the blinking sphere, light, and a
+ * dispose() function if you need to remove them later. (glowLayer reference removed as it's managed internally based on setting)
  ***************************************************************/
 function createMorseTower(scene, shadowGenerator, options = {}) {
     /***************************************************************
@@ -3255,14 +3237,15 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
      ***************************************************************/
     const defaults = {
         basePosition: new BABYLON.Vector3(0, 0, 0), // Base position for the tower
-        towerHeightInSegments: 5,                  // How many cylindrical segments
-        segmentHeight: 1,                          // Each cylinder's height
-        towerRadius: 1,                            // Cylinder radius
-        topSphereDiameter: 2,                      // Sphere diameter at top
-        morseCode: "...---...",                    // Default code: SOS
-        blinkUnit: 300,                            // ms for a dot
-        separationTime: 1000,                      // ms after full pattern
-        conicity: 1                                // Ratio of top diameter to base diameter (default: 1 for straight tower)
+        towerHeightInSegments: 5,               // How many cylindrical segments
+        segmentHeight: 1,                       // Each cylinder's height
+        towerRadius: 1,                         // Cylinder radius
+        topSphereDiameter: 2,                   // Sphere diameter at top
+        morseCode: "...---...",                 // Default code: SOS
+        blinkUnit: 300,                         // ms for a dot
+        separationTime: 1000,                   // ms after full pattern
+        conicity: 1,                            // Ratio of top diameter to base diameter (default: 1 for straight tower)
+        glowIntensity: 1                        // Added default for glow
     };
     const {
         basePosition,
@@ -3273,154 +3256,151 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
         morseCode,
         blinkUnit,
         separationTime,
-        conicity
+        conicity,
+        glowIntensity // Get glow intensity from options
     } = { ...defaults, ...options };
 
     /***************************************************************
      * 2) Create the cylindrical tower with alternating colors and conicity
      ***************************************************************/
-    for (let i = 0; i < towerHeightInSegments; i++) {
-        // Calculate the radius for this segment based on conicity
-        const segmentRadius = towerRadius * (1 - (1 - conicity) * (i / (towerHeightInSegments - 1)));
+     const towerParent = new BABYLON.TransformNode(`morseTowerParent_${basePosition.x}_${basePosition.z}`, scene);
 
-        // Create one cylinder segment
+    for (let i = 0; i < towerHeightInSegments; i++) {
+        const segmentRadius = towerRadius * (1 - (1 - conicity) * (i / (towerHeightInSegments - 1 || 1))); // Avoid division by zero if only 1 segment
+
         const cylinder = BABYLON.MeshBuilder.CreateCylinder(
             `towerSegment_${i}`,
             {
                 height: segmentHeight,
                 diameter: segmentRadius * 2,
-                tessellation: 6,     // reduces the number of sides (default is 24)
-                subdivisions: 1       // reduces the vertical segments (default is 1)
+                tessellation: 6,
+                subdivisions: 1
             },
             scene
         );
 
-        // Position it so each segment stacks on the previous one
         cylinder.position = new BABYLON.Vector3(
-            basePosition.x,
-            basePosition.y + i * segmentHeight + segmentHeight / 2 - 3,
-            basePosition.z
+            0, // Relative to parent
+            i * segmentHeight + segmentHeight / 2,
+            0  // Relative to parent
         );
 
-        // Alternate between red (1,0,0) and white (1,1,1)
         const colorRed = new BABYLON.Color3(1, 0, 0);
         const colorWhite = new BABYLON.Color3(1, 1, 1);
         const chosenColor = i % 2 === 0 ? colorWhite : colorRed;
 
-        // Material for this cylinder
         const segMaterial = new BABYLON.StandardMaterial(`towerMat_${i}`, scene);
         segMaterial.diffuseColor = chosenColor;
-        segMaterial.fogEnabled = true;  // if fog is in the scene
+        segMaterial.fogEnabled = true;
         cylinder.material = segMaterial;
+        cylinder.parent = towerParent; // Parent segment to the tower node
 
-        // If a shadow generator is provided, add this cylinder as a shadow caster
         if (shadowGenerator) {
             shadowGenerator.addShadowCaster(cylinder);
         }
     }
+    // Position the entire tower
+    towerParent.position = new BABYLON.Vector3(basePosition.x, basePosition.y - 3, basePosition.z); // Apply the original offset here
 
     /***************************************************************
      * 3) Create the blinking sphere at the top
      ***************************************************************/
-    // Calculate top Y position
-    const topYPos = basePosition.y + towerHeightInSegments * segmentHeight + (topSphereDiameter / 2) - 3;
+    const topYPos = towerHeightInSegments * segmentHeight + (topSphereDiameter / 2); // Relative to towerParent base
 
-    // Create the sphere mesh
     const sphere = BABYLON.MeshBuilder.CreateSphere("morseBlinkSphere", {
         diameter: topSphereDiameter,
-        segments: 4
+        segments: 8 // Reduced segments
     }, scene);
-    sphere.position = new BABYLON.Vector3(basePosition.x, topYPos, basePosition.z);
+    // Position relative to the towerParent
+    sphere.position = new BABYLON.Vector3(0, topYPos, 0);
+    sphere.parent = towerParent; // Parent sphere to the tower node
 
-    // Create a material with an emissive color (yellow)
     const sphereMaterial = new BABYLON.StandardMaterial("morseSphereMaterial", scene);
     const yellowColor = new BABYLON.Color3(1, 1, 0);
-    sphereMaterial.emissiveColor = yellowColor;
+    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0); // Start off
+    sphereMaterial.diffuseColor = new BABYLON.Color3(0,0,0);
+    sphereMaterial.specularColor = new BABYLON.Color3(0,0,0);
     sphereMaterial.fogEnabled = true;
     sphere.material = sphereMaterial;
 
-    // Create a point light at the sphere's position
-    const light = new BABYLON.PointLight("morseSphereLight", sphere.position, scene);
-    light.intensity = 0;                   // Start off
+    const light = new BABYLON.PointLight("morseSphereLight", sphere.getAbsolutePosition(), scene);
+    light.intensity = 0;
     light.diffuse = yellowColor;
-    light.range = 10;                      // Adjust as needed
+    light.range = towerHeightInSegments * segmentHeight * 1.5; // Adjust range based on height
 
-    // Optionally add glow
-    const glowLayer = new BABYLON.GlowLayer("morseGlow", scene);
-    glowLayer.intensity = 0;               // Start off
-    glowLayer.addIncludedOnlyMesh(sphere);
+    // --- Optional Glow Layer ---
+    let glowLayer = null; // Initialize as null
+    // Check the global setting
+    if (typeof enable_glow_effect !== 'undefined' && enable_glow_effect === true) {
+        glowLayer = scene.getGlowLayerByName("sharedGlowLayer"); // Use shared layer
+        if (!glowLayer) {
+            glowLayer = new BABYLON.GlowLayer("sharedGlowLayer", scene, { mainTextureRatio: 0.5 });
+            glowLayer.intensity = glowIntensity; // Use intensity from options/defaults
+            console.log("Created shared GlowLayer from MorseTower with intensity:", glowLayer.intensity);
+        }
+    }
+    // --- END Optional Glow Layer ---
 
-    // If there's a shadow generator, add the sphere as a shadow caster
     if (shadowGenerator) {
         shadowGenerator.addShadowCaster(sphere);
     }
 
     /***************************************************************
-     * 4) Define the Morse code blinking pattern
-     *
-     *  We'll interpret:
-     *    '.' (dot) as ON for blinkUnit, then OFF for blinkUnit
-     *    '-' (dash) as ON for 3 × blinkUnit, then OFF for blinkUnit
-     *  Then after the entire code, OFF for separationTime.
+     * 4) Define the Morse code blinking pattern (Unchanged)
      ***************************************************************/
     const patternIntervals = [];
     for (let i = 0; i < morseCode.length; i++) {
         const symbol = morseCode[i];
-
         if (symbol === '.') {
-            // Dot: ON for blinkUnit, OFF for blinkUnit
             patternIntervals.push({ duration: blinkUnit, isOn: true });
             patternIntervals.push({ duration: blinkUnit, isOn: false });
         } else if (symbol === '-') {
-            // Dash: ON for blinkUnit*3, OFF for blinkUnit
             patternIntervals.push({ duration: blinkUnit * 3, isOn: true });
             patternIntervals.push({ duration: blinkUnit, isOn: false });
         } else if (symbol === ' ') {
-            // Dash: ON for blinkUnit*3, OFF for blinkUnit
+             // Add gap between words (e.g., 3 units off, total 4 including char gap)
             patternIntervals.push({ duration: blinkUnit * 4, isOn: false });
         }
-        // If there's a space or another symbol, you could handle that here
     }
-    // After the entire code, add the separation time
     patternIntervals.push({ duration: separationTime, isOn: false });
-
-    // Total length in ms of one full Morse code cycle
     const totalPatternTime = patternIntervals.reduce((acc, x) => acc + x.duration, 0);
 
     /***************************************************************
      * 5) Animate the blinking based on current time
      ***************************************************************/
-    let isOn = false; // keep track of whether we are "on" or "off"
+    let isOn = false;
+    let animationStartTime = Date.now(); // Use a separate start time for each tower
 
-    // We'll run this each frame to check the cycle time
     const observer = scene.onBeforeRenderObservable.add(() => {
         const timeNow = Date.now();
-        // Where are we in the repeating pattern cycle?
-        const cycleTime = timeNow % totalPatternTime;
+        const cycleTime = (timeNow - animationStartTime) % totalPatternTime;
 
         let elapsed = 0;
+        let shouldBeOn = false; // Default to off
         for (let i = 0; i < patternIntervals.length; i++) {
             const interval = patternIntervals[i];
             if (cycleTime >= elapsed && cycleTime < elapsed + interval.duration) {
-                // We are in this interval
-                if (interval.isOn && !isOn) {
-                    // Turn ON
-                    sphereMaterial.emissiveColor = yellowColor;
-                    sphereMaterial.diffuseColor = yellowColor;
-                    light.intensity = 1;
-                    glowLayer.intensity = 1;
-                    isOn = true;
-                } else if (!interval.isOn && isOn) {
-                    // Turn OFF
-                    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                    sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                    light.intensity = 0;
-                    glowLayer.intensity = 0;
-                    isOn = false;
-                }
-                break; // no need to check further intervals
+                shouldBeOn = interval.isOn;
+                break;
             }
             elapsed += interval.duration;
+        }
+
+        // --- Update Visual State ---
+        if (isOn !== shouldBeOn) {
+            sphereMaterial.emissiveColor = shouldBeOn ? yellowColor : BABYLON.Color3.Black();
+            light.intensity = shouldBeOn ? 1 : 0;
+
+            // ** Interact with glowLayer only if it exists **
+            if (glowLayer) {
+                if (shouldBeOn) {
+                    glowLayer.addIncludedOnlyMesh(sphere);
+                } else {
+                    glowLayer.removeIncludedOnlyMesh(sphere);
+                }
+            }
+            // ** End GlowLayer Interaction **
+            isOn = shouldBeOn;
         }
     });
 
@@ -3428,65 +3408,55 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
      * 6) Return references in case the user needs them
      ***************************************************************/
     return {
+        towerParent, // Return the parent node
         sphere,
         light,
-        glowLayer,
+        // glowLayer, // No need to return shared layer
         dispose: () => {
             scene.onBeforeRenderObservable.remove(observer);
+            // ** Dispose Logic - Only interact if glowLayer exists **
+            if (glowLayer) {
+                glowLayer.removeIncludedOnlyMesh(sphere);
+            }
+            // ** End Dispose Logic **
             sphere.dispose();
             light.dispose();
-            glowLayer.dispose();
+            // Dispose all tower segments and parent
+            towerParent.dispose(false, true); // Dispose children too
         }
     };
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// --- create_lighthouses function (unchanged, but now createMorseTower respects the setting) ---
 
 function create_lighthouses(scene, shadowGenerator) {
 
-// Create the Morse tower at position (10,0,5) with 8 segments,
-    const morseTower = createMorseTower(scene, shadowGenerator, {
-
+    // Create the Morse tower at position (10,0,5) with 8 segments,
+    const morseTower1 = createMorseTower(scene, shadowGenerator, {
         // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
         basePosition: new BABYLON.Vector3(1971, 249, 955),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
         towerRadius: 2,
         topSphereDiameter: 3,
-        morseCode: "-.-- --- ..-    .- .-. .    - --- ---    ... -- .- .-. -", 
+        morseCode: "-.-- --- ..-    .- .-. .    - --- ---    ... -- .- .-. -", // Added spaces for word gaps
         blinkUnit: 300,         // ms for a dot
-        separationTime: 1000,    // ms of pause after pattern
-        conicity: .2 
+        separationTime: 2000,   // Increased pause after pattern
+        conicity: .2,
+        glowIntensity: 1.5 // Example specific intensity
     });
-    
-    const lighthouse = createMorseTower(scene, shadowGenerator, {
-    
-        // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
+
+    const morseTower2 = createMorseTower(scene, shadowGenerator, {
         basePosition: new BABYLON.Vector3(-1986, 25, -1380),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
         towerRadius: 2,
         topSphereDiameter: 3,
-        morseCode: "-.-. ..- .-. .. --- ... .. - -.--   -.- .. .-.. .-.. . -..   - .... .   -.-. .- -", 
+        morseCode: "-.-. ..- .-. .. --- ... .. - -.--    -.- .. .-.. .-.. . -..    - .... .    -.-. .- -", // Added spaces
         blinkUnit: 300,         // ms for a dot
-        separationTime: 1000    // ms of pause after pattern
+        separationTime: 2000,    // Increased pause after pattern
+        glowIntensity: 1.2 // Example specific intensity
     });
 
 }
@@ -3502,145 +3472,148 @@ function createBlinkingSphere(scene, x, y, z, options = {}) {
         sphereColor: new BABYLON.Color3(1, 0, 0),
         diameter: 4,
         lightRange: 10,
-        blinkInterval: 1000,
+        blinkInterval: 1000, // Time for ON phase or total cycle if waitingInterval is null
         lightIntensity: 1,
-        glowIntensity: 1,
-        waitingInterval: null,
-        number_of_blinks: null,
-        name: "blinkingSphere"
+        glowIntensity: 1, // Target global intensity for the layer (used if layer is created AND enabled)
+        waitingInterval: null, // Time for OFF phase (if specified)
+        number_of_blinks: null, // Number of blinks before waiting
+        name: "blinkingSphere",
+        createPointLight: true // Option to skip PointLight creation
     };
 
     const settings = { ...defaults, ...options };
 
-    const sphere = BABYLON.MeshBuilder.CreateSphere(settings.name, { 
+    // --- Sphere Mesh and Material ---
+    const sphere = BABYLON.MeshBuilder.CreateSphere(settings.name, {
         diameter: settings.diameter,
-        segments: 8
+        segments: 8 // Reduced segments for performance if many spheres
     }, scene);
 
     sphere.position = new BABYLON.Vector3(x, y, z);
+    sphere.isPickable = false; // Usually not needed for lights
 
     const sphereMaterial = new BABYLON.StandardMaterial(settings.name + "Material", scene);
-    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
+    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0); // Start off
+    sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    sphereMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
     sphereMaterial.fogEnabled = true;
     sphere.material = sphereMaterial;
 
-    const light = new BABYLON.PointLight(settings.name + "Light", sphere.position, scene);
-    light.intensity = 0;
-    light.diffuse = settings.sphereColor;
-    light.range = settings.lightRange;
+    // --- Optional Point Light ---
+    let light = null;
+    if (settings.createPointLight) {
+        light = new BABYLON.PointLight(settings.name + "Light", sphere.position, scene);
+        light.intensity = 0; // Start off
+        light.diffuse = settings.sphereColor;
+        light.range = settings.lightRange;
+    }
 
-    const glowLayer = new BABYLON.GlowLayer(settings.name + "Glow", scene);
-    glowLayer.intensity = 0;
-    glowLayer.addIncludedOnlyMesh(sphere);
+    // --- Optional Shared Glow Layer ---
+    let glowLayer = null; // Initialize glowLayer as null
 
+    // Check the global setting BEFORE attempting to use the glow layer
+    // (Assuming 'enable_glow_effect' is a global variable set in initializations.js)
+    if (typeof enable_glow_effect !== 'undefined' && enable_glow_effect === true) {
+        glowLayer = scene.getGlowLayerByName("sharedGlowLayer");
+        if (!glowLayer) {
+            glowLayer = new BABYLON.GlowLayer("sharedGlowLayer", scene, {
+                mainTextureRatio: 0.5 // Adjust ratio for performance/quality
+            });
+            glowLayer.intensity = settings.glowIntensity; // Use intensity from defaults/options
+            console.log("Created shared GlowLayer with intensity:", glowLayer.intensity);
+        }
+    } else {
+        // console.log("Glow effect is disabled globally."); // Optional log
+    }
+    // END Optional Shared Glow Layer
+
+    // --- Animation Logic ---
     let isOn = false;
     let startTime = Date.now();
-    let observer;
+    let observer = null;
 
+    function setLightState(shouldBeOn) {
+        if (isOn === shouldBeOn) {
+            return;
+        }
+
+        const targetEmissive = shouldBeOn ? settings.sphereColor : BABYLON.Color3.Black();
+        const targetLightIntensity = shouldBeOn ? settings.lightIntensity : 0;
+
+        sphereMaterial.emissiveColor = targetEmissive;
+
+        if (light) {
+            light.intensity = targetLightIntensity;
+        }
+
+        // ** MODIFIED GLOW LOGIC - Only interact if glowLayer exists (i.e., is enabled) **
+        if (glowLayer) {
+            if (shouldBeOn) {
+                glowLayer.addIncludedOnlyMesh(sphere);
+            } else {
+                glowLayer.removeIncludedOnlyMesh(sphere);
+            }
+        }
+        // ** END MODIFIED GLOW LOGIC **
+
+        isOn = shouldBeOn;
+    }
+
+    // --- Blinking Timer Logic (unchanged) ---
     if (settings.blinkInterval >= 0) {
         observer = scene.onBeforeRenderObservable.add(() => {
             const currentTime = Date.now();
             const elapsedTime = currentTime - startTime;
 
-            if (settings.number_of_blinks !== null) {
-                const blinkCycleTime = settings.blinkInterval * 2; // Time for one complete on-off cycle
-                const totalBlinkTime = blinkCycleTime * settings.number_of_blinks; // Time for all blinks
-                const totalCycleTime = totalBlinkTime + (settings.waitingInterval || 0); // Total time including waiting
+            if (settings.number_of_blinks !== null && settings.waitingInterval !== null) {
+                const blinkCycleTime = settings.blinkInterval * 2;
+                const totalBlinkTime = blinkCycleTime * settings.number_of_blinks;
+                const totalCycleTime = totalBlinkTime + settings.waitingInterval;
                 const timeInMainCycle = elapsedTime % totalCycleTime;
 
                 if (timeInMainCycle < totalBlinkTime) {
-                    // We're in the blinking phase
-                    const timeInBlinkCycle = timeInMainCycle % blinkCycleTime;
-                    const shouldBeOn = timeInBlinkCycle < settings.blinkInterval;
-
-                    if (shouldBeOn && !isOn) {
-                        sphereMaterial.emissiveColor = settings.sphereColor;
-                        sphereMaterial.diffuseColor = settings.sphereColor;
-                        light.intensity = settings.lightIntensity;
-                        glowLayer.intensity = settings.glowIntensity;
-                        isOn = true;
-                    } else if (!shouldBeOn && isOn) {
-                        sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                        sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                        light.intensity = 0;
-                        glowLayer.intensity = 0;
-                        isOn = false;
-                    }
-                } else if (isOn) {
-                    // We're in the waiting phase
-                    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                    sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                    light.intensity = 0;
-                    glowLayer.intensity = 0;
-                    isOn = false;
+                    const timeInBlinkSubCycle = timeInMainCycle % blinkCycleTime;
+                    const shouldBeOn = timeInBlinkSubCycle < settings.blinkInterval;
+                    setLightState(shouldBeOn);
+                } else {
+                    setLightState(false);
                 }
             } else if (settings.waitingInterval !== null) {
-                // Original behavior with waiting interval
                 const totalCycleTime = settings.waitingInterval + settings.blinkInterval;
                 const timeInCycle = elapsedTime % totalCycleTime;
-
-                if (timeInCycle < settings.waitingInterval) {
-                    if (isOn) {
-                        sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                        sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                        light.intensity = 0;
-                        glowLayer.intensity = 0;
-                        isOn = false;
-                    }
-                } else {
-                    if (!isOn) {
-                        sphereMaterial.emissiveColor = settings.sphereColor;
-                        sphereMaterial.diffuseColor = settings.sphereColor;
-                        light.intensity = settings.lightIntensity;
-                        glowLayer.intensity = settings.glowIntensity;
-                        isOn = true;
-                    }
-                }
+                const shouldBeOn = timeInCycle >= settings.waitingInterval;
+                setLightState(shouldBeOn);
             } else {
-                // Original behavior without waiting interval
-                if (currentTime % (settings.blinkInterval * 2) < settings.blinkInterval) {
-                    if (!isOn) {
-                        sphereMaterial.emissiveColor = settings.sphereColor;
-                        sphereMaterial.diffuseColor = settings.sphereColor;
-                        light.intensity = settings.lightIntensity;
-                        glowLayer.intensity = settings.glowIntensity;
-                        isOn = true;
-                    }
-                } else {
-                    if (isOn) {
-                        sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                        sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                        light.intensity = 0;
-                        glowLayer.intensity = 0;
-                        isOn = false;
-                    }
-                }
+                const shouldBeOn = (currentTime % (settings.blinkInterval * 2)) < settings.blinkInterval;
+                setLightState(shouldBeOn);
             }
         });
     } else {
-        // Always on if blinkInterval is negative
-        sphereMaterial.emissiveColor = settings.sphereColor;
-        sphereMaterial.diffuseColor = settings.sphereColor;
-        light.intensity = settings.lightIntensity;
-        glowLayer.intensity = settings.glowIntensity;
+        setLightState(true); // Always on if blinkInterval is negative
     }
 
+    // Return object with a dispose function
     return {
         sphere,
-        light,
-        glowLayer,
+        light, // Might be null
+        // glowLayer, // No need to return the shared layer reference here
         dispose: () => {
             if (observer) {
                 scene.onBeforeRenderObservable.remove(observer);
             }
+            // ** Dispose Logic - Only interact if glowLayer exists **
+            if (glowLayer) {
+                glowLayer.removeIncludedOnlyMesh(sphere);
+            }
+            // ** END Dispose Logic **
+            if (light) {
+                light.dispose();
+            }
+            sphere.material.dispose();
             sphere.dispose();
-            light.dispose();
-            glowLayer.dispose();
         }
     };
 }
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.3_🏡_WORLD_OBJECTS\4.3.7_💨_create_wind_turbines.js
@@ -3908,6 +3881,7 @@ const turbine4 = createWindTurbine({
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.4_✈_AIRCRAFT_GEOMETRY\4.1_✈_default_aircraft_model.js
 ###########################################
 
+
 // ========================================================
 // Aircraft Creation Function
 // ========================================================
@@ -3923,14 +3897,21 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     if (aircraft) {
         aircraft.dispose();
     }
+    // Dispose of existing GLB model if it exists
+    if (glbNode) {
+        glbNode.dispose(false, true); // Dispose hierarchy and materials
+        glbNode = null;
+    }
 
-    // Create the main aircraft sphere.
+    // Create the main aircraft sphere (invisible physics body).
     aircraft = BABYLON.MeshBuilder.CreateSphere("aircraft", { diameter: 0.1 }, scene);
-    aircraft.position.y = 430;
+    aircraft.position.y = initial_altitude || 100; // Use initial altitude or default
     aircraft.rotationQuaternion = new BABYLON.Quaternion(0, 0, 0, 1);
+    aircraft.isVisible = false; // Make the physics sphere invisible
 
     // Create a transform node to hold the simple aircraft geometry.
     planeNode = new BABYLON.TransformNode("simpleAircraft", scene);
+    planeNode.parent = aircraft; // Parent the visual node to the physics sphere
 
     // --- Create Aircraft Components ---
     // Wing
@@ -3940,7 +3921,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
         sideOrientation: BABYLON.Mesh.DOUBLESIDE
     }, scene);
     wing.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, Math.PI / 2);
-    wing.position = new BABYLON.Vector3(0, 0, -1.5);
+    wing.position = new BABYLON.Vector3(0, 0, 0); // Relative to planeNode
 
     // Horizontal stabilizer
     const horizontalStabilizer = BABYLON.MeshBuilder.CreatePlane("horizontalStabilizer", {
@@ -3949,7 +3930,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
         sideOrientation: BABYLON.Mesh.DOUBLESIDE
     }, scene);
     horizontalStabilizer.rotation = new BABYLON.Vector3(Math.PI / 2, Math.PI / 2, Math.PI / 2);
-    horizontalStabilizer.position = new BABYLON.Vector3(-2.5, 0, -1.5);
+    horizontalStabilizer.position = new BABYLON.Vector3(-2.5, 0, 0); // Relative to planeNode
 
     // Vertical stabilizer
     const verticalStabilizer = BABYLON.MeshBuilder.CreatePlane("verticalStabilizer", {
@@ -3958,7 +3939,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
         sideOrientation: BABYLON.Mesh.DOUBLESIDE
     }, scene);
     verticalStabilizer.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
-    verticalStabilizer.position = new BABYLON.Vector3(-2.5, 0.65, -1.5);
+    verticalStabilizer.position = new BABYLON.Vector3(-2.5, 0.65, 0); // Relative to planeNode
 
     // Fuselage (a cylinder rotated so its long axis lies along the X‑axis)
     const fuselage = BABYLON.MeshBuilder.CreateCylinder("fuselage", {
@@ -3967,7 +3948,7 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
         tessellation: 16
     }, scene);
     fuselage.rotation = new BABYLON.Vector3(0, 0, Math.PI / 2);
-    fuselage.position = new BABYLON.Vector3(0, 0, -1.5);
+    fuselage.position = new BABYLON.Vector3(0, 0, 0); // Relative to planeNode
 
     // Parent components to the transform node.
     wing.parent = planeNode;
@@ -3984,12 +3965,12 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     fuselage.material = aircraftMaterial;
 
     // --- Propeller ---
-    // Create a pivot node for the propeller and parent it directly to the aircraft.
-    // This ensures the propeller remains visible when an external model is loaded.
+    // Create a pivot node for the propeller and parent it directly to the planeNode.
+    // This ensures the propeller rotates with the visual aircraft model.
     const propellerPivot = new BABYLON.TransformNode("propellerPivot", scene);
-    propellerPivot.parent = aircraft;
+    propellerPivot.parent = planeNode; // Parent to the visual node
     // Position the hub at the nose of the fuselage (adjust as needed).
-    propellerPivot.position = new BABYLON.Vector3(2.5, 0, 0);
+    propellerPivot.position = new BABYLON.Vector3(2.5, 0, 0); // Relative to planeNode
 
     // Set the default tip-to-tip diameter to 1.5 m.
     const defaultDiameter = 1.5;
@@ -4000,9 +3981,6 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     propellerPivot.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
 
     // Define the trapezoidal shape for a blade using two simple paths.
-    // The blade is designed to be 'bladeLength' m long:
-    // - Bottom edge: 0.1 m wide (from -0.05 to 0.05)
-    // - Top edge: 0.05 m wide (from -0.025 to 0.025)
     const bottomEdge = [
         new BABYLON.Vector3(-0.05, 0, 0),
         new BABYLON.Vector3(0.05, 0, 0)
@@ -4014,117 +3992,96 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     const bladePaths = [bottomEdge, topEdge];
 
     // Create the first blade using CreateRibbon.
-    // Using a ribbon with two parallel paths avoids the need for polygon triangulation.
     const blade1 = BABYLON.MeshBuilder.CreateRibbon("blade1", {
         pathArray: bladePaths,
         sideOrientation: BABYLON.Mesh.DOUBLESIDE,
     }, scene);
-    // Rotate the blade by 90° about Y so that it lies in the YZ plane,
-    // ensuring the rotation axis (X) is perpendicular to the blade surface.
     blade1.rotation.y = BABYLON.Tools.ToRadians(90);
     blade1.parent = propellerPivot;
 
-    // Create the second blade by cloning the first,
-    // then rotate it 180° about X relative to the pivot.
+    // Create the second blade by cloning the first.
     const blade2 = blade1.clone("blade2");
     blade2.rotation.x += Math.PI; // 180° in radians
 
-    // Create a metallic PBR material so that the blades reflect sunlight.
+    // Create a metallic PBR material for the blades.
     const propellerMaterial = new BABYLON.PBRMetallicRoughnessMaterial("propellerMetal", scene);
     propellerMaterial.metallic = 1.0;
     propellerMaterial.roughness = 0.2;
     propellerMaterial.baseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
-    // Make the propeller translucent.
-    //propellerMaterial.alpha = 0.5;
-    // Optionally, assign an environment texture for enhanced reflections:
-    // propellerMaterial.reflectionTexture = scene.environmentTexture;
-    // propellerMaterial.reflectivityColor = new BABYLON.Color3(1, 1, 1);
+    // propellerMaterial.alpha = 0.5; // Optional transparency
 
     blade1.material = propellerMaterial;
     blade2.material = propellerMaterial;
 
     // Animate the propeller pivot to rotate about the X axis.
-    // 400 rpm is approximately 6.6667 rps or ~41.89 radians per second.
     const rpm = 310;
     const rps = rpm / 60;
     const angularSpeed = rps * 2 * Math.PI; // radians per second
     scene.onBeforeRenderObservable.add(() => {
-        const deltaTimeInSeconds = scene.getEngine().getDeltaTime() / 1000;
-        propellerPivot.rotation.x += angularSpeed * deltaTimeInSeconds;
+        if (propellerPivot && propellerPivot.isEnabled()) { // Only rotate if enabled
+            const deltaTimeInSeconds = scene.getEngine().getDeltaTime() / 1000;
+            propellerPivot.rotation.x += angularSpeed * deltaTimeInSeconds;
+        }
     });
 
-    // --- Parent the Aircraft Geometry ---
-    // Make the planeNode a child of the aircraft sphere.
-    planeNode.parent = aircraft;
-
-    // Adjust positions of child meshes for shadows and add them as shadow casters.
+    // --- Add components to shadow generator ---
     planeNode.getChildMeshes().forEach(mesh => {
-        mesh.position.z += 1.5;
         shadowGenerator.addShadowCaster(mesh);
     });
+    shadowGenerator.addShadowCaster(blade1);
+    shadowGenerator.addShadowCaster(blade2);
 
-    // --- Lights (as before) ---
+    // --- Lights ---
+    // Parent lights to planeNode so they move with the visual model
     const rightWingLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(0, 1, 0), // Green
-        diameter: 0.1,
-        lightRange: 2,
-        blinkInterval: -1000,
-        lightIntensity: 3,
-        glowIntensity: 2,
-        name: "starboard_light"
+        diameter: 0.1, lightRange: 2, blinkInterval: -1000,
+        lightIntensity: 3, glowIntensity: 2, name: "starboard_light",
+        createPointLight: false 
     });
     rightWingLightSphere.sphere.parent = planeNode;
-    rightWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, -4);
+    rightWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, -4); // Relative to planeNode
 
     const leftWingLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 0, 0), // Red
-        diameter: 0.1,
-        lightRange: 2,
-        blinkInterval: -1000,
-        lightIntensity: 3,
-        glowIntensity: 2,
-        name: "port_light"
+        diameter: 0.1, lightRange: 2, blinkInterval: -1000,
+        lightIntensity: 3, glowIntensity: 2, name: "port_light",
+        createPointLight: false 
     });
     leftWingLightSphere.sphere.parent = planeNode;
-    leftWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, 4);
+    leftWingLightSphere.sphere.position = new BABYLON.Vector3(0, 0, 4); // Relative to planeNode
 
     const tailconeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 1, 1),
-        diameter: 0.1,
-        lightRange: 2,
-        blinkInterval: -1000,
-        lightIntensity: 1,
-        glowIntensity: 1,
-        name: "tailcone_light"
+        diameter: 0.1, lightRange: 2, blinkInterval: -1000,
+        lightIntensity: 1, glowIntensity: 1, name: "tailcone_light",
+        createPointLight: false 
     });
     tailconeLightSphere.sphere.parent = planeNode;
-    tailconeLightSphere.sphere.position = new BABYLON.Vector3(-2.9, 0, 0);
+    tailconeLightSphere.sphere.position = new BABYLON.Vector3(-2.9, 0, 0); // Relative to planeNode
 
     const strobeLightSphere = createBlinkingSphere(scene, 0, 0, 0, {
         sphereColor: new BABYLON.Color3(1, 1, 1),
-        diameter: 0.1,
-        lightRange: 2,
-        blinkInterval: 40,
-        lightIntensity: 5,
-        glowIntensity: 2,
-        waitingInterval: 800,
-        number_of_blinks: 3,
-        name: "strobe_light"
+        diameter: 0.1, lightRange: 2, blinkInterval: 40,
+        lightIntensity: 5, glowIntensity: 2, waitingInterval: 800,
+        number_of_blinks: 3, name: "strobe_light",
+        createPointLight: false 
     });
     strobeLightSphere.sphere.parent = planeNode;
-    strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.25, 0);
+    strobeLightSphere.sphere.position = new BABYLON.Vector3(-2.5, 1.25, 0); // Relative to planeNode
 
+    // Initial update for cameras to target the new aircraft physics body
     if (scene.updateCamerasForAircraft) {
         scene.updateCamerasForAircraft(aircraft);
     }
+
+    // Initially enable the default plane node
+    planeNode.setEnabled(true);
 }
 
 
-
-
-
-
-
+// REMOVED/COMMENTED OUT: Original loadGlbFile function. It's replaced by the new loadGLB below.
+/*
 function loadGlbFile(
     file,
     scaleFactor,
@@ -4142,137 +4099,286 @@ function loadGlbFile(
     propeller_pos,
     propeller_diameter
 ) {
+    // ... original implementation ...
+}
+*/
+
+
+// ========================================================
+// NEW GLB Loading Function (adapted from the example)
+// ========================================================
+/**
+ * Loads a GLB file asynchronously, applies transformations, handles lights/propeller,
+ * and replaces the default aircraft model.
+ *
+ * @param {File} file - The GLB file object from the input element.
+ * @param {number} scaleFactor - Uniform scaling factor.
+ * @param {number} rotationX - Rotation around X axis (degrees).
+ * @param {number} rotationY - Rotation around Y axis (degrees).
+ * @param {number} rotationZ - Rotation around Z axis (degrees).
+ * @param {number} translationX - Translation along X axis.
+ * @param {number} translationY - Translation along Y axis.
+ * @param {number} translationZ - Translation along Z axis.
+ * @param {BABYLON.Scene} scene - The Babylon.js scene.
+ * @param {BABYLON.ShadowGenerator} shadowGenerator - The shadow generator.
+ * @param {Array<number>|null} wing_lights_pos - [x, y, z] position for wing lights, or null.
+ * @param {Array<number>|null} tailcone_light_pos - [x, y, z] position for tail light, or null.
+ * @param {Array<number>|null} strobe_light_pos - [x, y, z] position for strobe light, or null.
+ * @param {Array<number>|null} propeller_pos - [x, y, z] position for propeller pivot, or null.
+ * @param {number|null} propeller_diameter - Diameter of the propeller, or null.
+ */
+function loadGLB(
+    file,
+    scaleFactor,
+    rotationX,
+    rotationY,
+    rotationZ,
+    translationX,
+    translationY,
+    translationZ,
+    scene,
+    shadowGenerator,
+    wing_lights_pos,
+    tailcone_light_pos,
+    strobe_light_pos,
+    propeller_pos,
+    propeller_diameter
+) {
+    if (!file || !scene) {
+        console.error("File or scene not provided to loadGLB");
+        return;
+    }
+
     const reader = new FileReader();
+
     reader.onload = (event) => {
-        const arrayBuffer = event.target.result;
-        const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
+        try {
+            const arrayBuffer = event.target.result;
+            if (!arrayBuffer) {
+                throw new Error("FileReader did not return an ArrayBuffer.");
+            }
 
-        BABYLON.SceneLoader.ImportMesh(
-            "",
-            url,
-            "",
-            scene,
-            (meshes, particleSystems, skeletons, animationGroups) => {
-                const rootNode = new BABYLON.TransformNode("rootNode", scene);
+            const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
+            const url = URL.createObjectURL(blob);
 
-                meshes.forEach(mesh => {
-                    mesh.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-                    mesh.rotation = new BABYLON.Vector3(
-                        BABYLON.Tools.ToRadians(rotationX),
-                        BABYLON.Tools.ToRadians(rotationY),
-                        BABYLON.Tools.ToRadians(rotationZ)
-                    );
-                    mesh.position = new BABYLON.Vector3(translationX, translationY, translationZ);
-                    mesh.parent = rootNode;
-                    shadowGenerator.addShadowCaster(mesh);
+            console.log("Attempting to load GLB from URL:", url);
+
+            // --- Clear previous model ---
+            if (glbNode) {
+                console.log("Disposing previous GLB model:", glbNode.name);
+                glbNode.dispose(false, true); // Dispose hierarchy and materials
+                glbNode = null;
+            }
+
+            // --- Ensure loaders are ready ---
+            if (!BABYLON.SceneLoader) {
+                console.error("SceneLoader not available. Make sure loaders library is included.");
+                alert("Error: Babylon.js loaders are missing.");
+                URL.revokeObjectURL(url);
+                return;
+            }
+
+            // --- Load the GLB file using ImportMeshAsync ---
+            BABYLON.SceneLoader.ImportMeshAsync("", url, "", scene, null, ".glb")
+                .then((result) => {
+                    if (result.meshes && result.meshes.length > 0) {
+                        // --- Find Root Node ---
+                        // Prefer __root__, otherwise create a new TransformNode to group meshes.
+                        let rootNode = result.meshes.find(m => m.name === "__root__");
+                        if (!rootNode) {
+                            console.warn("GLB has no __root__ node. Creating a parent TransformNode.");
+                            rootNode = new BABYLON.TransformNode("glbRoot_" + file.name, scene);
+                            result.meshes.forEach(mesh => {
+                                // Only parent top-level meshes to avoid double parenting
+                                if (!mesh.parent) {
+                                    mesh.parent = rootNode;
+                                }
+                            });
+                        }
+                        glbNode = rootNode; // Store reference to the new root
+                        console.log("GLB loaded successfully. Root node:", glbNode.name);
+
+                        // --- Apply Transformations to the Root Node ---
+                        // Apply scaling first
+                        glbNode.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
+                        // Apply rotation (convert degrees to radians)
+                        glbNode.rotationQuaternion = null; // Ensure we use Euler angles
+                        glbNode.rotation = new BABYLON.Vector3(
+                            BABYLON.Tools.ToRadians(rotationX),
+                            BABYLON.Tools.ToRadians(rotationY),
+                            BABYLON.Tools.ToRadians(rotationZ)
+                        );
+                        // Apply translation
+                        glbNode.position = new BABYLON.Vector3(translationX, translationY, translationZ);
+
+                        // <<< --- FIX: Apply corrective scaling for Z-axis flip --- >>>
+                        glbNode.scaling.z *= -1;
+                        // <<< --- END FIX --- >>>
+
+                        // Parent the loaded GLB node to the main aircraft physics sphere
+                        if (aircraft) {
+                            glbNode.parent = aircraft;
+                        } else {
+                            console.warn("Aircraft physics body not found, GLB model might not move correctly.");
+                        }
+
+                        // Add all meshes in the hierarchy to the shadow generator
+                        glbNode.getChildMeshes(true).forEach(mesh => { // true = include children of children
+                             if (shadowGenerator) {
+                                 shadowGenerator.addShadowCaster(mesh);
+                             }
+                             mesh.receiveShadows = false; // Models usually don't receive shadows on themselves
+                         });
+                         // Check if rootNode itself is a mesh and add it
+                         if (glbNode instanceof BABYLON.AbstractMesh && shadowGenerator) {
+                             shadowGenerator.addShadowCaster(glbNode);
+                             glbNode.receiveShadows = false;
+                         }
+
+
+                        // --- Disable Default Model & Handle Lights/Propeller ---
+                        if (planeNode) {
+                            // Disable the simple default aircraft visuals
+                            planeNode.setEnabled(false);
+
+                            // Handle wing lights
+                            const rightWingLight = scene.getMeshByName("starboard_light");
+                            const leftWingLight = scene.getMeshByName("port_light");
+                            if (rightWingLight && leftWingLight) {
+                                if (wing_lights_pos) {
+                                    // Position relative to the *aircraft* (parent of glbNode)
+                                    rightWingLight.position = new BABYLON.Vector3(
+                                        wing_lights_pos[0], wing_lights_pos[1], -wing_lights_pos[2]
+                                    );
+                                    leftWingLight.position = new BABYLON.Vector3(
+                                        wing_lights_pos[0], wing_lights_pos[1], wing_lights_pos[2]
+                                    );
+                                    // Ensure lights are parented correctly to move with aircraft
+                                    rightWingLight.parent = aircraft;
+                                    leftWingLight.parent = aircraft;
+                                    rightWingLight.setEnabled(true);
+                                    leftWingLight.setEnabled(true);
+                                } else {
+                                    rightWingLight.setEnabled(false);
+                                    leftWingLight.setEnabled(false);
+                                }
+                            }
+
+                            // Handle tail light
+                            const tailconeLight = scene.getMeshByName("tailcone_light");
+                            if (tailconeLight) {
+                                if (tailcone_light_pos) {
+                                    tailconeLight.position = new BABYLON.Vector3(
+                                        tailcone_light_pos[0], tailcone_light_pos[1], tailcone_light_pos[2]
+                                    );
+                                    tailconeLight.parent = aircraft;
+                                    tailconeLight.setEnabled(true);
+                                } else {
+                                    tailconeLight.setEnabled(false);
+                                }
+                            }
+
+                            // Handle strobe light
+                            const strobeLight = scene.getMeshByName("strobe_light");
+                            if (strobeLight) {
+                                if (strobe_light_pos) {
+                                    strobeLight.position = new BABYLON.Vector3(
+                                        strobe_light_pos[0], strobe_light_pos[1], strobe_light_pos[2]
+                                    );
+                                    strobeLight.parent = aircraft;
+                                    strobeLight.setEnabled(true);
+                                } else {
+                                    strobeLight.setEnabled(false);
+                                }
+                            }
+
+                            // Handle propeller
+                            const propellerPivot = scene.getTransformNodeByName("propellerPivot");
+                            if (propellerPivot) {
+                                if (propeller_pos && propeller_diameter) {
+                                    propellerPivot.position = new BABYLON.Vector3(
+                                        propeller_pos[0], propeller_pos[1], propeller_pos[2]
+                                    );
+                                    const defaultDiameter = 1.5; // Must match the value in createAircraft
+                                    const diameterScale = propeller_diameter / defaultDiameter;
+                                    propellerPivot.scaling = new BABYLON.Vector3(diameterScale, diameterScale, diameterScale);
+                                    propellerPivot.parent = aircraft; // Ensure propeller is parented to main aircraft node
+                                    propellerPivot.setEnabled(true);
+                                    // Make sure propeller blades are visible and parented
+                                    let blade1 = scene.getMeshByName("blade1");
+                                    let blade2 = scene.getMeshByName("blade2");
+                                    if(blade1) blade1.parent = propellerPivot;
+                                    if(blade2) blade2.parent = propellerPivot;
+
+                                } else {
+                                    propellerPivot.setEnabled(false);
+                                }
+                            }
+                        } else {
+                            console.warn("planeNode (default aircraft) not found. Cannot disable it or reposition lights/propeller.");
+                        }
+
+
+                        // --- Frame Camera ---
+                        const camera = scene.activeCamera;
+                        if (camera && camera.zoomOn && glbNode) {
+                            try {
+                                // Delay zoomOn slightly to ensure bounding box is calculated
+                                setTimeout(() => {
+                                    camera.zoomOnFactor = 1.5; // Add padding
+                                    camera.zoomOn([glbNode], true);
+                                    console.log("Camera framed on loaded GLB model.");
+                                }, 100); // 100ms delay
+                            } catch (zoomError) {
+                                console.error("Error during camera.zoomOn:", zoomError);
+                                // Fallback: Manually set target
+                                const centerPoint = glbNode.getAbsolutePosition();
+                                camera.setTarget(centerPoint);
+                                camera.radius = (glbNode.getBoundingInfo()?.boundingSphere.radiusWorld * 2) || 10; // Adjust radius based on model size, added optional chaining
+                                console.warn("zoomOn failed, attempting manual camera target.");
+                            }
+                        } else {
+                             console.warn("Could not get active camera or GLB root reference to frame.");
+                        }
+
+                        // --- Handle Animations ---
+                        if (result.animationGroups && result.animationGroups.length > 0) {
+                             console.log(`Starting ${result.animationGroups.length} animation groups.`);
+                             result.animationGroups.forEach(ag => ag.play(true)); // Play all animations looping
+                        }
+
+
+                    } else {
+                        console.warn("GLB loaded, but no meshes found in the result.");
+                    }
+                    URL.revokeObjectURL(url); // Clean up the object URL
+                })
+                .catch((error) => {
+                    console.error("Error loading GLB using ImportMeshAsync:", error);
+                    alert(`Error loading GLB file: ${error.message || error}`);
+                    URL.revokeObjectURL(url); // Clean up URL even on error
+                    // Re-enable default plane if GLB fails to load?
+                    if(planeNode) planeNode.setEnabled(true);
+
                 });
 
-                if (planeNode) {
-                    planeNode.getChildMeshes().forEach(mesh => {
-                        const nameLC = mesh.name.toLowerCase();
-                        if (!nameLC.includes("light") && nameLC !== "propellerpivot") {
-                            mesh.setEnabled(false);
-                        }
-                    });
-
-                    // Handle wing lights
-                    const rightWingLight = scene.getMeshByName("starboard_light");
-                    const leftWingLight = scene.getMeshByName("port_light");
-                    if (rightWingLight && leftWingLight) {
-                        if (wing_lights_pos) {
-                            rightWingLight.position = new BABYLON.Vector3(
-                                wing_lights_pos[0],
-                                wing_lights_pos[1],
-                                -wing_lights_pos[2]
-                            );
-                            leftWingLight.position = new BABYLON.Vector3(
-                                wing_lights_pos[0],
-                                wing_lights_pos[1],
-                                wing_lights_pos[2]
-                            );
-                            rightWingLight.setEnabled(true);
-                            leftWingLight.setEnabled(true);
-                        } else {
-                            rightWingLight.setEnabled(false);
-                            leftWingLight.setEnabled(false);
-                        }
-                    }
-
-                    // Handle tail light
-                    const tailconeLight = scene.getMeshByName("tailcone_light");
-                    if (tailconeLight) {
-                        if (tailcone_light_pos) {
-                            tailconeLight.position = new BABYLON.Vector3(
-                                tailcone_light_pos[0],
-                                tailcone_light_pos[1],
-                                tailcone_light_pos[2]
-                            );
-                            tailconeLight.setEnabled(true);
-                        } else {
-                            tailconeLight.setEnabled(false);
-                        }
-                    }
-
-                    // Handle strobe light
-                    const strobeLight = scene.getMeshByName("strobe_light");
-                    if (strobeLight) {
-                        if (strobe_light_pos) {
-                            strobeLight.position = new BABYLON.Vector3(
-                                strobe_light_pos[0],
-                                strobe_light_pos[1],
-                                strobe_light_pos[2]
-                            );
-                            strobeLight.setEnabled(true);
-                        } else {
-                            strobeLight.setEnabled(false);
-                        }
-                    }
-
-                    // Handle propeller
-                    const propellerPivot = scene.getTransformNodeByName("propellerPivot");
-                    if (propellerPivot) {
-                        if (propeller_pos && propeller_diameter) {
-                            propellerPivot.position = new BABYLON.Vector3(
-                                propeller_pos[0],
-                                propeller_pos[1],
-                                propeller_pos[2]
-                            );
-                            const defaultDiameter = 1.5;
-                            const diameterScale = propeller_diameter / defaultDiameter;
-                            propellerPivot.scaling = new BABYLON.Vector3(diameterScale, diameterScale, diameterScale);
-                            propellerPivot.setEnabled(true);
-                        } else {
-                            propellerPivot.setEnabled(false);
-                        }
-                    }
-                }
-
-                glbNode = rootNode;
-                if (aircraft) {
-                    rootNode.parent = aircraft;
-                }
-
-                if (animationGroups && animationGroups.length > 0) {
-                    animationGroups[0].play(true);
-                }
-
-                if (scene.updateCamerasForAircraft) {
-                    scene.updateCamerasForAircraft(aircraft);
-                }
-
-                URL.revokeObjectURL(url);
-            },
-            null,
-            null,
-            ".glb"
-        );
+        } catch (loadError) {
+            console.error("Error processing file for loading:", loadError);
+            alert(`Error processing file: ${loadError.message}`);
+            // Re-enable default plane if file processing fails?
+             if(planeNode) planeNode.setEnabled(true);
+        }
     };
 
-    reader.readAsArrayBuffer(file);
+    reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        alert("Error reading file.");
+         // Re-enable default plane if file reading fails?
+         if(planeNode) planeNode.setEnabled(true);
+    };
+
+    reader.readAsArrayBuffer(file); // Read the file as binary data
 }
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.4_✈_AIRCRAFT_GEOMETRY\4.3_🔼_import_parameters_for_glb_aircraft.js
@@ -4280,140 +4386,136 @@ function loadGlbFile(
 
 
 
-
 function setup_GLB_model_transformations(scene, shadowGenerator) {
-    document.getElementById("fileInput").addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      const fileName = file ? file.name : '';
-      
-      //alert(fileName);
-  
-      if (file && file.name.toLowerCase().endsWith(".glb")) {
-        let scaleFactor, rotationX, rotationY, rotationZ, translationX, translationY, translationZ;
-  
+    const fileInput = document.getElementById("fileInput"); // Get reference outside listener
 
+    if (!fileInput) {
+        console.error("fileInput element not found. Cannot set up GLB loading.");
+        return;
+    }
+
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files ? event.target.files[0] : null; // Handle case where no file is selected
+      if (!file) {
+          console.log("No file selected.");
+          // Reset file input value to allow selecting the same file again
+          event.target.value = null;
+          return;
+      }
+
+      const fileName = file.name;
+      console.log("File selected:", fileName);
+
+      if (fileName.toLowerCase().endsWith(".glb")) {
+        let scaleFactor, rotationX, rotationY, rotationZ, translationX, translationY, translationZ;
+        
+        // Default values
+        scaleFactor = 1;
+        rotationX = 0; rotationY = 0; rotationZ = 0;
+        translationX = 0; translationY = 0; translationZ = 0;
+        let propeller_pos = null;
+        let wing_lights_pos = null;
+        let tailcone_light_pos = null;
+        let strobe_light_pos = null;
+        let propeller_diameter = null;
 
         // x positive towards the tail from the CoG
         // y positive upwards from the CoG 
         // z towards the right wing from the CoG
 
-        let propeller_pos = null
-        wing_lights_pos = null
-        tailcone_light_pos = null;
-        strobe_light_pos = null;
-        propeller_diameter = null
-
-        switch(fileName.toLowerCase()) {
+        // Apply specific transformations based on filename
+        switch (fileName.toLowerCase()) {
           case "mig21.glb":
-              scaleFactor = 1;
-              rotationX = 90;
-              rotationY = 90;
-              rotationZ = 0;
-              translationX = -4;
-              translationY = -5;
-              translationZ = 2;
-              break;
-
+            scaleFactor = 1;
+            rotationX = 0; rotationY = -90; rotationZ = 0;
+            translationX = -4; translationY = -5; translationZ = -2;
+            break;
           case "piper_pa18.glb":
-              scaleFactor = 1;
-              rotationX = 90;
-              rotationY = 90;
-              rotationZ = 0;
-              translationX = -1.5;
-              translationY = -1.2;
-              translationZ = 0;
-              wing_lights_pos = [.06, .79, 5.11]
-              tailcone_light_pos = [-5.2, .4, 0]
-              strobe_light_pos = [-1, .75, 0]
-              propeller_pos = [1.67, 0.05, 0]
-              propeller_diameter = 1.7
-              break;
+            scaleFactor = 1;
+            rotationX = 0; rotationY = -90; rotationZ = 0;
+            translationX = -1.5; translationY = -1.2; translationZ = 0;
+            wing_lights_pos = [0.06, 0.79, 5.11];
+            tailcone_light_pos = [-5.2, 0.4, 0];
+            strobe_light_pos = [-1, 0.75, 0];
+            propeller_pos = [1.67, 0.05, 0];
+            propeller_diameter = 1.7;
+            break;
           case "su57.glb":
-              scaleFactor = 1.;
-              rotationX = 0;
-              rotationY = 90;
-              rotationZ = 0;
-              translationX = 2;
-              translationY = 0;
-              translationZ = 0;
-              wing_lights_pos = [-2.2, 0.05, 6.11]
-              tailcone_light_pos = [-7.2, 0, 0]
-              strobe_light_pos = [-1, .4, 0]
-              break;
+            scaleFactor = 1.0;
+            rotationX = 0; rotationY = -90; rotationZ = 0;
+            translationX = 2; translationY = 0; translationZ = 0;
+            wing_lights_pos = [-2.2, 0.05, 6.11];
+            tailcone_light_pos = [-7.2, 0, 0];
+            strobe_light_pos = [-1, 0.4, 0];
+            break;
           case "bucker.glb":
-              scaleFactor = 1;
-              rotationX = 90;
-              rotationY = 90;
-              rotationZ = 0;
-              translationX = 1;
-              translationY = -2.5;
-              translationZ = 0;
-
-              break;
-              case "bucker_no_reg.glb":
-                scaleFactor = 1;
-                rotationX = 90;
-                rotationY = 90;
-                rotationZ = 0;
-                translationX = 1;
-                translationY = -2.5;
-                translationZ = 0;
-                propeller_pos = [3.3, 1, 0]
-                propeller_diameter = 1.9
-                break;
+            scaleFactor = 1;
+            rotationX = 0; rotationY = -90; rotationZ = 0;
+            translationX = 1; translationY = -2.5; translationZ = 0;
+            // Add light/propeller info specifically for bucker_no_reg if needed, or keep common
+            if (fileName.toLowerCase() === "bucker_no_reg.glb") {
+                propeller_pos = [3.3, 1, 0]; // Example position, adjust as needed
+                propeller_diameter = 1.9; // Example diameter
+                // wing_lights_pos = [...]; // Example
+                // tailcone_light_pos = [...]; // Example
+                // strobe_light_pos = [...]; // Example
+            }
+            break;
+          case "bucker_no_reg.glb": // Treat both the same for transformations
+            scaleFactor = 1;
+            rotationX = 0; rotationY = -90; rotationZ = 0;
+            translationX = 1; translationY = -2.5; translationZ = 0;
+            // Add light/propeller info specifically for bucker_no_reg if needed, or keep common
+            if (fileName.toLowerCase() === "bucker_no_reg.glb") {
+                propeller_pos = [3.3, 1, 0]; // Example position, adjust as needed
+                propeller_diameter = 1.9; // Example diameter
+                // wing_lights_pos = [...]; // Example
+                // tailcone_light_pos = [...]; // Example
+                // strobe_light_pos = [...]; // Example
+            }
+            break;
           case "airliner.glb":
-              scaleFactor = .01;
-              rotationX = 0;
-              rotationY = 0;
-              rotationZ = 0;
-              translationX = 0;
-              translationY = 0;
-              translationZ = 0;
-              break;
+            scaleFactor = 0.01;
+            rotationX = 0; rotationY = 0; rotationZ = 0;
+            translationX = 0; translationY = 0; translationZ = 0;
+            // Define light/propeller positions if applicable
+            break;
           case "bizjet.glb":
-              scaleFactor = .01;
-              rotationX = 0;
-              rotationY = -90;
-              rotationZ = 0;
-              translationX = 0;
-              translationY = -1.5;
-              translationZ = 0;
-              break;
+            scaleFactor = 0.01;
+            rotationX = 90; rotationY = 180; rotationZ = 90;
+            translationX = 0; translationY = -1.5; translationZ = 0;
+            // Define light/propeller positions if applicable
+            break;
           default:
-              scaleFactor = 1;
-              rotationX = 0;
-              rotationY = 0;
-              rotationZ = 0;
-              translationX = 0;
-              translationY = 0;
-              translationZ = 0;
+            // Use default transformations if filename doesn't match
+            console.log(`No specific transformations found for ${fileName}. Using defaults.`);
+        }
 
+        // MODIFIED: Call the new loadGLB function
+        loadGLB(
+          file,
+          scaleFactor,
+          rotationX,
+          rotationY,
+          rotationZ,
+          translationX,
+          translationY,
+          translationZ,
+          scene,
+          shadowGenerator,
+          wing_lights_pos,
+          tailcone_light_pos,
+          strobe_light_pos,
+          propeller_pos,
+          propeller_diameter
+        );
+      } else {
+        alert("Please select a valid .glb file");
       }
-        
-      loadGlbFile(
-        file,
-        scaleFactor,
-        rotationX,
-        rotationY,
-        rotationZ,
-        translationX,
-        translationY,
-        translationZ,
-        scene,
-        shadowGenerator,
-        wing_lights_pos,
-        tailcone_light_pos,
-        strobe_light_pos, 
-        propeller_pos, 
-        propeller_diameter
-    );
-} else {
-    alert("Please select a valid .glb file");
+      // Reset file input value AFTER processing to allow selecting the same file again
+       event.target.value = null;
+    });
 }
-});
-}
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\5_3D_FLIGHT_DATA_VISUALIZATION\5.1_📐_draw_forces_and_velocities.js
@@ -4617,6 +4719,17 @@ window.addEventListener("DOMContentLoaded", function () {
       updateInfo();
     }
 
+
+    /**
+    // Ensure consistent FOV for all cameras
+    scene.cameras.forEach(camera => {
+      if (camera.fov > 1.2) { // Check if FOV has expanded too much
+          camera.fov = 1.0; // Reset to default FOV
+      }
+  });
+  */
+
+
     // Render the scene
     scene.render();
   });
@@ -4778,10 +4891,35 @@ function logPickedCoordinates(point) {
 /**
  * Sets up the render loop for continuous updates
  * @param {BABYLON.Scene} scene - The scene to setup the render loop for
- */
+ 
 function setupRenderLoop(scene) {
     scene.onBeforeRenderObservable.add(() => {
         updateSkySphereDiameter(scene);
+    });
+}
+*/
+
+
+
+
+
+
+function setupRenderLoop(scene) {
+    const engine = scene.getEngine();
+    let previousTime = performance.now();
+    
+    scene.onBeforeRenderObservable.add(() => {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - previousTime) / 1000.0; // Convert to seconds
+        previousTime = currentTime;
+        
+        // Update sky with deltaTime factor
+        updateSkySphereDiameter(scene, scene.activeCamera, deltaTime);
+        
+        // Limit camera rotation speed based on deltaTime
+        if (scene.activeCamera && scene.activeCamera.angularSensibility) {
+            scene.activeCamera.angularSensibility = 1000 / deltaTime;
+        }
     });
 }
 
@@ -4863,15 +5001,6 @@ function setupLights_and_shadows(scene) {
  * @returns {Object} An object containing all camera instances.
  */
 function setupCameras(scene, canvas, shadowGenerator) {
-
-
-
-
-
-
-
-
-
   // Create and configure the main orbital (arc rotate) camera.
   const arcRotateCamera = new BABYLON.ArcRotateCamera(
     "ArcRotateCamera",
@@ -4883,7 +5012,7 @@ function setupCameras(scene, canvas, shadowGenerator) {
   );
   // Use a near plane of 1 and a far plane of 4000 to reduce depth buffer issues.
   arcRotateCamera.minZ = 10;
-  arcRotateCamera.maxZ = 8000;
+  arcRotateCamera.maxZ = 5000;
   arcRotateCamera.fov = 0.47;
   arcRotateCamera.attachControl(canvas, true);
   arcRotateCamera.upperBetaLimit = Math.PI;
@@ -4894,15 +5023,15 @@ function setupCameras(scene, canvas, shadowGenerator) {
   arcRotateCamera.lowerRadiusLimit = 10; // Changed from 0.1 to 10
   arcRotateCamera.upperRadiusLimit = 1650;
   arcRotateCamera.wheelPrecision = 8;
+
+  // Fix FOV mode to prevent aspect distortion
+  arcRotateCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
+  arcRotateCamera.fov = 1.0; // ~57 degrees in radians
+
   // Adjust panning sensitivity if available.
   if (arcRotateCamera.inputs.attached.pointers) {
     arcRotateCamera.inputs.attached.pointers.panningSensibility = 10;
   }
-
-
-
-
-
 
   // Create and configure the follow (chase) camera.
   const followCamera = new BABYLON.FollowCamera(
@@ -4917,10 +5046,11 @@ function setupCameras(scene, canvas, shadowGenerator) {
   followCamera.radius = -10;               // Distance from target.
   // Set clipping planes to match other cameras.
   followCamera.minZ = 10;
-  followCamera.maxZ = 8000;
-
-
-
+  followCamera.maxZ = 5000;
+  
+  // Fix FOV mode to prevent aspect distortion
+  followCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
+  followCamera.fov = 1.0; // ~57 degrees in radians
 
   // Create the cockpit camera (first-person view).
   const cockpitCamera = new BABYLON.UniversalCamera(
@@ -4929,15 +5059,14 @@ function setupCameras(scene, canvas, shadowGenerator) {
     scene
   );
   cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
+  
+  // Fix FOV mode to prevent aspect distortion
+  cockpitCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
   cockpitCamera.fov = 0.87;
+  
   // Set clipping planes for cockpit view.
   cockpitCamera.minZ = 1;
-  cockpitCamera.maxZ = 8000;
-
-
-
-
-
+  cockpitCamera.maxZ = 5000;
 
   // Create the wing camera (external view).
   const wingCamera = new BABYLON.UniversalCamera(
@@ -4947,20 +5076,14 @@ function setupCameras(scene, canvas, shadowGenerator) {
   );
   wingCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
   wingCamera.minZ = 1;
-  wingCamera.maxZ = 8000;
-  // Set a wider field of view (~85° in radians).
+  wingCamera.maxZ = 5000;
+  
+  // Fix FOV mode to prevent aspect distortion
+  wingCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
   wingCamera.fov = 1.9;
 
-
-
-
-
-
-
   // Register all cameras with the scene.
-  scene.cameras.push(arcRotateCamera, cockpitCamera, followCamera,  wingCamera )
-
-
+  scene.cameras.push(arcRotateCamera, cockpitCamera, followCamera, wingCamera);
 
   /**
    * Updates camera positions and targets based on the aircraft's position.
@@ -4982,25 +5105,40 @@ function setupCameras(scene, canvas, shadowGenerator) {
       Math.PI / 2, // Rotate 90° around the Y axis.
       0
     );
+    
+    // Force world up vector to prevent distortion
+    cockpitCamera.upVector = new BABYLON.Vector3(0, 1, 0);
 
     // Configure the wing camera (external view).
     wingCamera.parent = aircraft;
     wingCamera.position.set(-1.5, 0.5, -3.2);
     wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0);
+    
+    // Force world up vector to prevent distortion
+    wingCamera.upVector = new BABYLON.Vector3(0, 1, 0);
   }
 
   // If an aircraft is defined, perform an initial update.
-  // (Note: 'aircraft' is assumed to be a global variable or defined elsewhere.)
   if (typeof aircraft !== "undefined" && aircraft) {
     updateCamerasForAircraft(aircraft);
   }
+
+  // Add a scene observer to maintain camera stability during rendering
+  scene.onBeforeRenderObservable.add(() => {
+    // Force consistent up vectors on the cameras
+    if (scene.activeCamera) {
+      if (scene.activeCamera.name === "CockpitCamera" || 
+          scene.activeCamera.name === "WingCamera") {
+        scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+      }
+    }
+  });
 
   // Expose the update function on the scene for external access.
   scene.updateCamerasForAircraft = updateCamerasForAircraft;
 
   return {
     arcRotateCamera,
-    
     followCamera,
     cockpitCamera,
     wingCamera
@@ -5020,6 +5158,22 @@ function setActiveCamera(index, scene) {
   }
   scene.activeCamera = scene.cameras[index];
 
+  // Reset FOV to original values to maintain consistency
+  if (scene.activeCamera.name === "ArcRotateCamera") {
+    scene.activeCamera.fov = 1.0;
+  } else if (scene.activeCamera.name === "FollowCamera") {
+    scene.activeCamera.fov = 1.0;
+  } else if (scene.activeCamera.name === "CockpitCamera") {
+    scene.activeCamera.fov = 0.87;
+  } else if (scene.activeCamera.name === "WingCamera") {
+    scene.activeCamera.fov = 1.9;
+  }
+
+  // Force the up vector to be world-aligned for stability
+  if (scene.activeCamera.name !== "ArcRotateCamera") {
+    scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+  }
+
   // Toggle aircraft model visibility for cockpit view.
   // Assumes 'glbNode' is a global mesh representing the aircraft model.
   if (typeof glbNode !== "undefined" && glbNode) {
@@ -5027,8 +5181,6 @@ function setActiveCamera(index, scene) {
     glbNode.setEnabled(index !== 2);
   }
 }
-
-
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\0_Aircraft_Aerodynamic_Model\0.1_📊_aircraft_aerodynamic_and_propulsive_data.jl

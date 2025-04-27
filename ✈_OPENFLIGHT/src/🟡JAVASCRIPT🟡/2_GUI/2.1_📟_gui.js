@@ -1,3 +1,5 @@
+
+
 // ------------------------------------------------------------
 // GUI Creation Functions
 // ------------------------------------------------------------
@@ -156,29 +158,35 @@ function createFileLoadButton() {
     fileLoadButton.background = "#6C757D";
   });
 
+  // Action: Trigger the hidden file input when the GUI button is clicked.
   fileLoadButton.onPointerUpObservable.add(() => {
     const fileInput = document.getElementById("fileInput");
     if (fileInput) {
-      fileInput.click();
+      fileInput.click(); // Programmatically click the hidden input
     } else {
       console.error("fileInput element not found in the DOM!");
     }
   });
 
-  // Setup file input event listener.
+  // MODIFIED: Setup file input event listener (now in setup_GLB_model_transformations.js)
+  // Remove the original event listener here, as it's handled in setup_GLB_model_transformations.js
+  // We still need the button to trigger the click, but the file handling logic is centralized elsewhere.
+  /*
   const fileInput = document.getElementById("fileInput");
   if (fileInput) {
     fileInput.addEventListener("change", (event) => {
       const file = event.target.files[0];
       if (file) {
         console.log("Selected .glb file:", file.name);
-        // TODO: Load the .glb file into Babylon.
+        // REMOVED: Loading logic is now handled by the listener in setup_GLB_model_transformations.js
       }
     });
   }
+  */
 
   return fileLoadButton;
 }
+
 
 /**
  * Creates and returns a pause button.
@@ -215,6 +223,8 @@ function createPauseButton() {
  * Updates all GUI information elements with compact, formatted text.
  */
 function updateInfo() {
+    if (!aircraft) return; // Don't update if aircraft isn't created yet
+
   // Update location and altitude on separate lines.
   positionText.text =
     `Location: N:${(-aircraft.position.z).toFixed(0)} | E:${(-aircraft.position.x).toFixed(0)}\nAlt: ${(3.2808399 * aircraft.position.y).toFixed(0)} ft / ${aircraft.position.y.toFixed(0)} m`;
@@ -257,45 +267,31 @@ function pauseSimulation() {
     // (etc. if you want hover effects)
   }
 
-  // Show/hide a big "pauseIndicator"
+  // Show/hide a big "pauseIndicator" (Optional, currently commented out)
+  /*
   if (isPaused) {
     if (!window.pauseIndicator) {
-      /**
-      const pauseIndicatorRect = new BABYLON.GUI.Rectangle("pauseIndicator");
-      pauseIndicatorRect.width = "220px";
-      pauseIndicatorRect.height = "60px";
-      pauseIndicatorRect.cornerRadius = 10;
-      pauseIndicatorRect.color = "white";
-      pauseIndicatorRect.thickness = 2;
-      pauseIndicatorRect.background = "rgba(0, 0, 0, 0.7)";
-      pauseIndicatorRect.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-      pauseIndicatorRect.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-
-      const pauseText = new BABYLON.GUI.TextBlock();
-      pauseText.text = "SIMULATION PAUSED";
-      pauseText.color = "white";
-      pauseText.fontSize = 12;
-      pauseText.fontWeight = "bold";
-      //pauseIndicatorRect.addControl(pauseText);
-
-      advancedTexture.addControl(pauseIndicatorRect);
-      window.pauseIndicator = pauseIndicatorRect;
-      */
+       // Create pause indicator rectangle and text...
     } else {
-      //window.pauseIndicator.isVisible = true;
+      window.pauseIndicator.isVisible = true;
     }
   } else {
-    // On resume, hide
-    if (window.pauseIndicator) {
-      window.pauseIndicator.isVisible = false;
-    }
-    // reset timing so no big deltaTime spike
-    lastUpdateTime = performance.now();
-    lastFrameTime = Date.now();
-    timeSinceLastUpdate = 0;
+     // On resume, hide
+     if (window.pauseIndicator) {
+       window.pauseIndicator.isVisible = false;
+     }
+  }
+  */
+
+  // On resume, reset timing to avoid large deltaTime spikes
+  if (!isPaused) {
+     lastUpdateTime = performance.now();
+     lastFrameTime = Date.now();
+     timeSinceLastUpdate = 0;
   }
 
-  // Show/hide the "FLIGHT CONTROLS" help
+
+  // Show/hide the "FLIGHT CONTROLS" help panel
   if (isPaused) {
     if (!window.controlsHelp) {
       // Build the container for controls - SIGNIFICANTLY INCREASED HEIGHT TO FIT ALL CONTENT

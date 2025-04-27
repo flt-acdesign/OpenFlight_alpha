@@ -298,7 +298,8 @@ runway.physicsImpostor = new BABYLON.PhysicsImpostor(
         lightRange: 25,
         blinkInterval: 250,
         lightIntensity: 2,
-        glowIntensity: 1.5
+        glowIntensity: 1.5,
+        createPointLight: false
     });
 
     const blinkingSphere_18 = createBlinkingSphere(scene, 0, 14.5, -585, {
@@ -307,6 +308,7 @@ runway.physicsImpostor = new BABYLON.PhysicsImpostor(
         lightRange: 25,
         blinkInterval: 250,
         lightIntensity: 2,
-        glowIntensity: 1.5
+        glowIntensity: 1.5,
+        createPointLight: false
     });
 }

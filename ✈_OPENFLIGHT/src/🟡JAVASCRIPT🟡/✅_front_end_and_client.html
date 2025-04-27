@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,36 +8,27 @@
     <link rel="stylesheet" href="./00_CSS_styles/styles.css">
     <link rel="icon" href="./00_CSS_styles/openflight.ico" sizes="any">
 
-    <!-- ***Include downloaded Babylon.js and external libraries via local files*** -->
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.js"></script>
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon_GUI.js"></script>
-    <script src="./🛑_EXTERNAL_LIBRARIES/babylonjs.loaders.min.js"></script>
+    <script src="./🛑_EXTERNAL_LIBRARIES/babylonjs.loaders.min.js"></script> 
     <script src="./🛑_EXTERNAL_LIBRARIES/babylon.customMaterial.min.js"></script>
     <script src="./🛑_EXTERNAL_LIBRARIES/cannon.js"></script>
-    <!-- ************************************************************************** -->
 
-    <!-- Initialize global variables and aircraft state -->
     <script src="./0_INITIALIZATION/0.1_🧾_initializations.js"></script>
 
-    <!-- Websockets connection and code to transfer aircraft state to and from server -->
     <script src="./1_AIRCRAFT_STATE_TRANSFER/1.1_🔁_exchange_aircraft_state_with_server.js"></script>
     
-    <!-- Graphical User Interface (flight and control data)-->
     <script src="./2_GUI/2.1_📟_gui.js"></script> 
 
-    <!-- Inceptor (gamepad or joystick) -->
     <script src="./3_INCEPTORS/3.1_🕹_joystick_gamepad.js"></script>
 
-    <!-- CREATE WORLD SCENERY, OBJECTS AND AIRCRAFT -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.1_🌍_create_world_scenery.js"></script>
 
-    <!-- Create terrain and runway -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.1_🏞_create_terrain_height.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.2_🗺_create_terrain_texture.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.3_🎹_create_runway.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.2_🌍_TERRAIN_AND_RUNWAY/4.2.4_🌖_create_sky_sphere_and_fog.js"></script>
     
-    <!-- World Objects for scenery -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.1_🏠_generic_house_constructor.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.2_⛽_create_control_tower.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.3_🌲_create_trees.js"></script>
@@ -44,14 +37,12 @@
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.6._💡_blinking_light_constructor.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.3_🏡_WORLD_OBJECTS/4.3.7_💨_create_wind_turbines.js"></script>
     
-    <!-- Create aircraft default model or load external geometry in GLB format -->
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.4_✈_AIRCRAFT_GEOMETRY/4.1_✈_default_aircraft_model.js"></script>
     <script src="./4_TERRAIN_AND_WORLD_OBJECTS/4.4_✈_AIRCRAFT_GEOMETRY/4.3_🔼_import_parameters_for_glb_aircraft.js"></script>
 
     <script src="./5_3D_FLIGHT_DATA_VISUALIZATION/5.1_📐_draw_forces_and_velocities.js"></script>
     <script src="./5_3D_FLIGHT_DATA_VISUALIZATION/5.2_➰_draw_aircraft_trajectory.js"></script>
 
-    <!-- Start render loop and create the world -->
     <script src="./6_SCENE_AND_RENDER_LOOP/6.1_♻_MAIN_render_loop.js"></script>
     <script src="./6_SCENE_AND_RENDER_LOOP/6.2_🌄_create_scene.js"></script>
     <script src="./6_SCENE_AND_RENDER_LOOP/6.3_💡_create_lights_and_shadows.js"></script>
@@ -59,16 +50,14 @@
 
 </head>
 <body>
-
     <input
-  type="file"
-  id="fileInput"
-  accept=".glb"
-  style="display: none;"
-/>
+        type="file"
+        id="fileInput"
+        accept=".glb"
+        style="display: none;" 
+    />
 
     <canvas id="renderCanvas"></canvas>
 
 </body>
 </html>
-

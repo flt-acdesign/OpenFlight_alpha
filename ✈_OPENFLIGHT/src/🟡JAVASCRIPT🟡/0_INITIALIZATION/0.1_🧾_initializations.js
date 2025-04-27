@@ -1,12 +1,14 @@
+
+
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
 let aircraft_name = "SF25B.yaml"
 
 let initial_velocity = 30
-let initial_altitude = 40
+let initial_altitude = 400
 
 let start_flight_data_recording_at = 5
-let finish_flight_data_recording_at = 10
+let finish_flight_data_recording_at = 100
 
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"
@@ -15,6 +17,8 @@ let show_trajectory = "true"
 
 // 0 = nothing, 1 = low, 2 = medium or 3 = high
 let scenery_complexity = 3
+
+let enable_glow_effect = false;
 
 let aircraft = null;  // The sphere
 let planeNode = null; // TransformNode holding the simple plane
@@ -71,4 +75,3 @@ let positionText, velocityText, forceText, angularVelocityText, momentText, time
 let joystickAxes = [0, 0, 0, 0];
 
 let joystickButtons = [];
-

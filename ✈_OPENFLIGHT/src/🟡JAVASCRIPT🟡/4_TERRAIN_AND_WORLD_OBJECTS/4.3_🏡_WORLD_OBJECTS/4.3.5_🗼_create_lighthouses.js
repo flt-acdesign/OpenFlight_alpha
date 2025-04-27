@@ -1,29 +1,28 @@
 
 
-
 /***************************************************************
  * Creates a cylindrical tower with alternating white/red segments.
  * On top is a blinking sphere whose pattern follows the specified
- * Morse code. 
+ * Morse code.
  *
  * Parameters:
- *   - scene: The Babylon.js scene object.
- *   - shadowGenerator: (Optional) a ShadowGenerator to add the tower
- *                     and sphere as shadow casters.
- *   - options: An object with the following properties:
- *       basePosition: (BABYLON.Vector3) Base position of the tower.
- *       towerHeightInSegments: (number) number of cylindrical segments.
- *       segmentHeight: (number) height of each cylindrical segment.
- *       towerRadius: (number) radius for each cylinder.
- *       topSphereDiameter: (number) diameter of the blinking sphere.
- *       morseCode: (string) e.g. "...---..." (SOS).
- *       blinkUnit: (number) ms for a 'dot' duration.
- *       separationTime: (number) ms of quiet time after entire pattern repeats.
- *       conicity: (number) ratio of the diameter of the top of the tower to the diameter of the base (default: 1).
+ * - scene: The Babylon.js scene object.
+ * - shadowGenerator: (Optional) a ShadowGenerator to add the tower
+ * and sphere as shadow casters.
+ * - options: An object with the following properties:
+ * basePosition: (BABYLON.Vector3) Base position of the tower.
+ * towerHeightInSegments: (number) number of cylindrical segments.
+ * segmentHeight: (number) height of each cylindrical segment.
+ * towerRadius: (number) radius for each cylinder.
+ * topSphereDiameter: (number) diameter of the blinking sphere.
+ * morseCode: (string) e.g. "...---..." (SOS).
+ * blinkUnit: (number) ms for a 'dot' duration.
+ * separationTime: (number) ms of quiet time after entire pattern repeats.
+ * conicity: (number) ratio of the diameter of the top of the tower to the diameter of the base (default: 1).
  *
  * Returns:
- *   An object with references to the blinking sphere, light, glowLayer, and a
- *   dispose() function if you need to remove them later.
+ * An object with references to the blinking sphere, light, and a
+ * dispose() function if you need to remove them later. (glowLayer reference removed as it's managed internally based on setting)
  ***************************************************************/
 function createMorseTower(scene, shadowGenerator, options = {}) {
     /***************************************************************
@@ -31,14 +30,15 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
      ***************************************************************/
     const defaults = {
         basePosition: new BABYLON.Vector3(0, 0, 0), // Base position for the tower
-        towerHeightInSegments: 5,                  // How many cylindrical segments
-        segmentHeight: 1,                          // Each cylinder's height
-        towerRadius: 1,                            // Cylinder radius
-        topSphereDiameter: 2,                      // Sphere diameter at top
-        morseCode: "...---...",                    // Default code: SOS
-        blinkUnit: 300,                            // ms for a dot
-        separationTime: 1000,                      // ms after full pattern
-        conicity: 1                                // Ratio of top diameter to base diameter (default: 1 for straight tower)
+        towerHeightInSegments: 5,               // How many cylindrical segments
+        segmentHeight: 1,                       // Each cylinder's height
+        towerRadius: 1,                         // Cylinder radius
+        topSphereDiameter: 2,                   // Sphere diameter at top
+        morseCode: "...---...",                 // Default code: SOS
+        blinkUnit: 300,                         // ms for a dot
+        separationTime: 1000,                   // ms after full pattern
+        conicity: 1,                            // Ratio of top diameter to base diameter (default: 1 for straight tower)
+        glowIntensity: 1                        // Added default for glow
     };
     const {
         basePosition,
@@ -49,154 +49,151 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
         morseCode,
         blinkUnit,
         separationTime,
-        conicity
+        conicity,
+        glowIntensity // Get glow intensity from options
     } = { ...defaults, ...options };
 
     /***************************************************************
      * 2) Create the cylindrical tower with alternating colors and conicity
      ***************************************************************/
-    for (let i = 0; i < towerHeightInSegments; i++) {
-        // Calculate the radius for this segment based on conicity
-        const segmentRadius = towerRadius * (1 - (1 - conicity) * (i / (towerHeightInSegments - 1)));
+     const towerParent = new BABYLON.TransformNode(`morseTowerParent_${basePosition.x}_${basePosition.z}`, scene);
 
-        // Create one cylinder segment
+    for (let i = 0; i < towerHeightInSegments; i++) {
+        const segmentRadius = towerRadius * (1 - (1 - conicity) * (i / (towerHeightInSegments - 1 || 1))); // Avoid division by zero if only 1 segment
+
         const cylinder = BABYLON.MeshBuilder.CreateCylinder(
             `towerSegment_${i}`,
             {
                 height: segmentHeight,
                 diameter: segmentRadius * 2,
-                tessellation: 6,     // reduces the number of sides (default is 24)
-                subdivisions: 1       // reduces the vertical segments (default is 1)
+                tessellation: 6,
+                subdivisions: 1
             },
             scene
         );
 
-        // Position it so each segment stacks on the previous one
         cylinder.position = new BABYLON.Vector3(
-            basePosition.x,
-            basePosition.y + i * segmentHeight + segmentHeight / 2 - 3,
-            basePosition.z
+            0, // Relative to parent
+            i * segmentHeight + segmentHeight / 2,
+            0  // Relative to parent
         );
 
-        // Alternate between red (1,0,0) and white (1,1,1)
         const colorRed = new BABYLON.Color3(1, 0, 0);
         const colorWhite = new BABYLON.Color3(1, 1, 1);
         const chosenColor = i % 2 === 0 ? colorWhite : colorRed;
 
-        // Material for this cylinder
         const segMaterial = new BABYLON.StandardMaterial(`towerMat_${i}`, scene);
         segMaterial.diffuseColor = chosenColor;
-        segMaterial.fogEnabled = true;  // if fog is in the scene
+        segMaterial.fogEnabled = true;
         cylinder.material = segMaterial;
+        cylinder.parent = towerParent; // Parent segment to the tower node
 
-        // If a shadow generator is provided, add this cylinder as a shadow caster
         if (shadowGenerator) {
             shadowGenerator.addShadowCaster(cylinder);
         }
     }
+    // Position the entire tower
+    towerParent.position = new BABYLON.Vector3(basePosition.x, basePosition.y - 3, basePosition.z); // Apply the original offset here
 
     /***************************************************************
      * 3) Create the blinking sphere at the top
      ***************************************************************/
-    // Calculate top Y position
-    const topYPos = basePosition.y + towerHeightInSegments * segmentHeight + (topSphereDiameter / 2) - 3;
+    const topYPos = towerHeightInSegments * segmentHeight + (topSphereDiameter / 2); // Relative to towerParent base
 
-    // Create the sphere mesh
     const sphere = BABYLON.MeshBuilder.CreateSphere("morseBlinkSphere", {
         diameter: topSphereDiameter,
-        segments: 4
+        segments: 8 // Reduced segments
     }, scene);
-    sphere.position = new BABYLON.Vector3(basePosition.x, topYPos, basePosition.z);
+    // Position relative to the towerParent
+    sphere.position = new BABYLON.Vector3(0, topYPos, 0);
+    sphere.parent = towerParent; // Parent sphere to the tower node
 
-    // Create a material with an emissive color (yellow)
     const sphereMaterial = new BABYLON.StandardMaterial("morseSphereMaterial", scene);
     const yellowColor = new BABYLON.Color3(1, 1, 0);
-    sphereMaterial.emissiveColor = yellowColor;
+    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0); // Start off
+    sphereMaterial.diffuseColor = new BABYLON.Color3(0,0,0);
+    sphereMaterial.specularColor = new BABYLON.Color3(0,0,0);
     sphereMaterial.fogEnabled = true;
     sphere.material = sphereMaterial;
 
-    // Create a point light at the sphere's position
-    const light = new BABYLON.PointLight("morseSphereLight", sphere.position, scene);
-    light.intensity = 0;                   // Start off
+    const light = new BABYLON.PointLight("morseSphereLight", sphere.getAbsolutePosition(), scene);
+    light.intensity = 0;
     light.diffuse = yellowColor;
-    light.range = 10;                      // Adjust as needed
+    light.range = towerHeightInSegments * segmentHeight * 1.5; // Adjust range based on height
 
-    // Optionally add glow
-    const glowLayer = new BABYLON.GlowLayer("morseGlow", scene);
-    glowLayer.intensity = 0;               // Start off
-    glowLayer.addIncludedOnlyMesh(sphere);
+    // --- Optional Glow Layer ---
+    let glowLayer = null; // Initialize as null
+    // Check the global setting
+    if (typeof enable_glow_effect !== 'undefined' && enable_glow_effect === true) {
+        glowLayer = scene.getGlowLayerByName("sharedGlowLayer"); // Use shared layer
+        if (!glowLayer) {
+            glowLayer = new BABYLON.GlowLayer("sharedGlowLayer", scene, { mainTextureRatio: 0.5 });
+            glowLayer.intensity = glowIntensity; // Use intensity from options/defaults
+            console.log("Created shared GlowLayer from MorseTower with intensity:", glowLayer.intensity);
+        }
+    }
+    // --- END Optional Glow Layer ---
 
-    // If there's a shadow generator, add the sphere as a shadow caster
     if (shadowGenerator) {
         shadowGenerator.addShadowCaster(sphere);
     }
 
     /***************************************************************
-     * 4) Define the Morse code blinking pattern
-     *
-     *  We'll interpret:
-     *    '.' (dot) as ON for blinkUnit, then OFF for blinkUnit
-     *    '-' (dash) as ON for 3 × blinkUnit, then OFF for blinkUnit
-     *  Then after the entire code, OFF for separationTime.
+     * 4) Define the Morse code blinking pattern (Unchanged)
      ***************************************************************/
     const patternIntervals = [];
     for (let i = 0; i < morseCode.length; i++) {
         const symbol = morseCode[i];
-
         if (symbol === '.') {
-            // Dot: ON for blinkUnit, OFF for blinkUnit
             patternIntervals.push({ duration: blinkUnit, isOn: true });
             patternIntervals.push({ duration: blinkUnit, isOn: false });
         } else if (symbol === '-') {
-            // Dash: ON for blinkUnit*3, OFF for blinkUnit
             patternIntervals.push({ duration: blinkUnit * 3, isOn: true });
             patternIntervals.push({ duration: blinkUnit, isOn: false });
         } else if (symbol === ' ') {
-            // Dash: ON for blinkUnit*3, OFF for blinkUnit
+             // Add gap between words (e.g., 3 units off, total 4 including char gap)
             patternIntervals.push({ duration: blinkUnit * 4, isOn: false });
         }
-        // If there's a space or another symbol, you could handle that here
     }
-    // After the entire code, add the separation time
     patternIntervals.push({ duration: separationTime, isOn: false });
-
-    // Total length in ms of one full Morse code cycle
     const totalPatternTime = patternIntervals.reduce((acc, x) => acc + x.duration, 0);
 
     /***************************************************************
      * 5) Animate the blinking based on current time
      ***************************************************************/
-    let isOn = false; // keep track of whether we are "on" or "off"
+    let isOn = false;
+    let animationStartTime = Date.now(); // Use a separate start time for each tower
 
-    // We'll run this each frame to check the cycle time
     const observer = scene.onBeforeRenderObservable.add(() => {
         const timeNow = Date.now();
-        // Where are we in the repeating pattern cycle?
-        const cycleTime = timeNow % totalPatternTime;
+        const cycleTime = (timeNow - animationStartTime) % totalPatternTime;
 
         let elapsed = 0;
+        let shouldBeOn = false; // Default to off
         for (let i = 0; i < patternIntervals.length; i++) {
             const interval = patternIntervals[i];
             if (cycleTime >= elapsed && cycleTime < elapsed + interval.duration) {
-                // We are in this interval
-                if (interval.isOn && !isOn) {
-                    // Turn ON
-                    sphereMaterial.emissiveColor = yellowColor;
-                    sphereMaterial.diffuseColor = yellowColor;
-                    light.intensity = 1;
-                    glowLayer.intensity = 1;
-                    isOn = true;
-                } else if (!interval.isOn && isOn) {
-                    // Turn OFF
-                    sphereMaterial.emissiveColor = new BABYLON.Color3(0, 0, 0);
-                    sphereMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-                    light.intensity = 0;
-                    glowLayer.intensity = 0;
-                    isOn = false;
-                }
-                break; // no need to check further intervals
+                shouldBeOn = interval.isOn;
+                break;
             }
             elapsed += interval.duration;
+        }
+
+        // --- Update Visual State ---
+        if (isOn !== shouldBeOn) {
+            sphereMaterial.emissiveColor = shouldBeOn ? yellowColor : BABYLON.Color3.Black();
+            light.intensity = shouldBeOn ? 1 : 0;
+
+            // ** Interact with glowLayer only if it exists **
+            if (glowLayer) {
+                if (shouldBeOn) {
+                    glowLayer.addIncludedOnlyMesh(sphere);
+                } else {
+                    glowLayer.removeIncludedOnlyMesh(sphere);
+                }
+            }
+            // ** End GlowLayer Interaction **
+            isOn = shouldBeOn;
         }
     });
 
@@ -204,65 +201,55 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
      * 6) Return references in case the user needs them
      ***************************************************************/
     return {
+        towerParent, // Return the parent node
         sphere,
         light,
-        glowLayer,
+        // glowLayer, // No need to return shared layer
         dispose: () => {
             scene.onBeforeRenderObservable.remove(observer);
+            // ** Dispose Logic - Only interact if glowLayer exists **
+            if (glowLayer) {
+                glowLayer.removeIncludedOnlyMesh(sphere);
+            }
+            // ** End Dispose Logic **
             sphere.dispose();
             light.dispose();
-            glowLayer.dispose();
+            // Dispose all tower segments and parent
+            towerParent.dispose(false, true); // Dispose children too
         }
     };
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// --- create_lighthouses function (unchanged, but now createMorseTower respects the setting) ---
 
 function create_lighthouses(scene, shadowGenerator) {
 
-// Create the Morse tower at position (10,0,5) with 8 segments,
-    const morseTower = createMorseTower(scene, shadowGenerator, {
-
+    // Create the Morse tower at position (10,0,5) with 8 segments,
+    const morseTower1 = createMorseTower(scene, shadowGenerator, {
         // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
         basePosition: new BABYLON.Vector3(1971, 249, 955),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
         towerRadius: 2,
         topSphereDiameter: 3,
-        morseCode: "-.-- --- ..-    .- .-. .    - --- ---    ... -- .- .-. -", 
+        morseCode: "-.-- --- ..-    .- .-. .    - --- ---    ... -- .- .-. -", // Added spaces for word gaps
         blinkUnit: 300,         // ms for a dot
-        separationTime: 1000,    // ms of pause after pattern
-        conicity: .2 
+        separationTime: 2000,   // Increased pause after pattern
+        conicity: .2,
+        glowIntensity: 1.5 // Example specific intensity
     });
-    
-    const lighthouse = createMorseTower(scene, shadowGenerator, {
-    
-        // => x: 1959.8547327640256, y: 248.25910073079265, z: 955.0814661695462
+
+    const morseTower2 = createMorseTower(scene, shadowGenerator, {
         basePosition: new BABYLON.Vector3(-1986, 25, -1380),
         towerHeightInSegments: 8,
         segmentHeight: 2.5,
         towerRadius: 2,
         topSphereDiameter: 3,
-        morseCode: "-.-. ..- .-. .. --- ... .. - -.--   -.- .. .-.. .-.. . -..   - .... .   -.-. .- -", 
+        morseCode: "-.-. ..- .-. .. --- ... .. - -.--    -.- .. .-.. .-.. . -..    - .... .    -.-. .- -", // Added spaces
         blinkUnit: 300,         // ms for a dot
-        separationTime: 1000    // ms of pause after pattern
+        separationTime: 2000,    // Increased pause after pattern
+        glowIntensity: 1.2 // Example specific intensity
     });
 
 }

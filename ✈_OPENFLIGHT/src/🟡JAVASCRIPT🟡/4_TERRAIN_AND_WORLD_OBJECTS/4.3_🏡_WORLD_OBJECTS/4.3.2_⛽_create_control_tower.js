@@ -48,7 +48,8 @@ function create_control_tower(scene, shadowGenerator) {
             lightRange: 10,                           // 10 units light radius
             blinkInterval: 1000,                      // 1 second interval
             lightIntensity: 1,                        // Normal light intensity
-            glowIntensity: 1                          // Normal glow intensity
+            glowIntensity: 1,                          // Normal glow intensity
+            createPointLight: false
         }
     );
     // Return the blinking sphere controller in case we need to dispose it later

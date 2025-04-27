@@ -113,82 +113,80 @@ function compute_terrain_derivatives(x, z, freqX, freqZ, amplitude, step = 10) {
  * START of createGround()
  ********************************************/
 function create_checkered_ground() {
-  window.ground = BABYLON.MeshBuilder.CreateGround(
-    "ground", 
-    { width: 15000, height: 15000 },
-    window.scene
-  );
+  // ---------- configuration -------------------------------------------------
+  const boardSize     = 15_000;          // total width/height of the board (world units)
+  const squaresCount  = 30;              // tiles per side (must be even for 4 equal quadrants)
+  const tileSize      = boardSize / squaresCount;
+  const midIndex      = squaresCount / 2;  // centre line index
+  // --------------------------------------------------------------------------
 
-  const groundMat = new BABYLON.StandardMaterial("groundMat", window.scene);
+  // A parent node keeps the board together and plays the role of `window.ground`.
+  const boardRoot = new BABYLON.TransformNode("groundRoot", window.scene);
+  window.ground   = boardRoot;           // preserve external references
+  window.groundY  = 0;                   // compatibility with your old code
 
-  // Create a dynamic texture for the checkerboard pattern.
-  const textureSize = 2048;
-  const dt = new BABYLON.DynamicTexture("groundDT", { width: textureSize, height: textureSize }, window.scene, false);
-  const ctx = dt.getContext();
+  // Container for coloured materials so we reuse (not recreate) identical ones.
+  const matCache = {};
+  const getMat = (hex) => {
+    if (!matCache[hex]) {
+      const m = new BABYLON.StandardMaterial(`mat_${hex}`, window.scene);
+      m.diffuseColor  = BABYLON.Color3.FromHexString(hex);
+      m.specularColor = BABYLON.Color3.Black();   // no shine
+      matCache[hex] = m;
+    }
+    return matCache[hex];
+  };
 
-  const squaresCount = 10;
-  const tileSize = textureSize / squaresCount;
-  const midIndex = squaresCount / 2; // This divides the texture into 4 quadrants.
+  // --------------------------------------------------------------------------
+  // Build the tiled ground – a single CreateGround per square.
+  // --------------------------------------------------------------------------
+  for (let i = 0; i < squaresCount; ++i) {
+    for (let j = 0; j < squaresCount; ++j) {
+      // ----- quadrant logic (same colours as before) -------------------------
+      let colorPair, localI, localJ;
 
-  // Loop through each tile on the texture.
-  // Note: In canvas, j = 0 is the top row.
-  for (let i = 0; i < squaresCount; i++) {
-    for (let j = 0; j < squaresCount; j++) {
-      let colorPair;
-      let localI, localJ;
-
-      // Determine quadrant based on tile indices:
-      // - For horizontal (i): i < midIndex → left (x < 0), i >= midIndex → right (x > 0)
-      // - For vertical (j): j < midIndex → top (z > 0), j >= midIndex → bottom (z < 0)
-      if (i >= midIndex && j < midIndex) {
-        // Quadrant I: Right half, Top half (x > 0, z > 0) – Green shades.
+      if (i >= midIndex && j <  midIndex) {          // Quadrant I (x>0, z>0) – greens
         colorPair = { even: "#c4e0af", odd: "#8ec269" };
-        localI = i - midIndex;
-        localJ = j;
-      } else if (i < midIndex && j < midIndex) {
-        // Quadrant II: Left half, Top half (x < 0, z > 0) – Yellow shades.
+        localI = i - midIndex;  localJ = j;
+      } else if (i <  midIndex && j <  midIndex) {   // Quadrant II (x<0, z>0) – yellows
         colorPair = { even: "#ffffcc", odd: "#ffd700" };
-        localI = i;
-        localJ = j;
-      } else if (i < midIndex && j >= midIndex) {
-        // Quadrant III: Left half, Bottom half (x < 0, z < 0) – Orange shades.
+        localI = i;            localJ = j;
+      } else if (i <  midIndex && j >= midIndex) {   // Quadrant III (x<0, z<0) – oranges
         colorPair = { even: "#ffcc99", odd: "#ff9933" };
-        localI = i;
-        localJ = j - midIndex;
-      } else if (i >= midIndex && j >= midIndex) {
-        // Quadrant IV: Right half, Bottom half (x > 0, z < 0) – Pink shades.
+        localI = i;            localJ = j - midIndex;
+      } else {                                       // Quadrant IV (x>0, z<0) – pinks
         colorPair = { even: "#f6c1d6", odd: "#f299b9" };
-        localI = i - midIndex;
-        localJ = j - midIndex;
+        localI = i - midIndex;  localJ = j - midIndex;
       }
 
-      // Apply a checkerboard pattern within the quadrant.
-      const fillColor = (localI + localJ) % 2 === 0 ? colorPair.even : colorPair.odd;
-      ctx.fillStyle = fillColor;
-      ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+      const hex    = (localI + localJ) % 2 === 0 ? colorPair.even : colorPair.odd;
+      const mat    = getMat(hex);
+
+      // ----- create the tile -------------------------------------------------
+      const tile = BABYLON.MeshBuilder.CreateGround(
+        `tile_${i}_${j}`,
+        { width: tileSize, height: tileSize },
+        window.scene
+      );
+      tile.material       = mat;
+      tile.receiveShadows = true;
+      tile.isPickable     = true;
+
+      // Centre the board on (0,0) in world space.
+      tile.position.x = (i + 0.5) * tileSize - boardSize / 2;
+      tile.position.z = (j + 0.5) * tileSize - boardSize / 2;
+      tile.parent     = boardRoot;   // keep hierarchy tidy
     }
   }
-  dt.update();
 
-  // Set up the material using the dynamic texture.
-  groundMat.diffuseTexture = dt;
-  groundMat.diffuseTexture.uScale = squaresCount;
-  groundMat.diffuseTexture.vScale = squaresCount;
-  groundMat.diffuseTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
-  groundMat.diffuseTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
-  groundMat.diffuseTexture.anisotropicFilteringLevel = 16;
-  groundMat.diffuseTexture.samplingMode = BABYLON.Texture.NEAREST_SAMPLINGMODE;
-
-  window.ground.material = groundMat;
-  window.ground.isPickable = true;
-  window.ground.receiveShadows = true;
-
-  // Store initial ground position for reference.
-  window.groundY = 0;
-
-  // Create a separate transform node for ground projections (remains even if ground is hidden).
+  // A separate node for projection helpers, as in the original version.
   window.groundProjections = new BABYLON.TransformNode("groundProjections", window.scene);
 }
+
+
+
+
+
 /********************************************
  * END of createGround()
  ********************************************/

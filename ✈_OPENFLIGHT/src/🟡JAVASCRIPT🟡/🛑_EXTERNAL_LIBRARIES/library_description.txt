@@ -55,3 +55,44 @@ Viewer
 Simplified wrapper for displaying 3D models36
 Requires minimal code to implement
 Automatically handles scene setup and model loading
+
+
+Go to the Babylon.js GitHub Releases Page:
+
+Navigate to: https://github.com/BabylonJS/Babylon.js/releases
+Find the Latest Version 8 Release:
+
+Look for the latest tagged release under the v8 series (e.g., 8.4.0 or whatever is newest). It will usually be marked as "Latest".
+Download the cdnSnapshot.zip:
+
+On the page for the latest v8 release, scroll down to the "Assets" section.
+Find and download the file named cdnSnapshot.zip. This file contains all the pre-built JavaScript files for that specific version, similar to what the CDN hosts.
+Extract the Files:
+
+Unzip the cdnSnapshot.zip file you downloaded. You will get a folder structure containing the library files.
+Locate the v8 Equivalents:
+
+Inside the unzipped folder, find the corresponding v8 files for your v7 list. The names and locations might be slightly different:
+babylon.js (v7) -> Look for babylon.js or babylon.min.js in the root folder. (.min.js is usually preferred for performance).
+babylon_GUI.js (v7) -> Look inside the gui/ subfolder for babylon.gui.js or babylon.gui.min.js.
+babylonjs.loaders.min.js (v7) -> Look inside the loaders/ subfolder for babylonjs.loaders.min.js (or .js).
+babylon.customMaterial.min.js (v7) -> This likely refers to the Materials Library. Look inside the materialsLibrary/ subfolder for babylonjs.materials.min.js (or .js). Note: If this was truly a custom file you obtained elsewhere, you'll need to ensure its compatibility with v8 separately.
+cannon.js (v7) -> This file is NOT part of Babylon.js and will not be in the cdnSnapshot.zip. Cannon.js is a separate physics engine library. You need to download it independently.
+You can often find the latest build in its GitHub repository: https://github.com/schteppe/cannon.js/ (Look in the build/ folder for cannon.min.js).
+Alternatively, use a reliable CDN link for Cannon.js.
+Replace Old Files and Update HTML:
+
+Replace your existing v7 files in your 🛑_EXTERNAL_LIBRARIES folder with the new v8 files you located (and the updated cannon.js).
+Crucially, update the <script> tags in your HTML file to point to the correct new filenames and paths (e.g., babylon_GUI.js might become gui/babylon.gui.min.js). Your script includes might look something like this afterwards (adjust paths as needed):
+HTML
+
+<script src="./🛑_EXTERNAL_LIBRARIES/babylon.min.js"></script>
+<script src="./🛑_EXTERNAL_LIBRARIES/gui/babylon.gui.min.js"></script>
+<script src="./🛑_EXTERNAL_LIBRARIES/loaders/babylonjs.loaders.min.js"></script>
+<script src="./🛑_EXTERNAL_LIBRARIES/materialsLibrary/babylonjs.materials.min.js"></script>
+<script src="./🛑_EXTERNAL_LIBRARIES/cannon.min.js"></script>
+Check for Breaking Changes:
+
+Very Important: Simply replacing the files might not be enough. Major version updates (like v7 to v8) often include breaking changes in the API.
+Review the Babylon.js documentation for any migration guides or lists of breaking changes between v7 and v8 to see if you need to update your own JavaScript code that uses the library. You can often find this on the official docs site or linked from the release notes. Check the Breaking Changes page: https://doc.babylonjs.com/breaking-changes
+By following these steps, you can update your locally hosted Babylon.js files to the latest version 8. Remember to test thoroughly after updating!

@@ -1,178 +1,243 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Babylon.js GLB Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
     <style>
-        html, body {
+        body {
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
+            overflow: hidden; /* Prevent scrollbars */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f0f0; /* Light background for the page */
         }
         #renderCanvas {
+            flex-grow: 1; /* Canvas takes remaining space */
             width: 100%;
-            height: 100%;
-            touch-action: none;
+            height: 100%; /* Use 100% to fill container */
+            display: block;
+            touch-action: none; /* Prevent default touch actions */
+            outline: none; /* Remove default focus outline */
         }
-        #fileInput {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 10;
-            padding: 10px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 5px;
+        /* Ensure canvas is focusable for keyboard events if needed */
+        #renderCanvas:focus {
+            outline: none;
         }
-        #loadingText {
-            position: absolute;
-            top: 50%;
+        /* Style for the container holding the button */
+        #controls {
+            position: absolute; /* Position over the canvas */
+            top: 1rem; /* 16px */
             left: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
-            color: white;
-            font-family: Arial, sans-serif;
-            font-size: 20px;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
+            transform: translateX(-50%); /* Center horizontally */
+            z-index: 10; /* Ensure button is on top */
         }
     </style>
 </head>
-<body>
-    <input type="file" id="fileInput" accept=".glb" />
-    <div id="loadingText">Loading 3D Model...</div>
+<body class="bg-gray-100">
+
+    <div id="controls">
+        <button id="loadButton" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
+            Load GLB File
+        </button>
+        <input type="file" id="fileInput" accept=".glb" style="display: none;">
+    </div>
+
     <canvas id="renderCanvas"></canvas>
 
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <script>
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
-        const loadingText = document.getElementById("loadingText");
-        let currentScene;
-        let currentModel;
+        // Get references to HTML elements
+        const canvas = document.getElementById('renderCanvas');
+        const fileInput = document.getElementById('fileInput');
+        const loadButton = document.getElementById('loadButton');
 
-        const createScene = function() {
-            const scene = new BABYLON.Scene(engine);
-            
-            // Black background
-            scene.clearColor = new BABYLON.Color3(0, 0, 0);
-
-            // Camera setup
-            const camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 2, 10, 
-                          new BABYLON.Vector3(0, 0, 0), scene);
-            camera.attachControl(canvas, true);
-            camera.wheelPrecision = 50;
-            camera.pinchPrecision = 50;
-            camera.lowerRadiusLimit = 0.1;
-            camera.upperRadiusLimit = 100;
-
-            // Lighting
-            const hemiLight = new BABYLON.HemisphericLight("hemiLight", 
-                            new BABYLON.Vector3(0, 1, 0), scene);
-            hemiLight.intensity = 0.7;
-
-            const dirLight = new BABYLON.DirectionalLight("dirLight", 
-                           new BABYLON.Vector3(0, -1, 1), scene);
-            dirLight.intensity = 0.3;
-
-            // Environment
-            scene.createDefaultEnvironment({
-                createSkybox: false,
-                createGround: false,
-                environmentTexture: BABYLON.CubeTexture.CreateFromPrefilteredData(
-                    "https://playground.babylonjs.com/textures/environment.env",
-                    scene
-                )
+        // Check for Babylon.js availability
+        if (!BABYLON) {
+            console.error("Babylon.js not loaded!");
+            alert("Error: Babylon.js failed to load. Please check the console.");
+        } else {
+            // Initialize Babylon.js engine
+            const engine = new BABYLON.Engine(canvas, true, {
+                preserveDrawingBuffer: true,
+                stencil: true,
+                antialias: true
             });
 
-            return scene;
-        };
+            let currentModelRoot = null; // Keep track of the currently loaded model root node
+            let scene; // Declare scene variable accessible in loadGLB scope
+            let camera; // Declare camera variable accessible in loadGLB scope
 
-        const loadGLBFile = async function(file) {
-            loadingText.style.display = "block";
+            // --- Scene Creation ---
+            const createScene = () => {
+                scene = new BABYLON.Scene(engine); // Assign to the outer scope variable
+                scene.clearColor = new BABYLON.Color4(0.2, 0.2, 0.25, 1.0);
 
-            if (currentModel) {
-                currentModel.dispose();
-            }
+                // Create ArcRotateCamera
+                camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), scene); // Assign to outer scope variable
+                camera.attachControl(canvas, true);
+                camera.wheelPrecision = 50;
+                camera.lowerRadiusLimit = 1; // Allow closer zoom
+                camera.upperRadiusLimit = 100; // Increase max zoom distance
+                camera.minZ = 0.1;
 
-            try {
-                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "", file, currentScene, 
-                    function(evt) {
-                        // Optional loading progress
-                        if (evt.lengthComputable) {
-                            const progress = (evt.loaded * 100 / evt.total).toFixed();
-                            loadingText.textContent = `Loading: ${progress}%`;
+                // Create a basic hemispheric light
+                const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0.5, 1, 0.25), scene);
+                light.intensity = 0.9;
+
+                // Create an environment texture for reflections
+                 try {
+                    // Use a known working environment texture URL
+                    const environmentTexture = new BABYLON.CubeTexture("https://assets.babylonjs.com/environments/environmentSpecular.env", scene);
+                    scene.environmentTexture = environmentTexture;
+                    // Optionally create skybox (can increase load time slightly)
+                    // scene.createDefaultSkybox(environmentTexture, true, 1000, 0.3);
+                 } catch (e) {
+                    console.warn("Could not load default environment texture.", e);
+                 }
+
+                return scene; // Return the created scene
+            };
+
+            // --- GLB Loading Function ---
+            const loadGLB = (file) => {
+                if (!file || !scene) return; // Ensure scene exists
+
+                const reader = new FileReader();
+
+                reader.onload = (event) => {
+                    try {
+                        const arrayBuffer = event.target.result;
+                        if (!arrayBuffer) {
+                            throw new Error("FileReader did not return an ArrayBuffer.");
                         }
+
+                        const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
+                        const url = URL.createObjectURL(blob);
+
+                        console.log("Attempting to load GLB from URL:", url);
+
+                        // --- Clear previous model ---
+                        if (currentModelRoot) {
+                            console.log("Disposing previous model:", currentModelRoot.name);
+                            currentModelRoot.dispose(false, true); // Dispose hierarchy and materials
+                            currentModelRoot = null;
+                        }
+                         // --- Ensure loaders are ready ---
+                        if (!BABYLON.SceneLoader) {
+                             console.error("SceneLoader not available. Make sure loaders library is included.");
+                             alert("Error: Babylon.js loaders are missing.");
+                             URL.revokeObjectURL(url); // Clean up URL even if loader fails
+                             return;
+                        }
+
+                        // --- Load the GLB file ---
+                        // Provide ".glb" as the file extension hint (last argument)
+                        BABYLON.SceneLoader.ImportMeshAsync("", url, "", scene, null, ".glb") // <-- Added ".glb" hint
+                            .then((result) => {
+                                if (result.meshes && result.meshes.length > 0) {
+                                    // Find the __root__ node if it exists, otherwise use the first mesh
+                                    currentModelRoot = result.meshes.find(m => m.name === "__root__") || result.meshes[0];
+                                    console.log("GLB loaded successfully. Root node:", currentModelRoot.name);
+
+                                    // --- Frame the camera on the loaded model ---
+                                    // Use camera.zoomOn which usually handles hierarchies well
+                                    if (camera && currentModelRoot) { // Ensure camera and model root exist
+                                        try {
+                                            camera.zoomOnFactor = 1.3; // Add some padding around the model
+                                            camera.zoomOn([currentModelRoot], true); // Pass root node in an array
+                                            console.log("Camera framed on loaded model.");
+                                        } catch (zoomError) {
+                                             console.error("Error during camera.zoomOn:", zoomError);
+                                             // Fallback: Manually set target if zoomOn fails
+                                             const centerPoint = currentModelRoot.getAbsolutePosition();
+                                             camera.setTarget(centerPoint);
+                                             camera.radius = 10; // Reset radius to a default value
+                                             console.warn("zoomOn failed, attempting manual camera target.");
+                                        }
+                                    } else {
+                                         console.warn("Could not get camera or model root reference to frame.");
+                                    }
+
+                                } else {
+                                    console.warn("GLB loaded, but no meshes found in the result.");
+                                }
+                                URL.revokeObjectURL(url); // Clean up the object URL
+                            })
+                            .catch((error) => {
+                                console.error("Error loading GLB:", error);
+                                alert(`Error loading GLB file: ${error.message || error}`);
+                                URL.revokeObjectURL(url); // Clean up URL even on error
+                            });
+
+                    } catch (loadError) {
+                        console.error("Error processing file for loading:", loadError);
+                        alert(`Error processing file: ${loadError.message}`);
                     }
-                );
+                };
 
-                currentModel = result.meshes[0];
-                
-                // Center and scale model
-                const boundingBox = currentModel.getHierarchyBoundingVectors();
-                const modelSize = boundingBox.max.subtract(boundingBox.min);
-                const modelCenter = boundingBox.min.add(modelSize.scale(0.5));
-                
-                // Scale to reasonable size
-                const scaleFactor = 5 / Math.max(modelSize.x, modelSize.y, modelSize.z);
-                currentModel.scaling = new BABYLON.Vector3(scaleFactor, scaleFactor, scaleFactor);
-                
-                // Center the model
-                currentModel.position = new BABYLON.Vector3(
-                    -modelCenter.x * scaleFactor,
-                    -modelCenter.y * scaleFactor,
-                    -modelCenter.z * scaleFactor
-                );
+                reader.onerror = (error) => {
+                    console.error("FileReader error:", error);
+                    alert("Error reading file.");
+                };
 
-                // Reset camera
-                const camera = currentScene.getCameraByName("camera");
-                camera.setTarget(BABYLON.Vector3.Zero());
-                camera.alpha = 0;
-                camera.beta = Math.PI / 2;
-                camera.radius = 10;
+                reader.readAsArrayBuffer(file); // Read the file as binary data
+            };
 
-                // Enable PBR
-                currentScene.meshes.forEach(mesh => {
-                    if (mesh.material) {
-                        mesh.material.transparencyMode = BABYLON.Material.MATERIAL_OPAQUE;
-                        mesh.material.backFaceCulling = false;
-                    }
-                });
+            // --- Event Listeners ---
+            // Button triggers hidden file input
+            loadButton.addEventListener('click', () => {
+                fileInput.click(); // Programmatically click the hidden file input
+            });
 
-            } catch (error) {
-                console.error("Error loading GLB file:", error);
-                alert("Error loading 3D model. Please try another file.");
-            }
-
-            loadingText.style.display = "none";
-        };
-
-        // Initialize scene
-        currentScene = createScene();
-
-        // File input handling
-        document.getElementById("fileInput").addEventListener("change", function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.name.toLowerCase().endsWith('.glb')) {
-                    loadGLBFile(file);
+            // File input change handler
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files ? event.target.files[0] : null;
+                if (file) {
+                    console.log("File selected:", file.name);
+                    loadGLB(file);
                 } else {
-                    alert("Please select a GLB file");
+                    console.log("No file selected.");
                 }
+                // Reset file input to allow loading the same file again if needed
+                event.target.value = null;
+            });
+
+            // --- Initialization ---
+            // Create the scene *before* setting up event listeners that might use it
+            scene = createScene(); // Assign the created scene to the outer scope variable
+
+            // Ensure the scene is ready before potentially loading a file if one was pre-selected (not applicable here but good practice)
+            if (scene.isReady()) {
+                 console.log("Scene is ready.");
+            } else {
+                 scene.onReadyObservable.addOnce(() => {
+                     console.log("Scene became ready.");
+                 });
             }
-        });
 
-        // Render loop
-        engine.runRenderLoop(function() {
-            currentScene.render();
-        });
 
-        // Handle window resize
-        window.addEventListener("resize", function() {
-            engine.resize();
-        });
+            // Start the render loop
+            engine.runRenderLoop(() => {
+                if (scene && scene.activeCamera) { // Check if scene and camera exist before rendering
+                   scene.render();
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                engine.resize();
+            });
+        } // End of Babylon.js check
     </script>
+
 </body>
 </html>
