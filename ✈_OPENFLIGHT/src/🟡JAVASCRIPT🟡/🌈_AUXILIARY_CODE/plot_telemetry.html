@@ -29,7 +29,7 @@
         }
          .controls-container input[type="number"] {
              width: 90px; /* Slightly narrower width */
-         }
+        }
         .plot-container {
             width: 100%; /* Plots take full width available */
             /* Height is now set via Plotly layout */
@@ -103,25 +103,26 @@
         <h1>Flight Data Visualization</h1>
 
         <div class="file-input-container">
-             <label for="csvFile" class="file-label">Choose CSV File</label>
-             <input type="file"
-                   id="csvFile"
-                   accept=".csv"
-                   onchange="handleFileSelect(event)">
-             <span id="fileName">No file selected</span>
-             <p>Select a CSV file to visualize the flight data</p>
+              <label for="csvFile" class="file-label">Choose CSV File</label>
+              <input type="file"
+                     id="csvFile"
+                     accept=".csv"
+                     onchange="handleFileSelect(event)">
+              <span id="fileName">No file selected</span>
+              <p>Select a CSV file to visualize the flight data</p>
         </div>
 
-        <div class="controls-container" id="plotControls" style="display: none;"> <label for="startTime">Start Time (s):</label>
-             <input type="number" id="startTime" step="any" placeholder="Start">
+        <div class="controls-container" id="plotControls" style="display: none;">
+              <label for="startTime">Start Time (s):</label>
+              <input type="number" id="startTime" step="any" placeholder="Start">
 
-             <label for="endTime">End Time (s):</label>
-             <input type="number" id="endTime" step="any" placeholder="End">
+              <label for="endTime">End Time (s):</label>
+              <input type="number" id="endTime" step="any" placeholder="End">
 
-             <label for="graphHeight">Graph Height (px):</label>
-             <input type="number" id="graphHeight" step="10" value="500" placeholder="Height">
+              <label for="graphHeight">Graph Height (px):</label>
+              <input type="number" id="graphHeight" step="10" value="500" placeholder="Height">
 
-             <button id="updateButton" class="custom-button">Update Plot</button>
+              <button id="updateButton" class="custom-button">Update Plot</button>
         </div>
 
         <div id="loading">Loading and processing data...</div>
@@ -136,14 +137,15 @@
             <div id="pitchPlot" class="plot-container"></div>
             <div id="rollPlot" class="plot-container"></div>
             <div id="yawPlot" class="plot-container"></div>
-        </div>
+            <div id="thrustPlot" class="plot-container"></div> </div>
     </div>
 
     <script>
         // Store original parsed data globally
         let originalData = null;
+        // Updated plotDivIds to include thrustPlot
         const plotDivIds = ['positionPlot', 'velocityPlot', 'quaternionPlot', 'angularVelocityPlot',
-                            'forcePlot', 'anglePlot', 'pitchPlot', 'rollPlot', 'yawPlot'];
+                            'forcePlot', 'anglePlot', 'pitchPlot', 'rollPlot', 'yawPlot', 'thrustPlot'];
         const DEFAULT_GRAPH_HEIGHT = 500;
 
         async function handleFileSelect(event) {
@@ -172,25 +174,33 @@
         function processData(csvText) {
             const rows = csvText.split('\n').slice(1); // Skip header
 
+            // *** UPDATED data object structure ***
             const data = {
-                time: [], x: [], y: [], z: [], vx: [], vy: [], vz: [],
-                qx: [], qy: [], qz: [], qw: [], wx: [], wy: [], wz: [],
-                fx: [], fy: [], fz: [], alpha: [], beta: [],
+                time: [], LATITUDE_m: [], ALTITUDE_m: [], LONGITUDE_m: [],
+                vx: [], VSI_ms: [], vz: [],
+                qx: [], qy: [], qz: [], qw: [],
+                wx: [], wy: [], wz: [],
+                fx_global: [], fy_global: [], fz_global: [],
+                alpha_DEG: [], beta_DEG: [],
                 pitch_demand: [], roll_demand: [], yaw_demand: [],
-                pitch_attained: [], roll_attained: [], yaw_attained: []
+                pitch_attained: [], roll_attained: [], yaw_attained: [],
+                thrust_setting_demand: [], thrust_attained: [] // Added thrust keys
             };
+            const expectedColumns = 27; // Number of columns in the new header
 
             rows.forEach(row => {
                 if (row.trim()) {
                     const columns = row.split(',');
-                    if (columns.length >= 25) {
+                    // *** UPDATED column length check ***
+                    if (columns.length >= expectedColumns) {
                         try {
+                            // *** UPDATED column parsing based on new header ***
                             data.time.push(parseFloat(columns[0]));
-                            data.x.push(parseFloat(columns[1]));
-                            data.y.push(parseFloat(columns[2]));
-                            data.z.push(parseFloat(columns[3]));
+                            data.LATITUDE_m.push(parseFloat(columns[1])); // old x
+                            data.ALTITUDE_m.push(parseFloat(columns[2])); // old y
+                            data.LONGITUDE_m.push(parseFloat(columns[3])); // old z
                             data.vx.push(parseFloat(columns[4]));
-                            data.vy.push(parseFloat(columns[5]));
+                            data.VSI_ms.push(parseFloat(columns[5])); // old vy
                             data.vz.push(parseFloat(columns[6]));
                             data.qx.push(parseFloat(columns[7]));
                             data.qy.push(parseFloat(columns[8]));
@@ -199,22 +209,24 @@
                             data.wx.push(parseFloat(columns[11]));
                             data.wy.push(parseFloat(columns[12]));
                             data.wz.push(parseFloat(columns[13]));
-                            data.fx.push(parseFloat(columns[14]));
-                            data.fy.push(parseFloat(columns[15]));
-                            data.fz.push(parseFloat(columns[16]));
-                            data.alpha.push(parseFloat(columns[17]));
-                            data.beta.push(parseFloat(columns[18]));
+                            data.fx_global.push(parseFloat(columns[14])); // old fx
+                            data.fy_global.push(parseFloat(columns[15])); // old fy
+                            data.fz_global.push(parseFloat(columns[16])); // old fz
+                            data.alpha_DEG.push(parseFloat(columns[17])); // old alpha
+                            data.beta_DEG.push(parseFloat(columns[18])); // old beta
                             data.pitch_demand.push(parseFloat(columns[19]));
                             data.roll_demand.push(parseFloat(columns[20]));
                             data.yaw_demand.push(parseFloat(columns[21]));
                             data.pitch_attained.push(parseFloat(columns[22]));
                             data.roll_attained.push(parseFloat(columns[23]));
                             data.yaw_attained.push(parseFloat(columns[24]));
+                            data.thrust_setting_demand.push(parseFloat(columns[25])); // New
+                            data.thrust_attained.push(parseFloat(columns[26])); // New
                         } catch (e) {
                             console.warn("Skipping row due to parsing error:", row, e);
                         }
                     } else {
-                        // console.warn("Skipping malformed row:", row);
+                         console.warn(`Skipping malformed row: expected ${expectedColumns} columns, got ${columns.length}`, row);
                     }
                 }
             });
@@ -232,8 +244,8 @@
             // Set default time range in inputs
             document.getElementById('startTime').value = originalData.time[0];
             document.getElementById('endTime').value = originalData.time[originalData.time.length - 1];
-            // Set default height
-            document.getElementById('graphHeight').value = DEFAULT_GRAPH_HEIGHT;
+             // Set default height
+             document.getElementById('graphHeight').value = DEFAULT_GRAPH_HEIGHT;
 
 
             document.getElementById('loading').style.display = 'none'; // Hide loading message
@@ -286,9 +298,9 @@
              });
 
              if (indices.length === 0) {
-                alert("No data points found in the specified time range.");
-                plotDivIds.forEach(id => Plotly.purge(id)); // Clear plots
-                return;
+                 alert("No data points found in the specified time range.");
+                 plotDivIds.forEach(id => Plotly.purge(id)); // Clear plots
+                 return;
              }
 
              // Create filtered arrays for all data keys
@@ -298,17 +310,91 @@
                  }
              }
 
-             // Define plot configurations (could be moved outside if static)
+             // *** UPDATED plot configurations ***
               const plotConfigs = [
-                { id: 'positionPlot', traces: [{y: filteredData.x, name: 'X'}, {y: filteredData.y, name: 'Y'}, {y: filteredData.z, name: 'Z'}], layout: { title: 'Position', yaxis: { title: 'Position (m)' } } },
-                { id: 'velocityPlot', traces: [{y: filteredData.vx, name: 'Vx'}, {y: filteredData.vy, name: 'Vy'}, {y: filteredData.vz, name: 'Vz'}], layout: { title: 'Velocity', yaxis: { title: 'Velocity (m/s)' } } },
-                { id: 'quaternionPlot', traces: [{y: filteredData.qx, name: 'qx'}, {y: filteredData.qy, name: 'qy'}, {y: filteredData.qz, name: 'qz'}, {y: filteredData.qw, name: 'qw'}], layout: { title: 'Quaternion', yaxis: { title: 'Quaternion' } } },
-                { id: 'angularVelocityPlot', traces: [{y: filteredData.wx, name: 'ωx'}, {y: filteredData.wy, name: 'ωy'}, {y: filteredData.wz, name: 'ωz'}], layout: { title: 'Angular Velocity', yaxis: { title: 'Angular Velocity (rad/s)' } } },
-                { id: 'forcePlot', traces: [{y: filteredData.fx, name: 'Fx'}, {y: filteredData.fy, name: 'Fy'}, {y: filteredData.fz, name: 'Fz'}], layout: { title: 'Forces', yaxis: { title: 'Force (N)' } } },
-                { id: 'anglePlot', traces: [{y: filteredData.alpha, name: 'Alpha'}, {y: filteredData.beta, name: 'Beta'}], layout: { title: 'Angles', yaxis: { title: 'Angle (deg)' } } },
-                { id: 'pitchPlot', traces: [{y: filteredData.pitch_demand, name: 'Demand', line: { dash: 'dash' }}, {y: filteredData.pitch_attained, name: 'Attained'}], layout: { title: 'Pitch', yaxis: { title: 'Pitch (deg)' } } },
-                { id: 'rollPlot', traces: [{y: filteredData.roll_demand, name: 'Demand', line: { dash: 'dash' }}, {y: filteredData.roll_attained, name: 'Attained'}], layout: { title: 'Roll', yaxis: { title: 'Roll (deg)' } } },
-                { id: 'yawPlot', traces: [{y: filteredData.yaw_demand, name: 'Demand', line: { dash: 'dash' }}, {y: filteredData.yaw_attained, name: 'Attained'}], layout: { title: 'Yaw', yaxis: { title: 'Yaw (deg)' } } }
+                  // Position Plot: Use LATITUDE_m, ALTITUDE_m, LONGITUDE_m
+                  { id: 'positionPlot',
+                    traces: [
+                        {y: filteredData.LATITUDE_m, name: 'LATITUDE_m'},
+                        {y: filteredData.ALTITUDE_m, name: 'ALTITUDE_m'},
+                        {y: filteredData.LONGITUDE_m, name: 'LONGITUDE_m'}
+                    ],
+                    layout: { title: 'Position', yaxis: { title: 'Position (m)' } }
+                  },
+                  // Velocity Plot: Use vx, VSI_ms, vz
+                  { id: 'velocityPlot',
+                    traces: [
+                        {y: filteredData.vx, name: 'Vx (m/s)'},
+                        {y: filteredData.VSI_ms, name: 'VSI (m/s)'},
+                        {y: filteredData.vz, name: 'Vz (m/s)'}
+                    ],
+                    layout: { title: 'Velocity Components', yaxis: { title: 'Velocity (m/s)' } }
+                  },
+                  // Quaternion Plot: Unchanged data source
+                  { id: 'quaternionPlot',
+                    traces: [
+                        {y: filteredData.qx, name: 'qx'}, {y: filteredData.qy, name: 'qy'},
+                        {y: filteredData.qz, name: 'qz'}, {y: filteredData.qw, name: 'qw'}
+                    ],
+                    layout: { title: 'Quaternion', yaxis: { title: 'Component' } }
+                  },
+                  // Angular Velocity Plot: Unchanged data source
+                  { id: 'angularVelocityPlot',
+                    traces: [
+                        {y: filteredData.wx, name: 'ωx'}, {y: filteredData.wy, name: 'ωy'},
+                        {y: filteredData.wz, name: 'ωz'}
+                    ],
+                    layout: { title: 'Angular Velocity', yaxis: { title: 'Angular Velocity (rad/s)' } }
+                  },
+                   // Force Plot: Use fx_global, fy_global, fz_global
+                  { id: 'forcePlot',
+                    traces: [
+                        {y: filteredData.fx_global, name: 'Fx_global'},
+                        {y: filteredData.fy_global, name: 'Fy_global'},
+                        {y: filteredData.fz_global, name: 'Fz_global'}
+                     ],
+                    layout: { title: 'Global Forces', yaxis: { title: 'Force (N)' } }
+                  },
+                  // Angle Plot: Use alpha_DEG, beta_DEG
+                  { id: 'anglePlot',
+                    traces: [
+                        {y: filteredData.alpha_DEG, name: 'AoA (deg)'},
+                        {y: filteredData.beta_DEG, name: 'AoS (deg)'}
+                    ],
+                    layout: { title: 'Aerodynamic Angles', yaxis: { title: 'Angle (deg)' } }
+                  },
+                  // Pitch Plot: Unchanged data source
+                  { id: 'pitchPlot',
+                    traces: [
+                        {y: filteredData.pitch_demand, name: 'Demand', line: { dash: 'dash' }},
+                        {y: filteredData.pitch_attained, name: 'Attained'}
+                    ],
+                    layout: { title: 'Pitch Control', yaxis: { title: 'Pitch Signal/Angle' } } // Updated title
+                  },
+                  // Roll Plot: Unchanged data source
+                  { id: 'rollPlot',
+                    traces: [
+                        {y: filteredData.roll_demand, name: 'Demand', line: { dash: 'dash' }},
+                        {y: filteredData.roll_attained, name: 'Attained'}
+                    ],
+                    layout: { title: 'Roll Control', yaxis: { title: 'Roll Signal/Angle' } } // Updated title
+                  },
+                  // Yaw Plot: Unchanged data source
+                  { id: 'yawPlot',
+                    traces: [
+                        {y: filteredData.yaw_demand, name: 'Demand', line: { dash: 'dash' }},
+                        {y: filteredData.yaw_attained, name: 'Attained'}
+                    ],
+                    layout: { title: 'Yaw Control', yaxis: { title: 'Yaw Signal/Angle' } } // Updated title
+                  },
+                  // *** ADDED Thrust Plot ***
+                  { id: 'thrustPlot',
+                    traces: [
+                        {y: filteredData.thrust_setting_demand, name: 'Demand', line: { dash: 'dash' }},
+                        {y: filteredData.thrust_attained, name: 'Attained'}
+                    ],
+                    layout: { title: 'Thrust Control', yaxis: { title: 'Thrust Setting (Fraction)' } }
+                  }
              ];
 
 

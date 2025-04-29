@@ -12,8 +12,8 @@ initial_altitude: 400  # Initial altitude in m
 
 # FLIGHT TEST PARAMETERS
 
-start_flight_data_recording_at:  5    # start recording in seconds after start of flight
-finish_flight_data_recording_at: 100    # finish recording in seconds
+start_flight_data_recording_at:  1    # start recording in seconds after start of flight
+finish_flight_data_recording_at: 5    # finish recording in seconds
 
 show_force_vectors: "true"
 show_velocity_vectors: "true"
