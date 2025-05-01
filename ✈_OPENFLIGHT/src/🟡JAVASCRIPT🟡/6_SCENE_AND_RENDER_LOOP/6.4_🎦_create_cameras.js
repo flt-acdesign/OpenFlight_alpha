@@ -1,3 +1,4 @@
+
 /**
  * Sets up and configures all cameras for the scene.
  *
@@ -45,18 +46,22 @@ function setupCameras(scene, canvas, shadowGenerator) {
     new BABYLON.Vector3(0, 10, -1), // Initial position.
     scene
   );
-  followCamera.heightOffset = 5;          // Height above target.
-  followCamera.rotationOffset = 180;      // Rotate 180° around the target.
+  followCamera.heightOffset = 5;         // Height above target.
+  followCamera.rotationOffset = 180;     // Rotate 180° around the target.
   followCamera.cameraAcceleration = 0.01; // Smoothing factor.
-  followCamera.maxCameraSpeed = 60;        // Maximum speed.
-  followCamera.radius = -10;               // Distance from target.
+  followCamera.maxCameraSpeed = 60;       // Maximum speed.
+  followCamera.radius = -10;              // Distance from target.
   // Set clipping planes to match other cameras.
   followCamera.minZ = 10;
   followCamera.maxZ = 5000;
-  
+
   // Fix FOV mode to prevent aspect distortion
   followCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
   followCamera.fov = 1.0; // ~57 degrees in radians
+
+  // Force the FollowCamera to use the world's Y-axis as its up direction
+  // This prevents scene distortion during aircraft rolls.
+  followCamera.upVector = new BABYLON.Vector3(0, 1, 0);
 
   // Create the cockpit camera (first-person view).
   const cockpitCamera = new BABYLON.UniversalCamera(
@@ -65,11 +70,11 @@ function setupCameras(scene, canvas, shadowGenerator) {
     scene
   );
   cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
-  
+
   // Fix FOV mode to prevent aspect distortion
   cockpitCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
   cockpitCamera.fov = 0.87;
-  
+
   // Set clipping planes for cockpit view.
   cockpitCamera.minZ = 1;
   cockpitCamera.maxZ = 5000;
@@ -83,7 +88,7 @@ function setupCameras(scene, canvas, shadowGenerator) {
   wingCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
   wingCamera.minZ = 1;
   wingCamera.maxZ = 5000;
-  
+
   // Fix FOV mode to prevent aspect distortion
   wingCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
   wingCamera.fov = 1.9;
@@ -94,7 +99,7 @@ function setupCameras(scene, canvas, shadowGenerator) {
   /**
    * Updates camera positions and targets based on the aircraft's position.
    *
-   * @param {BABYLON.Mesh} aircraft - The aircraft mesh to follow.
+   * @param {BABYLON.Mesh | BABYLON.TransformNode} aircraft - The aircraft mesh or node to follow.
    */
   function updateCamerasForAircraft(aircraft) {
     if (!aircraft) return;
@@ -102,26 +107,33 @@ function setupCameras(scene, canvas, shadowGenerator) {
     // Update locked targets for the orbital and follow cameras.
     arcRotateCamera.lockedTarget = aircraft;
     followCamera.lockedTarget = aircraft;
+    // Ensure FollowCamera upVector is set (might be redundant if already set above, but safe)
+    followCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+
 
     // Configure the cockpit camera (first-person view).
     cockpitCamera.parent = aircraft;
-    cockpitCamera.position.set(0.5, 1, 0);
+    cockpitCamera.position.set(0.5, 1, 0); // Position relative to aircraft origin
     cockpitCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
       0,
-      Math.PI / 2, // Rotate 90° around the Y axis.
+      Math.PI / 2, // Rotate 90° around the LOCAL Y axis to face forward (assuming aircraft +X is forward)
       0
     );
-    
-    // Force world up vector to prevent distortion
-    cockpitCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+
+    // --- REMOVED THIS LINE ---
+    // We rely on the onBeforeRenderObservable to set the upVector for the active cockpit camera
+    // cockpitCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+    // ------------------------
 
     // Configure the wing camera (external view).
     wingCamera.parent = aircraft;
-    wingCamera.position.set(-1.5, 0.5, -3.2);
-    wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0);
-    
-    // Force world up vector to prevent distortion
-    wingCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+    wingCamera.position.set(-1.5, 0.5, -3.2); // Position relative to aircraft origin
+    wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0); // Slight rotation
+
+    // --- REMOVED THIS LINE ---
+    // We rely on the onBeforeRenderObservable to set the upVector for the active wing camera
+    // wingCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+    // ------------------------
   }
 
   // If an aircraft is defined, perform an initial update.
@@ -131,12 +143,19 @@ function setupCameras(scene, canvas, shadowGenerator) {
 
   // Add a scene observer to maintain camera stability during rendering
   scene.onBeforeRenderObservable.add(() => {
-    // Force consistent up vectors on the cameras
+    // Force consistent up vectors on the cameras that are parented or following WHEN ACTIVE
     if (scene.activeCamera) {
-      if (scene.activeCamera.name === "CockpitCamera" || 
+      // Apply to Cockpit and Wing cameras ALWAYS when they are active
+      if (scene.activeCamera.name === "CockpitCamera" ||
           scene.activeCamera.name === "WingCamera") {
         scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
       }
+      // Note: FollowCamera upVector is set during setup and should persist.
+      // If issues remain with FollowCamera, uncommenting the following might help,
+      // but could impact performance slightly if checked every frame.
+      // else if (scene.activeCamera.name === "FollowCamera") {
+      //  scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+      //}
     }
   });
 
@@ -175,15 +194,31 @@ function setActiveCamera(index, scene) {
     scene.activeCamera.fov = 1.9;
   }
 
-  // Force the up vector to be world-aligned for stability
-  if (scene.activeCamera.name !== "ArcRotateCamera") {
-    scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
+  // Force the up vector to be world-aligned for stability immediately on switch
+  // This complements the onBeforeRenderObservable which handles it frame-by-frame
+  if (scene.activeCamera.name === "CockpitCamera" ||
+      scene.activeCamera.name === "WingCamera" ||
+      scene.activeCamera.name === "FollowCamera") {
+      scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
   }
 
+
   // Toggle aircraft model visibility for cockpit view.
-  // Assumes 'glbNode' is a global mesh representing the aircraft model.
+  // Assumes 'glbNode' is a global mesh/node representing the loaded aircraft model.
+  // Assumes 'planeNode' is the default simple aircraft model.
+  const isCockpitView = (index === 2); // Assuming index 2 is CockpitCamera
+
+  // Hide loaded GLB model in cockpit view
   if (typeof glbNode !== "undefined" && glbNode) {
-    // Hide the aircraft model in cockpit view (assuming index 2 is the cockpit camera).
-    glbNode.setEnabled(index !== 2);
+     glbNode.setEnabled(!isCockpitView);
+  }
+  // Also ensure the default planeNode (if visible) is hidden in cockpit view
+  if (typeof planeNode !== "undefined" && planeNode) {
+     // Only hide planeNode if glbNode is NOT loaded, otherwise glbNode logic takes precedence
+     if (!glbNode) {
+         planeNode.setEnabled(!isCockpitView);
+     } else {
+         planeNode.setEnabled(false); // Ensure default is hidden if GLB is loaded
+     }
   }
 }
