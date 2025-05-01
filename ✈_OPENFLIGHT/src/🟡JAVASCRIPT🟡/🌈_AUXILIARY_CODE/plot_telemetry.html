@@ -2,98 +2,263 @@
 <html>
 <head>
     <title>Flight Data Visualization</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
     <style>
+        /* --- Enhanced Styles --- */
+        :root {
+            --primary-color: #4a90e2; /* A nice blue */
+            --secondary-color: #f4f7f6; /* Light background */
+            --accent-color: #50e3c2; /* A minty green accent */
+            --text-color: #333;
+            --border-color: #dce3e9;
+            --button-hover-bg: #357abd;
+            --button-secondary-bg: #e7e9eb;
+            --button-secondary-hover-bg: #cfd3d6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --success-color: #4CAF50;
+            --success-hover-color: #45a049;
+            --modal-bg: rgba(0, 0, 0, 0.5); /* Modal background overlay */
+        }
+
         body {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
+
         .container {
-            padding: 20px;
+            padding: 20px 30px; /* Adjusted padding */
+            max-width: 1600px;
+            margin: 20px auto;
         }
-        .file-input-container, .controls-container {
-            text-align: center;
-            margin: 20px auto; /* Center align and add auto margin */
-            padding: 15px; /* Adjusted padding */
-            border: 2px dashed #ccc;
-            border-radius: 10px;
-            max-width: 900px; /* Adjusted width */
-        }
-        .controls-container label, .controls-container input, .controls-container button {
-             margin: 5px 8px; /* Adjusted margin */
-             padding: 8px;
-             font-size: 14px;
-             vertical-align: middle; /* Align items vertically */
-        }
-         .controls-container input[type="number"] {
-             width: 90px; /* Slightly narrower width */
-        }
-        .plot-container {
-            width: 100%; /* Plots take full width available */
-            /* Height is now set via Plotly layout */
-            margin: 20px 0; /* Add margin top/bottom */
-        }
-        .grid-container {
-            display: grid;
-            /* Single column layout */
-            grid-template-columns: 1fr;
-            gap: 30px; /* Increased gap */
-            padding: 20px;
-            display: none; /* Initially hidden */
-            width: 100%; /* Ensure grid takes full width */
-            box-sizing: border-box; /* Include padding in width calculation */
-        }
+
         h1 {
             text-align: center;
-            padding: 20px;
+            padding: 15px 0; /* Reduced padding */
+            color: var(--primary-color);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 25px; /* Reduced margin */
         }
-        #loading {
-            display: none;
+
+        .file-input-container, .controls-container, #visibilityControls {
             text-align: center;
-            font-size: 1.2em;
-            color: #666;
-            margin-top: 20px;
+            margin: 20px auto; /* Reduced margin */
+            padding: 20px; /* Reduced padding */
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            max-width: 95%;
         }
-        .custom-button {
-             padding: 10px 20px;
-             background: #007bff;
-             color: white;
-             border: none;
-             border-radius: 5px;
-             cursor: pointer;
-             font-size: 16px;
-             transition: background-color 0.2s ease;
-             vertical-align: middle; /* Align items vertically */
-        }
-         .custom-button:hover {
-            background: #0056b3;
+
+         .file-input-container p {
+             margin-top: 10px; /* Reduced margin */
+             color: #667;
+             font-size: 0.9em; /* Slightly smaller */
          }
 
-        /* Hide default file input */
-        input[type="file"] {
-           display: none;
-        }
-        /* Style the custom label acting as button */
-        .file-label {
-             padding: 10px 20px;
-             background: #4CAF50;
-             color: white;
-             border: none;
+        /* --- Compact Controls --- */
+         .controls-container {
+             text-align: center; /* Keep controls centered */
+             line-height: 1.8; /* Adjust line height for spacing */
+         }
+
+        .control-group {
+             display: inline-block; /* Arrange label/input pairs */
+             margin: 4px 8px; /* Reduced margin around pairs */
+             vertical-align: middle;
+         }
+
+        .controls-container label {
+             margin-right: 5px; /* Space between label and input */
+             font-size: 0.9em; /* Slightly smaller label */
+             vertical-align: middle;
+         }
+
+         .controls-container input, .controls-container select, .controls-container button {
+             padding: 6px 10px; /* Reduced padding */
+             font-size: 13px; /* Slightly smaller font */
+             vertical-align: middle;
              border-radius: 5px;
+             border: 1px solid var(--border-color);
+             margin: 0; /* Remove default margins */
+         }
+
+         .controls-container input[type="number"] {
+             width: 75px; /* Adjusted width */
+         }
+         .controls-container input[type="number"].aspect-ratio-input {
+             width: 55px;
+         }
+         .controls-container select {
              cursor: pointer;
-             font-size: 16px;
-             display: inline-block; /* Align properly with text */
-             margin-bottom: 10px;
+             background-color: white;
+             padding-right: 20px; /* Space for dropdown arrow */
+         }
+
+         .controls-container button {
+             margin-left: 10px; /* Space before buttons */
+         }
+         /* Remove explicit line break styling */
+         .controls-container br { display: none; }
+
+        /* Visibility Controls (keep original styling) */
+        #visibilityControls { display: none; text-align: left; padding: 25px; }
+        #visibilityControls h3 { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--primary-color); font-weight: 500; }
+        .visibility-buttons { text-align: center; margin-bottom: 20px; }
+        .visibility-buttons button { padding: 8px 18px; font-size: 13px; margin: 0 8px; cursor: pointer; background-color: var(--button-secondary-bg); border: 1px solid var(--border-color); border-radius: 6px; transition: background-color 0.2s ease; }
+        .visibility-buttons button:hover { background-color: var(--button-secondary-hover-bg); }
+        .visibility-item { display: inline-block; margin: 8px 20px 8px 0; white-space: nowrap; }
+        .visibility-item input[type="checkbox"] { margin-right: 8px; cursor: pointer; vertical-align: middle; accent-color: var(--primary-color); width: 15px; height: 15px; }
+        .visibility-item label { vertical-align: middle; cursor: pointer; font-size: 0.95em; }
+
+        /* Plot Styling */
+        .plot-container { width: 100%; margin: 0; min-height: 150px; box-sizing: border-box; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px var(--shadow-color); background-color: #ffffff; }
+        .grid-container { display: grid; gap: 25px; /* Slightly reduced gap */ padding: 20px 0; display: none; width: 100%; box-sizing: border-box; }
+        #loading { display: none; text-align: center; font-size: 1.3em; color: #555; margin-top: 30px; padding: 20px; }
+
+        /* Buttons */
+        .custom-button {
+            padding: 8px 18px; /* Slightly reduced padding */
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px; /* Match inputs */
+            cursor: pointer;
+            font-size: 13px; /* Match inputs */
+            transition: background-color 0.2s ease;
+            vertical-align: middle;
+            font-weight: 500;
         }
-        .file-label:hover {
-            background: #45a049;
+        .custom-button:hover { background: var(--button-hover-bg); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
+
+        /* Secondary button style (for User Guide) */
+        .secondary-button {
+            background-color: var(--button-secondary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
         }
-        #fileName {
-            margin-left: 15px;
-            font-style: italic;
-            color: #555;
+        .secondary-button:hover {
+            background-color: var(--button-secondary-hover-bg);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+
+        /* File Input */
+        input[type="file"] { display: none; }
+        .file-label { padding: 8px 18px; background: var(--success-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; display: inline-block; margin-bottom: 10px; transition: background-color 0.2s ease; font-weight: 500; vertical-align: middle;}
+        .file-label:hover { background: var(--success-hover-color); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
+        #fileName { margin-left: 10px; font-style: italic; color: #555; font-size: 0.9em; vertical-align: middle;}
+
+        /* --- Modal Styles --- */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Enable scroll if needed */
+            background-color: var(--modal-bg);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; /* 10% from the top and centered */
+            padding: 25px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+            max-width: 600px; /* Maximum width */
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-close {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        .modal h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .modal p, .modal ul {
+            font-size: 0.95em;
+            line-height: 1.7;
+            color: var(--text-color);
+        }
+        .modal ul {
+            padding-left: 25px;
+            margin-top: 10px;
+        }
+        .modal li {
+            margin-bottom: 8px;
+        }
+        .modal code {
+             background-color: #eee;
+             padding: 2px 5px;
+             border-radius: 3px;
+             font-family: monospace;
+        }
+
+
+        /* Responsive Adjustments */
+        @media (max-width: 900px) { /* Adjust breakpoint for controls wrapping */
+             .control-group {
+                  display: block; /* Stack controls vertically */
+                  margin: 8px auto; /* Center stacked blocks */
+                  text-align: left; /* Align labels left */
+                  max-width: 300px; /* Limit width */
+             }
+             .controls-container label {
+                 display: inline-block; /* Ensure label stays with input */
+                 width: auto; /* Allow label to size naturally */
+                 margin-bottom: 3px;
+             }
+             .controls-container input[type="number"], .controls-container select {
+                 width: auto; /* Allow inputs to size based on content/css */
+                 min-width: 55px; /* Ensure minimum size */
+             }
+             .controls-container button {
+                 display: block; /* Stack buttons */
+                 margin: 10px auto; /* Center buttons */
+             }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            h1 { font-size: 1.8em; }
+             /* Controls already adjusted by 900px breakpoint */
+            .custom-button, .file-label { font-size: 13px; padding: 8px 15px; }
+            .grid-container { gap: 20px; }
+            .visibility-item { margin: 6px 10px 6px 0; } /* Slightly reduce margin */
+            .modal-content { width: 90%; margin: 15% auto; }
+        }
+
+        @media (max-width: 480px) {
+            /* Further adjust controls if needed, but 900px breakpoint handles stacking */
+             .visibility-item { display: block; margin: 8px 0; }
+             .visibility-buttons button { margin: 5px; }
+             .modal-content { padding: 15px; }
+             .modal h2 { font-size: 1.2em; }
+             .modal p, .modal ul { font-size: 0.9em; }
         }
 
     </style>
@@ -103,344 +268,415 @@
         <h1>Flight Data Visualization</h1>
 
         <div class="file-input-container">
-              <label for="csvFile" class="file-label">Choose CSV File</label>
-              <input type="file"
-                     id="csvFile"
-                     accept=".csv"
-                     onchange="handleFileSelect(event)">
-              <span id="fileName">No file selected</span>
-              <p>Select a CSV file to visualize the flight data</p>
+            <label for="csvFile" class="file-label">Choose CSV File</label>
+            <input type="file" id="csvFile" accept=".csv" onchange="handleFileSelect(event)">
+            <span id="fileName">No file selected</span>
+            <p>Select a CSV file containing flight data. Must include 'time', 'LATITUDE_m', 'LONGITUDE_m', 'ALTITUDE_m', 'TAS', 'nz'. Other columns enable corresponding plots.</p>
         </div>
 
         <div class="controls-container" id="plotControls" style="display: none;">
-              <label for="startTime">Start Time (s):</label>
-              <input type="number" id="startTime" step="any" placeholder="Start">
-
-              <label for="endTime">End Time (s):</label>
-              <input type="number" id="endTime" step="any" placeholder="End">
-
-              <label for="graphHeight">Graph Height (px):</label>
-              <input type="number" id="graphHeight" step="10" value="500" placeholder="Height">
-
-              <button id="updateButton" class="custom-button">Update Plot</button>
+             <div class="control-group">
+                 <label for="startTime">Start Time (s):</label>
+                 <input type="number" id="startTime" step="any" placeholder="Start">
+             </div>
+             <div class="control-group">
+                 <label for="endTime">End Time (s):</label>
+                 <input type="number" id="endTime" step="any" placeholder="End">
+             </div>
+             <div class="control-group">
+                 <label for="timeLine1">V Line 1 (s):</label>
+                 <input type="number" id="timeLine1" step="any" placeholder="Time 1">
+             </div>
+             <div class="control-group">
+                 <label for="timeLine2">V Line 2 (s):</label>
+                 <input type="number" id="timeLine2" step="any" placeholder="Time 2">
+             </div>
+             <div class="control-group">
+                 <label for="aspectRatio">Aspect Ratio (W/H):</label>
+                 <input type="number" id="aspectRatio" class="aspect-ratio-input" step="0.1" value="1.77" min="0.5" placeholder="e.g., 1.77">
+             </div>
+             <div class="control-group">
+                 <label for="gridColumns">Columns:</label>
+                 <select id="gridColumns">
+                     <option value="1">1</option>
+                     <option value="2" selected>2</option>
+                     <option value="3">3</option>
+                     <option value="4">4</option>
+                 </select>
+             </div>
+             <button id="updateButton" class="custom-button">Update Plot</button>
+             <button id="guideButton" class="custom-button secondary-button">User Guide</button>
         </div>
+
+        <div id="visibilityControls">
+           </div>
 
         <div id="loading">Loading and processing data...</div>
 
         <div class="grid-container" id="plotGrid">
-            <div id="positionPlot" class="plot-container"></div>
-            <div id="velocityPlot" class="plot-container"></div>
-            <div id="quaternionPlot" class="plot-container"></div>
-            <div id="angularVelocityPlot" class="plot-container"></div>
-            <div id="forcePlot" class="plot-container"></div>
-            <div id="anglePlot" class="plot-container"></div>
-            <div id="pitchPlot" class="plot-container"></div>
-            <div id="rollPlot" class="plot-container"></div>
-            <div id="yawPlot" class="plot-container"></div>
-            <div id="thrustPlot" class="plot-container"></div> </div>
+             </div>
+    </div>
+
+    <div id="guideModal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" id="modalCloseButton">&times;</span>
+        <h2>User Guide</h2>
+        <p>This tool visualizes flight data from a CSV file.</p>
+        <ul>
+            <li><strong>Choose CSV File:</strong> Select your data file. It must contain a header row starting with <code>time,...</code>. Key columns like <code>time</code>, <code>LATITUDE_m</code>, <code>LONGITUDE_m</code>, <code>ALTITUDE_m</code>, <code>TAS</code>, <code>nz</code> are needed for basic plots. Other columns (e.g., <code>EAS</code>, <code>Mach</code>, <code>VSI_ms</code>, load factors, control moments) enable their specific plots.</li>
+            <li><strong>Time Range:</strong> Enter start and end times (in seconds) to focus the plots on a specific interval.</li>
+            <li><strong>V Lines:</strong> Enter times (in seconds) to draw vertical dashed lines on the time-series plots for reference. Red line for Time 1, Blue line for Time 2.</li>
+            <li><strong>Aspect Ratio:</strong> Set the desired width-to-height ratio for the plots (e.g., 1.77 for 16:9).</li>
+            <li><strong>Columns:</strong> Choose how many columns to arrange the visible plots into.</li>
+            <li><strong>Update Plot:</strong> Apply changes to time range, aspect ratio, or columns.</li>
+            <li><strong>Show/Hide Plots:</strong> Use the checkboxes below the controls to toggle the visibility of individual plots. Use "Show All" / "Hide All" for quick selection.</li>
+        </ul>
+        <p>Plots will update automatically when the file is loaded, visibility is changed, or the window is resized. Use the "Update Plot" button after changing time range, aspect ratio, or column count.</p>
+      </div>
     </div>
 
     <script>
-        // Store original parsed data globally
         let originalData = null;
-        // Updated plotDivIds to include thrustPlot
-        const plotDivIds = ['positionPlot', 'velocityPlot', 'quaternionPlot', 'angularVelocityPlot',
-                            'forcePlot', 'anglePlot', 'pitchPlot', 'rollPlot', 'yawPlot', 'thrustPlot'];
-        const DEFAULT_GRAPH_HEIGHT = 500;
+        let masterPlotConfigs = [];
+        const DEFAULT_ASPECT_RATIO = 16 / 9; // Approx 1.77
 
+        // --- Modal Elements ---
+        const guideModal = document.getElementById('guideModal');
+        // Get button reference later, when controls are shown
+        let guideButton = null;
+        const modalCloseButton = document.getElementById('modalCloseButton');
+
+
+        // --- Data Handling ---
         async function handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
-                document.getElementById('fileName').textContent = file.name; // Show file name
+                document.getElementById('fileName').textContent = file.name;
                 document.getElementById('loading').style.display = 'block';
-                document.getElementById('plotGrid').style.display = 'none'; // Hide grid while loading
-                document.getElementById('plotControls').style.display = 'none'; // Hide controls
-                originalData = null; // Reset data
-
+                document.getElementById('plotGrid').style.display = 'none';
+                document.getElementById('plotControls').style.display = 'none';
+                document.getElementById('visibilityControls').style.display = 'none';
+                originalData = null; masterPlotConfigs = []; // Reset data and configs
+                // Clear plot grid content in case of error on previous load
+                document.getElementById('plotGrid').innerHTML = '';
                 const reader = new FileReader();
-
-                reader.onload = function(e) {
-                    const text = e.target.result;
-                    // Use setTimeout to allow the UI to update (show loading message)
-                    setTimeout(() => processData(text), 10);
-                };
-
+                reader.onload = e => setTimeout(() => processData(e.target.result), 50);
                 reader.readAsText(file);
-            } else {
-                 document.getElementById('fileName').textContent = 'No file selected';
-            }
+            } else { document.getElementById('fileName').textContent = 'No file selected'; }
         }
 
         function processData(csvText) {
-            const rows = csvText.split('\n').slice(1); // Skip header
+            const lines = csvText.split('\n');
+            let headerIndex = -1;
+            for(let i = 0; i < lines.length; i++) {
+                if (lines[i].trim().toLowerCase().startsWith('time,')) {
+                    headerIndex = i;
+                    break;
+                }
+            }
 
-            // *** UPDATED data object structure ***
-            const data = {
-                time: [], LATITUDE_m: [], ALTITUDE_m: [], LONGITUDE_m: [],
-                vx: [], VSI_ms: [], vz: [],
-                qx: [], qy: [], qz: [], qw: [],
-                wx: [], wy: [], wz: [],
-                fx_global: [], fy_global: [], fz_global: [],
-                alpha_DEG: [], beta_DEG: [],
-                pitch_demand: [], roll_demand: [], yaw_demand: [],
-                pitch_attained: [], roll_attained: [], yaw_attained: [],
-                thrust_setting_demand: [], thrust_attained: [] // Added thrust keys
-            };
-            const expectedColumns = 27; // Number of columns in the new header
+            if (headerIndex === -1) {
+                alert("Could not find the header row starting with 'time,...'. Please check the CSV format.");
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
 
-            rows.forEach(row => {
+            const header = lines[headerIndex].trim().split(',');
+            const data = {};
+            const columnNames = new Set(); // Keep track of actual columns found
+            header.forEach(h => {
+                const trimmedKey = h.trim();
+                if (trimmedKey) { // Avoid empty column names
+                    data[trimmedKey] = [];
+                    columnNames.add(trimmedKey);
+                }
+            });
+
+            console.log(`Found ${header.length} columns in header:`, Array.from(columnNames));
+
+            const rows = lines.slice(headerIndex + 1);
+            rows.forEach((row, rowIndex) => {
                 if (row.trim()) {
                     const columns = row.split(',');
-                    // *** UPDATED column length check ***
-                    if (columns.length >= expectedColumns) {
+                    if (columns.length >= header.length) {
                         try {
-                            // *** UPDATED column parsing based on new header ***
-                            data.time.push(parseFloat(columns[0]));
-                            data.LATITUDE_m.push(parseFloat(columns[1])); // old x
-                            data.ALTITUDE_m.push(parseFloat(columns[2])); // old y
-                            data.LONGITUDE_m.push(parseFloat(columns[3])); // old z
-                            data.vx.push(parseFloat(columns[4]));
-                            data.VSI_ms.push(parseFloat(columns[5])); // old vy
-                            data.vz.push(parseFloat(columns[6]));
-                            data.qx.push(parseFloat(columns[7]));
-                            data.qy.push(parseFloat(columns[8]));
-                            data.qz.push(parseFloat(columns[9]));
-                            data.qw.push(parseFloat(columns[10]));
-                            data.wx.push(parseFloat(columns[11]));
-                            data.wy.push(parseFloat(columns[12]));
-                            data.wz.push(parseFloat(columns[13]));
-                            data.fx_global.push(parseFloat(columns[14])); // old fx
-                            data.fy_global.push(parseFloat(columns[15])); // old fy
-                            data.fz_global.push(parseFloat(columns[16])); // old fz
-                            data.alpha_DEG.push(parseFloat(columns[17])); // old alpha
-                            data.beta_DEG.push(parseFloat(columns[18])); // old beta
-                            data.pitch_demand.push(parseFloat(columns[19]));
-                            data.roll_demand.push(parseFloat(columns[20]));
-                            data.yaw_demand.push(parseFloat(columns[21]));
-                            data.pitch_attained.push(parseFloat(columns[22]));
-                            data.roll_attained.push(parseFloat(columns[23]));
-                            data.yaw_attained.push(parseFloat(columns[24]));
-                            data.thrust_setting_demand.push(parseFloat(columns[25])); // New
-                            data.thrust_attained.push(parseFloat(columns[26])); // New
+                            header.forEach((key, index) => {
+                                const trimmedKey = key.trim();
+                                if (data.hasOwnProperty(trimmedKey)) {
+                                    const value = parseFloat(columns[index]);
+                                    data[trimmedKey].push(isNaN(value) ? NaN : value);
+                                }
+                            });
                         } catch (e) {
-                            console.warn("Skipping row due to parsing error:", row, e);
+                            console.warn(`Parsing error on row ${headerIndex + 2 + rowIndex}:`, row, e);
                         }
-                    } else {
-                         console.warn(`Skipping malformed row: expected ${expectedColumns} columns, got ${columns.length}`, row);
+                    } else if (columns.length > 0 && columns[0].trim() !== '') {
+                        console.warn(`Malformed row ${headerIndex + 2 + rowIndex}: Expected at least ${header.length} columns, got ${columns.length}`, row);
                     }
                 }
             });
 
-             // Check if data was parsed
-            if (data.time.length === 0) {
-                alert("Could not parse any valid data from the file. Please ensure it's a valid CSV with the expected structure and numeric data.");
+            if (!data.time || data.time.length === 0 || data.time.every(isNaN)) { // Check if time is valid
+                alert("No valid numeric time data parsed. Please check the 'time' column in the CSV file.");
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('plotControls').style.display = 'none'; // Keep controls hidden
                 return;
             }
+            originalData = data;
 
-            originalData = data; // Store parsed data
+            // Recreate plot divs in the grid container before defining configs
+            const plotGrid = document.getElementById('plotGrid');
+            plotGrid.innerHTML = ''; // Clear any previous message or plots
+            const plotDivIds = [ // List all expected plot div IDs
+                'trajectory3DPlot', 'altitudePlot', 'horizontalPositionPlot', 'verticalSpeedPlot',
+                'aerodynamicSpeedsPlot', 'machPlot', 'dynamicPressurePlot', 'aeroAnglesPlot',
+                'aeroCoeffPlot', 'liftDragRatioPlot', 'loadFactorPlot', 'bodyRatesPlot',
+                'aeroForceMomentsPlot', 'controlMomentsPlot', 'aeroStiffnessMomentsPlot',
+                'aeroDampingMomentsPlot', 'pitchPlot', 'rollPlot', 'yawPlot', 'thrustPlot',
+                'quaternionPlot', 'angularVelocityPlot'
+            ];
+            plotDivIds.forEach(id => {
+                 const div = document.createElement('div');
+                 div.id = id;
+                 div.className = 'plot-container';
+                 plotGrid.appendChild(div);
+            });
 
-            // Set default time range in inputs
+
+            // *** Define masterPlotConfigs ***
+            masterPlotConfigs = [
+                // ===== MODIFIED 3D TRAJECTORY PLOT =====
+                {   id: 'trajectory3DPlot',
+                    requiredCols: ['LONGITUDE_m', 'LATITUDE_m', 'ALTITUDE_m', 'nz'], // Added nz requirement
+                    tracesFn: (d) => [{
+                        x: d.LONGITUDE_m,
+                        y: d.LATITUDE_m,
+                        z: d.ALTITUDE_m,
+                        name: 'Trajectory',
+                        type: 'scatter3d',
+                        mode: 'lines+markers', // Show markers colored by nz
+                        marker: {
+                            size: 3.5,           // Adjust marker size if needed
+                            color: d.nz,       // Color points by nz value
+                            colorscale: 'Viridis', // Choose colorscale (e.g., Viridis, Plasma, Jet, Bluered, RdBu)
+                            colorbar: {
+                                title: 'nz (g)', // Label for the color bar
+                                thickness: 15,
+                                titleside: 'right'
+                            },
+                            opacity: 0.8
+                        },
+                        line: {
+                            width: 1 // Keep line thin to emphasize markers
+                            // Note: line color will also be influenced by marker colors
+                        }
+                    }],
+                    layout: {
+                        title: '3D Trajectory (Colored by nz)',
+                        scene: {
+                            xaxis: { title: 'Longitude (m)' },
+                            yaxis: { title: 'Latitude (m)' },
+                            zaxis: { title: 'Altitude (m)' },
+                            aspectmode: 'data'
+                        }
+                    }
+                },
+                // ===== END MODIFIED 3D PLOT =====
+                { id: 'altitudePlot', requiredCols: ['ALTITUDE_m'], tracesFn: (d) => [ {y: d.ALTITUDE_m, name: 'Altitude'} ], layout: { title: 'Altitude', yaxis: { title: 'Altitude (m)' } } },
+                { id: 'horizontalPositionPlot', requiredCols: ['LONGITUDE_m', 'LATITUDE_m'],
+                  tracesFn: (d) => [ { x: d.LONGITUDE_m, y: d.LATITUDE_m, name: 'Ground Track', type: 'scatter', mode: 'lines' }],
+                  layout: { title: 'Horizontal Position (Ground Track)', yaxis: { title: 'Latitude (m)', scaleanchor:'x', scaleratio: 1 }, xaxis: { title: 'Longitude (m)' } }
+                },
+                { id: 'verticalSpeedPlot', requiredCols: ['VSI_ms'], tracesFn: (d) => [ {y: d.VSI_ms, name: 'VSI'} ], layout: { title: 'Vertical Speed', yaxis: { title: 'VSI (m/s)' } } },
+                { id: 'aerodynamicSpeedsPlot', requiredCols: ['TAS'],
+                  tracesFn: (d) => {
+                      const traces = [{ y: d.TAS, name: 'TAS' }];
+                      if (d.EAS && Array.isArray(d.EAS) && d.EAS.some(val => !isNaN(val))) { traces.push({ y: d.EAS, name: 'EAS' }); }
+                      return traces;
+                  }, layout: { title: 'Aerodynamic Speeds', yaxis: { title: 'Speed (m/s)' } }
+                },
+                { id: 'machPlot', requiredCols: ['Mach'], tracesFn: (d) => [{ y: d.Mach, name: 'Mach'}], layout: { title: 'Mach Number', yaxis: { title: 'Mach' } } },
+                { id: 'dynamicPressurePlot', requiredCols: ['dynamic_pressure'], tracesFn: (d) => [{ y: d.dynamic_pressure, name: 'Dyn. Press.'}], layout: { title: 'Dynamic Pressure', yaxis: { title: 'Pressure (Pa)' } } },
+                { id: 'aeroAnglesPlot', requiredCols: ['alpha_DEG', 'beta_DEG'], tracesFn: (d) => [ {y: d.alpha_DEG, name: 'AoA (Alpha)'}, {y: d.beta_DEG, name: 'AoS (Beta)'} ], layout: { title: 'Aerodynamic Angles', yaxis: { title: 'Angle (deg)' } } },
+                { id: 'aeroCoeffPlot', requiredCols: ['CL', 'CD', 'CS'], tracesFn: (d) => [ {y: d.CL, name: 'CL'}, {y: d.CD, name: 'CD'}, {y: d.CS, name: 'CS'} ], layout: { title: 'Aerodynamic Coefficients', yaxis: { title: 'Coefficient' } } },
+                { id: 'liftDragRatioPlot', requiredCols: ['CL_CD_ratio'], tracesFn: (d) => [ {y: d.CL_CD_ratio, name: 'CL/CD'} ], layout: { title: 'Lift/Drag Ratio', yaxis: { title: 'Ratio' } } },
+                { id: 'loadFactorPlot', requiredCols: ['nx', 'ny', 'nz'], tracesFn: (d) => [ {y: d.nx, name: 'nx'}, {y: d.ny, name: 'ny'}, {y: d.nz, name: 'nz'} ], layout: { title: 'Load Factors', yaxis: { title: 'Load Factor (g)' } } },
+                { id: 'bodyRatesPlot', requiredCols: ['p_roll_rate', 'q_pitch_rate', 'r_yaw_rate'], tracesFn: (d) => [ {y: d.p_roll_rate, name: 'p (Roll)'}, {y: d.q_pitch_rate, name: 'q (Pitch)'}, {y: d.r_yaw_rate, name: 'r (Yaw)'} ], layout: { title: 'Body Angular Rates', yaxis: { title: 'Rate (rad/s)' } } },
+                { id: 'aeroForceMomentsPlot', requiredCols: ['CM_roll_from_aero_forces', 'CM_yaw_from_aero_forces', 'CM_pitch_from_aero_forces'], tracesFn: (d) => [ {y: d.CM_roll_from_aero_forces, name: 'Roll'}, {y: d.CM_yaw_from_aero_forces, name: 'Yaw'}, {y: d.CM_pitch_from_aero_forces, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Aero Forces)', yaxis: { title: 'Coefficient' } } },
+                { id: 'controlMomentsPlot', requiredCols: ['CM_roll_from_control', 'CM_yaw_from_control', 'CM_pitch_from_control'], tracesFn: (d) => [ {y: d.CM_roll_from_control, name: 'Roll'}, {y: d.CM_yaw_from_control, name: 'Yaw'}, {y: d.CM_pitch_from_control, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Control)', yaxis: { title: 'Coefficient' } } },
+                { id: 'aeroStiffnessMomentsPlot', requiredCols: ['CM_roll_from_aero_stiffness', 'CM_yaw_from_aero_stiffness', 'CM_pitch_from_aero_stiffness'], tracesFn: (d) => [ {y: d.CM_roll_from_aero_stiffness, name: 'Roll'}, {y: d.CM_yaw_from_aero_stiffness, name: 'Yaw'}, {y: d.CM_pitch_from_aero_stiffness, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Aero Stiffness)', yaxis: { title: 'Coefficient' } } },
+                { id: 'aeroDampingMomentsPlot', requiredCols: ['CM_roll_from_aero_damping', 'CM_yaw_from_aero_damping', 'CM_pitch_from_aero_damping'], tracesFn: (d) => [ {y: d.CM_roll_from_aero_damping, name: 'Roll'}, {y: d.CM_yaw_from_aero_damping, name: 'Yaw'}, {y: d.CM_pitch_from_aero_damping, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Aero Damping)', yaxis: { title: 'Coefficient' } } },
+                { id: 'pitchPlot', requiredCols: ['pitch_demand', 'pitch_demand_attained'], tracesFn: (d) => [ {y: d.pitch_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.pitch_demand_attained, name: 'Attained'} ], layout: { title: 'Pitch Control', yaxis: { title: 'Value' } } },
+                { id: 'rollPlot', requiredCols: ['roll_demand', 'roll_demand_attained'], tracesFn: (d) => [ {y: d.roll_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.roll_demand_attained, name: 'Attained'} ], layout: { title: 'Roll Control', yaxis: { title: 'Value' } } },
+                { id: 'yawPlot', requiredCols: ['yaw_demand', 'yaw_demand_attained'], tracesFn: (d) => [ {y: d.yaw_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.yaw_demand_attained, name: 'Attained'} ], layout: { title: 'Yaw Control', yaxis: { title: 'Value' } } },
+                { id: 'thrustPlot', requiredCols: ['thrust_setting_demand', 'thrust_attained'], tracesFn: (d) => [ {y: d.thrust_setting_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.thrust_attained, name: 'Attained'} ], layout: { title: 'Thrust Control', yaxis: { title: 'Value' } } },
+                { id: 'quaternionPlot', requiredCols: ['qx', 'qy', 'qz', 'qw'], tracesFn: (d) => [ {y: d.qx, name: 'qx'}, {y: d.qy, name: 'qy'}, {y: d.qz, name: 'qz'}, {y: d.qw, name: 'qw'} ], layout: { title: 'Quaternion Components', yaxis: { title: 'Component' } } },
+                { id: 'angularVelocityPlot', requiredCols: ['wx', 'wy', 'wz'], tracesFn: (d) => [ {y: d.wx, name: 'ωx'}, {y: d.wy, name: 'ωy'}, {y: d.wz, name: 'ωz'} ], layout: { title: 'Angular Velocity (World Frame)', yaxis: { title: 'Rate (rad/s)' } } },
+            ].filter(config => {
+                 // Filter based on actual data present
+                 const hasAllData = config.requiredCols.every(col => columnNames.has(col) && originalData[col].some(val => !isNaN(val)) ); // Ensure required columns exist AND have some valid data
+                 if (!hasAllData) {
+                      const missingOrEmpty = config.requiredCols.filter(col => !columnNames.has(col) || !originalData[col].some(val => !isNaN(val)));
+                      console.warn(`Configuration for plot '${config.layout.title}' (${config.id}) disabled. Missing or empty required columns: [${missingOrEmpty.join(', ')}]`);
+                 }
+                  if (!document.getElementById(config.id)) {
+                      console.warn(`HTML div element for plot '${config.id}' not found.`);
+                      return false;
+                  }
+                 return hasAllData;
+            });
+
+            // Set initial control values
             document.getElementById('startTime').value = originalData.time[0];
             document.getElementById('endTime').value = originalData.time[originalData.time.length - 1];
-             // Set default height
-             document.getElementById('graphHeight').value = DEFAULT_GRAPH_HEIGHT;
+            document.getElementById('aspectRatio').value = DEFAULT_ASPECT_RATIO.toFixed(2);
 
+            populateVisibilityControls();
 
-            document.getElementById('loading').style.display = 'none'; // Hide loading message
-            document.getElementById('plotControls').style.display = 'block'; // Show controls
-            document.getElementById('plotGrid').style.display = 'grid'; // Show grid container
+            // Show controls and plot grid
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('plotControls').style.display = 'block'; // Show controls block
 
-            updatePlots(); // Perform initial plot
+             // Get guide button reference now that controls are visible
+             guideButton = document.getElementById('guideButton');
+             if (guideButton && !guideButton.onclick) { // Attach listener only if not already attached
+                 guideButton.onclick = function() {
+                     guideModal.style.display = "block";
+                 }
+             }
+
+            document.getElementById('visibilityControls').style.display = 'block';
+            document.getElementById('plotGrid').style.display = 'grid';
+            updatePlots(); // Initial plot rendering
         }
+
+
+        // --- Plotting Logic ---
+
+        function populateVisibilityControls() {
+            const container = document.getElementById('visibilityControls');
+            container.innerHTML = ''; // Clear previous controls
+
+            if (!masterPlotConfigs || masterPlotConfigs.length === 0) {
+                 container.innerHTML = '<p style="text-align:center; color: #777;">No data loaded or no plots could be configured based on available data columns.</p>';
+                 return;
+            }
+
+            const heading = document.createElement('h3');
+            heading.textContent = 'Show/Hide Plots';
+            container.appendChild(heading);
+
+            const buttonDiv = document.createElement('div');
+            buttonDiv.className = 'visibility-buttons';
+            const showAllBtn = document.createElement('button'); showAllBtn.textContent = 'Show All'; showAllBtn.addEventListener('click', handleShowAll); buttonDiv.appendChild(showAllBtn);
+            const hideAllBtn = document.createElement('button'); hideAllBtn.textContent = 'Hide All'; hideAllBtn.addEventListener('click', handleHideAll); buttonDiv.appendChild(hideAllBtn);
+            container.appendChild(buttonDiv);
+
+            masterPlotConfigs.forEach(config => {
+                const itemDiv = document.createElement('div'); itemDiv.className = 'visibility-item';
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `check-${config.id}`; checkbox.value = config.id; checkbox.className = 'plot-visibility-checkbox'; checkbox.checked = true; checkbox.addEventListener('change', updatePlots);
+                const label = document.createElement('label'); label.htmlFor = checkbox.id; label.textContent = config.layout.title || config.id;
+                itemDiv.appendChild(checkbox); itemDiv.appendChild(label); container.appendChild(itemDiv);
+            });
+        }
+
+        function handleShowAll() { document.querySelectorAll('.plot-visibility-checkbox').forEach(cb => cb.checked = true); updatePlots(); }
+        function handleHideAll() { document.querySelectorAll('.plot-visibility-checkbox').forEach(cb => cb.checked = false); updatePlots(); }
 
         function updatePlots() {
-             if (!originalData) {
-                 alert("No data loaded. Please select a file first.");
-                 return;
-             }
+            if (!originalData || masterPlotConfigs.length === 0) { return; }
 
-             const startTimeInput = document.getElementById('startTime');
-             const endTimeInput = document.getElementById('endTime');
-             const heightInput = document.getElementById('graphHeight'); // Get height input element
+            const startTimeInput = document.getElementById('startTime'), endTimeInput = document.getElementById('endTime'), aspectRatioInput = document.getElementById('aspectRatio'), columnsSelect = document.getElementById('gridColumns'), timeLine1Input = document.getElementById('timeLine1'), timeLine2Input = document.getElementById('timeLine2');
+            let startTime = parseFloat(startTimeInput.value), endTime = parseFloat(endTimeInput.value), aspectRatio = parseFloat(aspectRatioInput.value), numColumns = parseInt(columnsSelect.value), timeLine1Value = parseFloat(timeLine1Input.value), timeLine2Value = parseFloat(timeLine2Input.value);
 
-             // Use parseFloat, provide defaults if empty or invalid
-             let startTime = parseFloat(startTimeInput.value);
-             let endTime = parseFloat(endTimeInput.value);
-             let plotHeight = parseInt(heightInput.value); // Parse integer height
+            if (isNaN(startTime)) startTime = (originalData.time && originalData.time.length > 0) ? originalData.time[0] : 0;
+            if (isNaN(endTime)) endTime = (originalData.time && originalData.time.length > 0) ? originalData.time[originalData.time.length - 1] : 0;
+            if (isNaN(aspectRatio) || aspectRatio <= 0) { aspectRatio = DEFAULT_ASPECT_RATIO; aspectRatioInput.value = aspectRatio.toFixed(2); }
+            if (isNaN(numColumns) || numColumns < 1 || numColumns > 4) { numColumns = 2; columnsSelect.value = '2'; }
+            if (startTime > endTime) { [startTime, endTime] = [endTime, startTime]; startTimeInput.value = startTime; endTimeInput.value = endTime; }
 
-             // Default to full time range if inputs are invalid
-             if (isNaN(startTime)) startTime = originalData.time[0];
-             if (isNaN(endTime)) endTime = originalData.time[originalData.time.length - 1];
+            const indices = [];
+            if (originalData.time) { originalData.time.forEach((t, index) => { if (t >= startTime && t <= endTime) { indices.push(index); } }); }
 
-             // Default height if input is invalid or non-positive
-             if (isNaN(plotHeight) || plotHeight <= 50) { // Added minimum height check
-                 plotHeight = DEFAULT_GRAPH_HEIGHT; // Use default height
-                 heightInput.value = plotHeight; // Update input field with default
-             }
+            const plotGrid = document.getElementById('plotGrid');
+            if (plotGrid.firstChild && plotGrid.firstChild.tagName === 'P') { plotGrid.innerHTML = '';
+                masterPlotConfigs.forEach(config => { if (!document.getElementById(config.id)) { const div = document.createElement('div'); div.id = config.id; div.className = 'plot-container'; plotGrid.appendChild(div); } });
+            }
 
+            if (indices.length === 0) {
+                console.warn("No data points found in selected time range.");
+                masterPlotConfigs.forEach(config => { const plotDiv = document.getElementById(config.id); if(plotDiv) plotDiv.style.display = 'none'; });
+                plotGrid.innerHTML = `<p style="text-align:center; grid-column: 1 / -1; color: #777; padding: 20px 0;">No data in selected time range (${startTime.toFixed(2)}s - ${endTime.toFixed(2)}s).</p>`;
+                plotGrid.style.display = 'block'; plotGrid.style.gridTemplateColumns = '1fr'; return;
+            } else {
+                plotGrid.style.display = 'grid'; plotGrid.style.gridTemplateColumns = `repeat(${numColumns}, 1fr)`;
+            }
 
-             // Ensure start <= end
-             if (startTime > endTime) {
-                 [startTime, endTime] = [endTime, startTime]; // Swap them
-                 startTimeInput.value = startTime; // Update input fields
-                 endTimeInput.value = endTime;
-             }
+            const filteredData = {};
+            for (const key in originalData) { if (originalData.hasOwnProperty(key) && Array.isArray(originalData[key])) { filteredData[key] = originalData[key].length > 0 ? indices.map(index => originalData[key][index]) : []; } }
 
-             // Filter data based on time range
-             const filteredData = {};
-             const indices = [];
-             originalData.time.forEach((t, index) => {
-                 if (t >= startTime && t <= endTime) {
-                     indices.push(index);
-                 }
-             });
+            const plotlyDefaultLayout = { autosize: true, margin: { l: 60, r: 30, t: 70, b: 50 }, plot_bgcolor: 'rgba(255,255,255,0.9)', paper_bgcolor: '#ffffff', font: { family: 'Segoe UI, sans-serif', size: 12, color: '#333' }, title: { font: { size: 16, color: 'var(--primary-color)' }, x: 0.05, xanchor: 'left'}, legend: { bgcolor: 'rgba(255,255,255,0.7)', bordercolor: '#ddd', borderwidth: 1, x: 1, xanchor: 'right', y: 1 }, xaxis: { gridcolor: '#eee', linecolor: '#aaa', zerolinecolor: '#ccc', automargin: true }, yaxis: { gridcolor: '#eee', linecolor: '#aaa', zerolinecolor: '#ccc', automargin: true } };
 
-             if (indices.length === 0) {
-                 alert("No data points found in the specified time range.");
-                 plotDivIds.forEach(id => Plotly.purge(id)); // Clear plots
-                 return;
-             }
+            masterPlotConfigs.forEach(config => {
+                const plotDiv = document.getElementById(config.id); const checkbox = document.getElementById(`check-${config.id}`);
+                if (!plotDiv) { console.error("Plot div missing during update:", config.id); return; }
 
-             // Create filtered arrays for all data keys
-             for (const key in originalData) {
-                 if (originalData.hasOwnProperty(key)) { // Ensure it's own property
-                     filteredData[key] = indices.map(index => originalData[key][index]);
-                 }
-             }
+                if (checkbox && checkbox.checked) {
+                    plotDiv.style.display = 'block';
+                    let plotWidth = plotDiv.offsetWidth || (plotGrid.offsetWidth - (numColumns - 1) * 25) / numColumns || 450; let plotHeight = Math.max(150, Math.round(plotWidth / aspectRatio));
+                    let traces; let plotLayout = JSON.parse(JSON.stringify(plotlyDefaultLayout)); plotLayout = {...plotLayout, ...config.layout };
+                    if (config.layout.scene) plotLayout.scene = {...plotLayout.scene, ...config.layout.scene}; if (config.layout.xaxis) plotLayout.xaxis = {...plotLayout.xaxis, ...config.layout.xaxis}; if (config.layout.yaxis) plotLayout.yaxis = {...plotLayout.yaxis, ...config.layout.yaxis};
+                    plotLayout.height = plotHeight;
+                    let plotShapes = [];
+                    try {
+                        traces = config.tracesFn(filteredData); if (!Array.isArray(traces)) { console.error(`tracesFn for ${config.id} did not return array.`); traces = []; }
+                        // Filter traces that don't have valid data points
+                         traces = traces.filter(trace => {
+                             const dataKey = Object.keys(trace).find(k => ['y', 'z', 'x'].includes(k) && Array.isArray(trace[k]));
+                             if (dataKey) { return trace[dataKey].some(val => val !== null && !isNaN(val)); }
+                             // Special check for 3D marker color data which might be the only numeric array
+                             if(trace.marker && trace.marker.color && Array.isArray(trace.marker.color)){ return trace.marker.color.some(val => val !== null && !isNaN(val)); }
+                             return false; // If no valid data array found, filter out
+                         });
+                    } catch (e) { console.error(`Error generating traces for ${config.id}:`, e); traces = []; plotDiv.innerHTML = `<p style='color: red; padding: 10px;'>Error loading data for ${config.layout.title || config.id}.</p>`; }
 
-             // *** UPDATED plot configurations ***
-              const plotConfigs = [
-                  // Position Plot: Use LATITUDE_m, ALTITUDE_m, LONGITUDE_m
-                  { id: 'positionPlot',
-                    traces: [
-                        {y: filteredData.LATITUDE_m, name: 'LATITUDE_m'},
-                        {y: filteredData.ALTITUDE_m, name: 'ALTITUDE_m'},
-                        {y: filteredData.LONGITUDE_m, name: 'LONGITUDE_m'}
-                    ],
-                    layout: { title: 'Position', yaxis: { title: 'Position (m)' } }
-                  },
-                  // Velocity Plot: Use vx, VSI_ms, vz
-                  { id: 'velocityPlot',
-                    traces: [
-                        {y: filteredData.vx, name: 'Vx (m/s)'},
-                        {y: filteredData.VSI_ms, name: 'VSI (m/s)'},
-                        {y: filteredData.vz, name: 'Vz (m/s)'}
-                    ],
-                    layout: { title: 'Velocity Components', yaxis: { title: 'Velocity (m/s)' } }
-                  },
-                  // Quaternion Plot: Unchanged data source
-                  { id: 'quaternionPlot',
-                    traces: [
-                        {y: filteredData.qx, name: 'qx'}, {y: filteredData.qy, name: 'qy'},
-                        {y: filteredData.qz, name: 'qz'}, {y: filteredData.qw, name: 'qw'}
-                    ],
-                    layout: { title: 'Quaternion', yaxis: { title: 'Component' } }
-                  },
-                  // Angular Velocity Plot: Unchanged data source
-                  { id: 'angularVelocityPlot',
-                    traces: [
-                        {y: filteredData.wx, name: 'ωx'}, {y: filteredData.wy, name: 'ωy'},
-                        {y: filteredData.wz, name: 'ωz'}
-                    ],
-                    layout: { title: 'Angular Velocity', yaxis: { title: 'Angular Velocity (rad/s)' } }
-                  },
-                   // Force Plot: Use fx_global, fy_global, fz_global
-                  { id: 'forcePlot',
-                    traces: [
-                        {y: filteredData.fx_global, name: 'Fx_global'},
-                        {y: filteredData.fy_global, name: 'Fy_global'},
-                        {y: filteredData.fz_global, name: 'Fz_global'}
-                     ],
-                    layout: { title: 'Global Forces', yaxis: { title: 'Force (N)' } }
-                  },
-                  // Angle Plot: Use alpha_DEG, beta_DEG
-                  { id: 'anglePlot',
-                    traces: [
-                        {y: filteredData.alpha_DEG, name: 'AoA (deg)'},
-                        {y: filteredData.beta_DEG, name: 'AoS (deg)'}
-                    ],
-                    layout: { title: 'Aerodynamic Angles', yaxis: { title: 'Angle (deg)' } }
-                  },
-                  // Pitch Plot: Unchanged data source
-                  { id: 'pitchPlot',
-                    traces: [
-                        {y: filteredData.pitch_demand, name: 'Demand', line: { dash: 'dash' }},
-                        {y: filteredData.pitch_attained, name: 'Attained'}
-                    ],
-                    layout: { title: 'Pitch Control', yaxis: { title: 'Pitch Signal/Angle' } } // Updated title
-                  },
-                  // Roll Plot: Unchanged data source
-                  { id: 'rollPlot',
-                    traces: [
-                        {y: filteredData.roll_demand, name: 'Demand', line: { dash: 'dash' }},
-                        {y: filteredData.roll_attained, name: 'Attained'}
-                    ],
-                    layout: { title: 'Roll Control', yaxis: { title: 'Roll Signal/Angle' } } // Updated title
-                  },
-                  // Yaw Plot: Unchanged data source
-                  { id: 'yawPlot',
-                    traces: [
-                        {y: filteredData.yaw_demand, name: 'Demand', line: { dash: 'dash' }},
-                        {y: filteredData.yaw_attained, name: 'Attained'}
-                    ],
-                    layout: { title: 'Yaw Control', yaxis: { title: 'Yaw Signal/Angle' } } // Updated title
-                  },
-                  // *** ADDED Thrust Plot ***
-                  { id: 'thrustPlot',
-                    traces: [
-                        {y: filteredData.thrust_setting_demand, name: 'Demand', line: { dash: 'dash' }},
-                        {y: filteredData.thrust_attained, name: 'Attained'}
-                    ],
-                    layout: { title: 'Thrust Control', yaxis: { title: 'Thrust Setting (Fraction)' } }
-                  }
-             ];
+                    if (config.id === 'trajectory3DPlot') {
+                        // Already handled marker coloring in traceFn
+                        delete plotLayout.xaxis; delete plotLayout.yaxis; // Still remove 2D axes
+                        // Don't delete legend if colorbar is present
+                        plotLayout.margin = { l: 10, r: 10, t: 60, b: 10 };
+                    } else if (config.id === 'horizontalPositionPlot') { plotLayout.showlegend = traces.length > 1; }
+                    else {
+                        traces = traces.map(trace => ({ type: 'scatter', mode: 'lines', ...trace, x: filteredData.time }));
+                        plotLayout.xaxis = { title: 'Time (s)', range: [startTime, endTime], ...plotLayout.xaxis }; plotLayout.showlegend = traces.length > 0;
+                        if (!isNaN(timeLine1Value) && timeLine1Value >= startTime && timeLine1Value <= endTime) { plotShapes.push({ type: 'line', xref: 'x', yref: 'paper', x0: timeLine1Value, x1: timeLine1Value, y0: 0, y1: 1, line: { color: 'rgba(255, 0, 0, 0.7)', width: 1.5, dash: 'dash' } }); }
+                        if (!isNaN(timeLine2Value) && timeLine2Value >= startTime && timeLine2Value <= endTime) { plotShapes.push({ type: 'line', xref: 'x', yref: 'paper', x0: timeLine2Value, x1: timeLine2Value, y0: 0, y1: 1, line: { color: 'rgba(0, 0, 255, 0.7)', width: 1.5, dash: 'dash' } }); }
+                        if (plotShapes.length > 0) { plotLayout.shapes = plotShapes; }
+                    }
 
-
-             // Update all plots using Plotly.react
-             plotConfigs.forEach(config => {
-                 const traces = config.traces.map(trace => ({
-                     x: filteredData.time, // Use filtered time for x-axis
-                     y: trace.y,
-                     name: trace.name,
-                     type: 'scatter',
-                     mode: 'lines',
-                     line: trace.line || {}
-                 }));
-
-                 const layout = {
-                     ...config.layout, // Base layout from config
-                     height: plotHeight, // *** Set the plot height ***
-                     xaxis: { title: 'Time (s)' }, // Add x-axis title here
-                     showlegend: true,
-                     legend: { x: 1, xanchor: 'right', y: 1 },
-                     margin: { l: 60, r: 30, t: 50, b: 50 },
-                     autosize: true // Keep for width responsiveness
-                 };
-
-                 const plotDiv = document.getElementById(config.id);
-                 if (plotDiv) {
-                    Plotly.react(config.id, traces, layout, {responsive: true}); // Use react for efficiency
-                 } else {
-                    console.error("Target div not found:", config.id);
-                 }
-             });
+                    if (traces.length > 0) { Plotly.react(config.id, traces, plotLayout, {responsive: true, displaylogo: false}); }
+                    else { Plotly.purge(plotDiv); plotDiv.innerHTML = `<p style='text-align: center; padding: 20px; color: #777;'>No valid data to display for ${config.layout.title || config.id}.</p>`; plotDiv.style.height = `${plotHeight}px`; }
+                } else { plotDiv.style.display = 'none'; /* if (plotDiv._fullLayout) { Plotly.purge(plotDiv); } */ }
+            });
+            if (indices.length > 0) { plotGrid.style.gridTemplateColumns = `repeat(${numColumns}, 1fr)`; }
         }
 
-        // Attach event listener to the Update button
+        // --- Event Listeners ---
         document.getElementById('updateButton').addEventListener('click', updatePlots);
+        document.getElementById('gridColumns').addEventListener('change', updatePlots);
+        document.getElementById('aspectRatio').addEventListener('change', updatePlots);
+        document.getElementById('timeLine1').addEventListener('change', updatePlots);
+        document.getElementById('timeLine2').addEventListener('change', updatePlots);
+        document.getElementById('startTime').addEventListener('change', updatePlots);
+        document.getElementById('endTime').addEventListener('change', updatePlots);
 
-        // Add event listener for window resize to redraw plots (mainly for width)
-        window.addEventListener('resize', () => {
-            plotDivIds.forEach(id => {
-                const plotDiv = document.getElementById(id);
-                 // Check if plot exists (check for _fullLayout property)
-                if (plotDiv && plotDiv._fullLayout) {
-                    Plotly.Plots.resize(plotDiv);
-                }
-            });
-        });
+        // --- Modal Event Listeners ---
+        modalCloseButton.onclick = function() { guideModal.style.display = "none"; }
+        window.onclick = function(event) { if (event.target == guideModal) { guideModal.style.display = "none"; } }
+        // Note: Guide button listener is attached dynamically in processData when controls become visible
+
+        // --- Resize Handling ---
+        let resizeTimeout;
+        window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(() => { if (originalData) { console.log("Window resized, updating plots..."); updatePlots(); } }, 250); });
 
     </script>
 </body>

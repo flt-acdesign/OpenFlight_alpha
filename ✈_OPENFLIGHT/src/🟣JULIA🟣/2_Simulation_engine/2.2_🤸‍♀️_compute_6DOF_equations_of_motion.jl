@@ -59,8 +59,6 @@ function compute_6DOF_equations_of_motion(
         control_demand_vector_attained
     )
 
-
-
     
     # Aerodynamic forces in wind frame [CD, CL, CS]
     aerodynamic_force_vector_wind_N = initial_flight_conditions.dynamic_pressure * aircraft_data.reference_area .* [CD, CL, CS]
@@ -85,6 +83,9 @@ function compute_6DOF_equations_of_motion(
     # Sum propulsive + aerodynamic forces in body axes
     total_propulsive_plus_aerodynamic_force_vector_body_N = propulsive_force_vector_body_N + aerodynamic_force_vector_body_N
 
+    load_factors_body_axis = total_propulsive_plus_aerodynamic_force_vector_body_N ./ (initial_flight_conditions.aircraft_mass * GRAVITY_ACCEL)
+
+
     # Rotate sum back to the global frame
     total_propulsive_plus_aerodynamic_force_vector_global_N = rotate_vector_by_quaternion( total_propulsive_plus_aerodynamic_force_vector_body_N,  initial_flight_conditions.global_orientation_quaternion )
 
@@ -105,7 +106,7 @@ function compute_6DOF_equations_of_motion(
         [
             0.0,  # roll
             0.0,  # yaw,
-            aircraft_flight_physics_and_propulsive_data.wing_lift_lever_arm_wrt_CoG_over_MAC * CL
+            aircraft_flight_physics_and_propulsive_data.wing_lift_lever_arm_wrt_CoG_over_MAC * CL  # pitch
         ]
 
 
@@ -190,18 +191,18 @@ function compute_6DOF_equations_of_motion(
         aircraft_state_vector[5] ,   # 2)  y
         aircraft_state_vector[6] ,   # 3)  z
         
-        aircraft_CoG_acceleration_global[1],  # 4)  Vx
-        aircraft_CoG_acceleration_global[2],  # 5)  Vy
-        aircraft_CoG_acceleration_global[3],  # 6)  Vz
+        aircraft_CoG_acceleration_global[1],  # 4)  nx_global
+        aircraft_CoG_acceleration_global[2],  # 5)  ny_global
+        aircraft_CoG_acceleration_global[3],  # 6)  nz_global
 
         initial_flight_conditions.q_dot[2] ,  # 7)  qx
         initial_flight_conditions.q_dot[3] ,  # 8)  qy
         initial_flight_conditions.q_dot[4],  # 9)  qz
         initial_flight_conditions.q_dot[1],  # 10) qw
 
-        angular_acceleration_body[1],  # 11) wx
-        angular_acceleration_body[2],  # 12) wy
-        angular_acceleration_body[3],   # 13) wz
+        angular_acceleration_body[1],  # 11) wx, roll  
+        angular_acceleration_body[2],  # 12) wy, yaw 
+        angular_acceleration_body[3],   # 13) wz, pitch 
     ]
 
     total_propulsive_plus_aerodynamic_force_vector_global_N = [
@@ -211,8 +212,44 @@ function compute_6DOF_equations_of_motion(
     ]
 
 
+    flight_data_for_telemetry = [
+    CL, 
+    CD, 
+    CL/CD,
+    CS, 
 
-    return (new_aircraft_state_vector, total_propulsive_plus_aerodynamic_force_vector_global_N)
+    load_factors_body_axis[1],
+    load_factors_body_axis[2],
+    load_factors_body_axis[3],
 
+    vector_of_moment_coefficients_due_to_aero_forces_body[1],
+    vector_of_moment_coefficients_due_to_aero_forces_body[2],
+    vector_of_moment_coefficients_due_to_aero_forces_body[3],
+
+    vector_of_moment_coefficients_of_control_body[1],
+    vector_of_moment_coefficients_of_control_body[2],
+    vector_of_moment_coefficients_of_control_body[3],
+
+    vector_of_moment_coefficients_of_static_stability_body[1],
+    vector_of_moment_coefficients_of_static_stability_body[2],
+    vector_of_moment_coefficients_of_static_stability_body[3],
+
+    vector_of_moment_coefficients_of_aerodynamic_damping_body[1],
+    vector_of_moment_coefficients_of_aerodynamic_damping_body[2],
+    vector_of_moment_coefficients_of_aerodynamic_damping_body[3],
+
+    initial_flight_conditions.q_pitch_rate,
+    initial_flight_conditions.p_roll_rate,
+    initial_flight_conditions.r_yaw_rate,
+
+    initial_flight_conditions.TAS , 
+    initial_flight_conditions.EAS ,
+    initial_flight_conditions.Mach_number ,
+
+    initial_flight_conditions.dynamic_pressure ,
+
+    ]
+
+    return (new_aircraft_state_vector, total_propulsive_plus_aerodynamic_force_vector_global_N, flight_data_for_telemetry)
 
 end

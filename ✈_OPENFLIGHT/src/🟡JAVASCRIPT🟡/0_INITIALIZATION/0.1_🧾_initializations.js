@@ -5,10 +5,10 @@ let freeport = 8000  // default value for the server port, it will be updated by
 let aircraft_name = "SF25B.yaml"
 
 let initial_velocity = 30
-let initial_altitude = 400
+let initial_altitude = 1400
 
 let start_flight_data_recording_at = 1
-let finish_flight_data_recording_at = 5
+let finish_flight_data_recording_at = 50
 
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"

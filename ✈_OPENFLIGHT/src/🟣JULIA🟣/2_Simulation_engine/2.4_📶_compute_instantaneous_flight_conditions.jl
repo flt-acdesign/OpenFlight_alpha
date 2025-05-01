@@ -6,12 +6,12 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     altitude  = initial_aircraft_state_vector[2]
     longitude = initial_aircraft_state_vector[3]
 
-    T, p, rho, speed_of_sound = atmosphere_isa(altitude)
+    T, p, rho, speed_of_sound, density_ratio = atmosphere_isa(altitude)
 
     vx = initial_aircraft_state_vector[4]
     vy = initial_aircraft_state_vector[5]
     vz = initial_aircraft_state_vector[6]
-
+    
     # Quaternion: [qx, qy, qz, qw]
     qx = initial_aircraft_state_vector[7]
     qy = initial_aircraft_state_vector[8]
@@ -36,7 +36,6 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     # q_dot = 0.5 * (global_orientation_quaternion ⨂ ω_body)
     q_dot = 0.5 * quat_multiply(global_orientation_quaternion, omega_body_quaternion)
 
-
     # === 2) FORCES & LINEAR ACCELERATIONS ===
 
     # Global velocity vector
@@ -47,7 +46,7 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     v_body_magnitude = norm(v_body) + 1e-6  # Avoid division by zero
 
     # Dynamic pressure
-    dynamic_pressure = simple_dynamic_pressure(v_body_magnitude, altitude)
+    dynamic_pressure = .5 * v_body_magnitude ^2 * rho
 
     # Mach number
     Mach_number = v_body_magnitude / speed_of_sound
@@ -72,6 +71,9 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         vx = vx,
         vy = vy,
         vz = vz,
+
+        TAS = v_body_magnitude, 
+        EAS = v_body_magnitude * density_ratio,
 
         qx = qx,
         qy = qy,
@@ -102,6 +104,7 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         q_dot = q_dot,
 
         aircraft_mass = aircraft_mass,  # this and the inertia could change due to fuel burn
+
         I_body = I_body,
         # Pre-compute the inverse of the inertia tensor matrix
         I_body_inverse = I_body_inverse     # pre-compute 3×3 inverse inertia tensor matrix to save time in RK4 evaluations

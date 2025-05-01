@@ -2,6 +2,7 @@
 function reset_flight_data_recording()
     # Define the DataFrame structure with NEW valid identifier names
     global df = DataFrame(
+        # --- Original Columns ---
         time=Float64[],
         LATITUDE_m=Float64[],  # Renamed from x
         ALTITUDE_m=Float64[],  # Renamed from y
@@ -28,7 +29,37 @@ function reset_flight_data_recording()
         roll_demand_attained=Float64[],
         yaw_demand_attained=Float64[],
         thrust_setting_demand=Float64[],
-        thrust_attained=Float64[]
+        thrust_attained=Float64[],
+
+        # --- New Columns Added ---
+        CL=Float64[],
+        CD=Float64[],
+        CL_CD_ratio=Float64[], # Renamed from CL/CD
+        CS=Float64[],
+        nx=Float64[],
+        nz=Float64[],
+        ny=Float64[],
+        CM_roll_from_aero_forces=Float64[],
+        CM_yaw_from_aero_forces=Float64[],
+        CM_pitch_from_aero_forces=Float64[],
+        CM_roll_from_control=Float64[],
+        CM_yaw_from_control=Float64[],
+        CM_pitch_from_control=Float64[],
+        CM_roll_from_aero_stiffness=Float64[],
+        CM_yaw_from_aero_stiffness=Float64[],
+        CM_pitch_from_aero_stiffness=Float64[],
+        CM_roll_from_aero_damping=Float64[],
+        CM_yaw_from_aero_damping=Float64[],
+        CM_pitch_from_aero_damping=Float64[],
+        q_pitch_rate=Float64[],
+        p_roll_rate=Float64[],
+        r_yaw_rate=Float64[],
+
+        TAS =Float64[],
+        EAS =Float64[],
+        Mach =Float64[],
+        dynamic_pressure =Float64[]
+        
     )
 
     global has_written_to_csv = false
