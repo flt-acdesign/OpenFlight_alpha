@@ -46,7 +46,7 @@ function compute_terrain_height(x, z, freqX, freqZ, amplitude, scenery_complexit
     );
   
     // Flatten near origin if desired
-    if (Math.abs(x) < 100 && Math.abs(z) < 300) {
+    if (Math.abs(x) < 80 && Math.abs(z) < 600) {
       heightY = 0;
     }
   

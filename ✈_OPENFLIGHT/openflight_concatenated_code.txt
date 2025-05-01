@@ -32,7 +32,7 @@ include(raw"./src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.2_🛠_auxilia
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.1_⭐_Runge_Kutta_4_integrator.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.2_🤸‍♀️_compute_6DOF_equations_of_motion.jl")
 include(raw"./SRC/🟣JULIA🟣/2_Simulation_engine/2.3_💥_handle_collisions.jl")
-include(raw"./src/🟣JULIA🟣/2_Simulation_engine/2.4_📶_compute_initial_flight_conditions.jl")
+include(raw"./src/🟣JULIA🟣/2_Simulation_engine/2.4_📶_compute_instantaneous_flight_conditions.jl")
 
 # 5) Load websockets + flight-data code:
 include(raw"./src/🟣JULIA🟣/3_Websockets_and_flight_data/3.0_🌐_launch_web_browser.jl")
@@ -261,15 +261,16 @@ let freeport = 8000  // default value for the server port, it will be updated by
 let aircraft_name = "SF25B.yaml"
 
 let initial_velocity = 30
-let initial_altitude = 400
+let initial_altitude = 1400
 
-let start_flight_data_recording_at = 5
-let finish_flight_data_recording_at = 100
+let start_flight_data_recording_at = 1
+let finish_flight_data_recording_at = 50
 
 let show_force_vectors = "true"
 let show_velocity_vectors = "true"
 
 let show_trajectory = "true"
+let frames_per_trajectory_marker = 2
 
 // 0 = nothing, 1 = low, 2 = medium or 3 = high
 let scenery_complexity = 3
@@ -4587,12 +4588,14 @@ function updateForceLine() {
  *
  * Creates a "thin instance" system for trajectory spheres.
  * We switch to using serverTime instead of local 'elapsedTime'.
+ * MODIFIED: Adds a sphere only once every 5 calls.
  ***************************************************************/
 
 // We'll track all instance transforms/colors in arrays
 let trajectoryBaseSphere;
 let trajectoryMatrixData = [];
 let trajectoryColorData  = [];
+let updateTrajectoryCallCount = 0; // Counter for calls to updateTrajectory
 
 /**
  * Initializes the base sphere for trajectory thin-instances.
@@ -4600,14 +4603,14 @@ let trajectoryColorData  = [];
 function initializeTrajectorySystem() {
     trajectoryBaseSphere = BABYLON.MeshBuilder.CreateSphere("trajectoryBase", {
         diameter: 1.1,
-        segments: 4
+        segments: 3
     }, scene);
 
     trajectoryBaseSphere.isPickable = false; // unpickable
 
     const trajectoryMaterial = new BABYLON.StandardMaterial("trajectoryMaterial", scene);
-    trajectoryMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    trajectoryMaterial.instancedColor = true;
+    trajectoryMaterial.diffuseColor = new BABYLON.Color3(1, 1, 1); // Base color (less important with instancedColor)
+    trajectoryMaterial.instancedColor = true; // Enable per-instance color
 
     trajectoryBaseSphere.material = trajectoryMaterial;
     trajectoryBaseSphere.useThinInstances = true;
@@ -4615,60 +4618,108 @@ function initializeTrajectorySystem() {
 }
 
 /**
- * Adds a new sphere instance at the aircraft's position. Color depends on:
- *   - if `serverTime` ∈ [start_flight_data_recording_at, finish_flight_data_recording_at],
- *     then pink; else green.
+ * Adds a new sphere instance at the aircraft's position, but only once
+ * every frames_per_trajectory_marker times this function is called. Color depends on:
+ * - if `serverTime` ∈ [start_flight_data_recording_at, finish_flight_data_recording_at],
+ * then pink; else green.
  * @param {number} serverTime - The time from the Julia server.
  */
-function updateTrajectory(serverTime) {
+function updateTrajectory(serverTime ) {
     if (show_trajectory !== "true") {
-        return;
+        return; // Exit if trajectory display is off
     }
     if (!aircraft) {
-        return;
+        return; // Exit if aircraft mesh doesn't exist yet
+    }
+    if (!trajectoryBaseSphere) {
+        console.warn("Trajectory system not initialized yet.");
+        return; // Exit if base sphere isn't ready
     }
 
-    // 1) Build transform for the new sphere
-    const matrix = BABYLON.Matrix.Translation(
-        aircraft.position.x,
-        aircraft.position.y,
-        aircraft.position.z
-    );
-    trajectoryMatrixData.push(matrix);
+    // Increment the call counter
+    updateTrajectoryCallCount++;
 
-    // 2) Decide color (pink if in record interval, else green)
-    let sphereColor;
-    if (
-        serverTime >= start_flight_data_recording_at &&
-        serverTime <= finish_flight_data_recording_at
-    ) {
-        // pink
-        sphereColor = new BABYLON.Color3(1.0, 0.7, 0.85);
-    } else {
-        // green
-        sphereColor = new BABYLON.Color3(0.7, 1.0, 0.7);
+    // Only proceed to add a sphere instance every 5 calls
+    if (updateTrajectoryCallCount % frames_per_trajectory_marker === 0) {
+
+        // 1) Build transform matrix for the new sphere based on current aircraft position
+        const matrix = BABYLON.Matrix.Translation(
+            aircraft.position.x,
+            aircraft.position.y,
+            aircraft.position.z
+        );
+        // Add the new matrix to our array
+        trajectoryMatrixData.push(matrix);
+
+        // 2) Decide the color for this new sphere instance
+        let sphereColor;
+        if (
+            serverTime >= start_flight_data_recording_at &&
+            serverTime <= finish_flight_data_recording_at
+        ) {
+            // Pink if within the recording interval
+            sphereColor = new BABYLON.Color3(1.0, 0.7, 0.85);
+        } else {
+            // Green otherwise
+            sphereColor = new BABYLON.Color3(0.7, 1.0, 0.7);
+        }
+        // Add the color components (RGBA) to our color array
+        trajectoryColorData.push([sphereColor.r, sphereColor.g, sphereColor.b, 1.0]); // Add alpha = 1.0
+
+        // --- Update the thin instance buffers ---
+        // It's more efficient to create the typed arrays once with the correct size
+        // than pushing elements individually in a loop inside the update function.
+        // However, since the arrays grow, we rebuild them here. For very high
+        // performance, consider pre-allocating or using a different strategy.
+
+        // Convert matrix array to a flat Float32Array
+        const matrixData = new Float32Array(trajectoryMatrixData.length * 16);
+        for (let i = 0; i < trajectoryMatrixData.length; i++) {
+            trajectoryMatrixData[i].copyToArray(matrixData, i * 16);
+        }
+
+        // Convert color array to a flat Float32Array
+        const colorData = new Float32Array(trajectoryColorData.length * 4);
+        // We can directly copy from the nested array structure
+        for (let i = 0; i < trajectoryColorData.length; i++) {
+             colorData[i * 4 + 0] = trajectoryColorData[i][0]; // R
+             colorData[i * 4 + 1] = trajectoryColorData[i][1]; // G
+             colorData[i * 4 + 2] = trajectoryColorData[i][2]; // B
+             colorData[i * 4 + 3] = trajectoryColorData[i][3]; // A
+         }
+
+        // Make the base sphere visible only if there are instances to show
+        trajectoryBaseSphere.isVisible = trajectoryMatrixData.length > 0;
+
+        // Update the buffers on the GPU
+        // The 'true' argument indicates the buffer size might change (dynamic)
+        trajectoryBaseSphere.thinInstanceSetBuffer("matrix", matrixData, 16, true);
+        trajectoryBaseSphere.thinInstanceSetBuffer("color", colorData, 4, true);
+
+        // The thinInstanceCount MUST be set explicitly after updating buffers
+        // It tells Babylon.js how many instances to actually draw.
+        // It should always match the number of items in your data arrays.
+        trajectoryBaseSphere.thinInstanceCount = trajectoryMatrixData.length;
+
+        // --- End buffer update ---
     }
+    // If it's not the 5th call (updateTrajectoryCallCount % 5 !== 0),
+    // this function does nothing, effectively skipping the sphere addition.
+}
 
-    trajectoryColorData.push([sphereColor.r, sphereColor.g, sphereColor.b, 1.0]);
-
-    // Convert to typed arrays
-    const matrixData = new Float32Array(trajectoryMatrixData.length * 16);
-    for (let i = 0; i < trajectoryMatrixData.length; i++) {
-        trajectoryMatrixData[i].copyToArray(matrixData, i * 16);
+// Optional: Consider adding a function to clear the trajectory if needed
+function resetTrajectory() {
+    trajectoryMatrixData = [];
+    trajectoryColorData = [];
+    updateTrajectoryCallCount = 0; // Reset the counter too
+    if (trajectoryBaseSphere) {
+        trajectoryBaseSphere.thinInstanceCount = 0; // Tell Babylon to draw 0 instances
+        trajectoryBaseSphere.isVisible = false; // Hide the base sphere holder
+        // Optionally clear the buffers explicitly, though setting count to 0 is usually enough
+        // trajectoryBaseSphere.thinInstanceSetBuffer("matrix", null);
+        // trajectoryBaseSphere.thinInstanceSetBuffer("color", null);
     }
-
-    const colorData = new Float32Array(trajectoryColorData.length * 4);
-    for (let i = 0; i < trajectoryColorData.length; i++) {
-        colorData[i * 4 + 0] = trajectoryColorData[i][0];
-        colorData[i * 4 + 1] = trajectoryColorData[i][1];
-        colorData[i * 4 + 2] = trajectoryColorData[i][2];
-        colorData[i * 4 + 3] = trajectoryColorData[i][3];
-    }
-
-    trajectoryBaseSphere.isVisible = true;
-    trajectoryBaseSphere.thinInstanceSetBuffer("matrix", matrixData, 16);
-    trajectoryBaseSphere.thinInstanceSetBuffer("color", colorData, 4);
-    trajectoryBaseSphere.thinInstanceCount = trajectoryMatrixData.length;
+    console.log("Trajectory reset.");
 }
 
 ###########################################
@@ -6197,7 +6248,7 @@ function Runge_Kutta_4_integrator(
     # Calculate four intermediate derivatives for RK4 integration
 
     # First derivative (k1) at initial state
-    state_vec_derivative_1, global_force1 = compute_6DOF_equations_of_motion(
+    state_vec_derivative_1, global_force1 , flight_data_for_telemetry1 = compute_6DOF_equations_of_motion(
         initial_aircraft_state_vector,
         control_demand_vector_attained,
         aircraft_flight_physics_and_propulsive_data, 
@@ -6205,7 +6256,7 @@ function Runge_Kutta_4_integrator(
     )
 
     # Second derivative (k2) at state + (dt/2)*k1
-    state_vec_derivative_2, global_force2  = compute_6DOF_equations_of_motion(
+    state_vec_derivative_2, global_force2 , flight_data_for_telemetry2 = compute_6DOF_equations_of_motion(
         initial_aircraft_state_vector .+ (deltaTime / 2) .* state_vec_derivative_1,
         control_demand_vector_attained,
         aircraft_flight_physics_and_propulsive_data, 
@@ -6213,7 +6264,7 @@ function Runge_Kutta_4_integrator(
     )
 
     # Third derivative (k3) at state + (dt/2)*k2
-    state_vec_derivative_3, global_force3  = compute_6DOF_equations_of_motion(
+    state_vec_derivative_3, global_force3 , flight_data_for_telemetry3 = compute_6DOF_equations_of_motion(
         initial_aircraft_state_vector .+ (deltaTime / 2) .* state_vec_derivative_2,
         control_demand_vector_attained,
         aircraft_flight_physics_and_propulsive_data,
@@ -6221,7 +6272,7 @@ function Runge_Kutta_4_integrator(
     )
 
     # Fourth derivative (k4) at state + dt*k3
-    state_vec_derivative_4, global_force4  = compute_6DOF_equations_of_motion(
+    state_vec_derivative_4, global_force4 , flight_data_for_telemetry4  = compute_6DOF_equations_of_motion(
         initial_aircraft_state_vector .+ deltaTime .* state_vec_derivative_3,
         control_demand_vector_attained,
         aircraft_flight_physics_and_propulsive_data,
@@ -6233,9 +6284,11 @@ function Runge_Kutta_4_integrator(
     new_aircraft_state_vector = initial_aircraft_state_vector .+ (deltaTime / 6.0) .* 
         (state_vec_derivative_1 .+ 2 .* state_vec_derivative_2 .+ 2 .* state_vec_derivative_3 .+ state_vec_derivative_4)
 
-    # Step 4: Average Forces
+    # Step 4: Average Forces and data for telemetry
     # Calculate average force over the time step using all four RK4 stages
     total_aero_and_propulsive_force_resultant = (global_force1 .+ global_force2 .+ global_force3 .+ global_force4) ./ 4
+    average_flight_data_for_telemetry = (flight_data_for_telemetry1 .+ flight_data_for_telemetry2 .+ flight_data_for_telemetry3 .+ flight_data_for_telemetry4) ./ 4
+
 
     # Step 5: Handle Ground Interactions
     # Check for collisions and adjust vertical velocity if necessary
@@ -6287,8 +6340,46 @@ function Runge_Kutta_4_integrator(
         "pitch_demand_attained" => control_demand_vector_attained.pitch_demand_attained,
         "roll_demand_attained" => control_demand_vector_attained.roll_demand_attained,
         "yaw_demand_attained" => control_demand_vector_attained.yaw_demand_attained,
-        "thrust_attained" => control_demand_vector_attained.thrust_attained
+        "thrust_attained" => control_demand_vector_attained.thrust_attained,
+
+    # Additional flight data for telemetry
+
+    "CL"  => average_flight_data_for_telemetry[1],                     
+    "CD"  => average_flight_data_for_telemetry[2],  
+    "CL/CD"  => average_flight_data_for_telemetry[3], 
+    "CS"  => average_flight_data_for_telemetry[4], 
+
+    "nx"  => average_flight_data_for_telemetry[5], 
+    "nz"  => average_flight_data_for_telemetry[6], 
+    "ny"  => average_flight_data_for_telemetry[7], 
+
+    "CM_roll_from_aero_forces"   => average_flight_data_for_telemetry[8], 
+    "CM_yaw_from_aero_forces"   => average_flight_data_for_telemetry[9], 
+    "CM_pitch_from_aero_forces"   => average_flight_data_for_telemetry[10], 
+
+    "CM_roll_from_control"   => average_flight_data_for_telemetry[11], 
+    "CM_yaw_from_control"   => average_flight_data_for_telemetry[12], 
+    "CM_pitch_from_control"   => average_flight_data_for_telemetry[13], 
+
+    "CM_roll_from_aero_stiffness"   => average_flight_data_for_telemetry[14], 
+    "CM_yaw_from_aero_stiffness"   => average_flight_data_for_telemetry[15], 
+    "CM_pitch_from_aero_stiffness"   => average_flight_data_for_telemetry[16], 
+
+    "CM_roll_from_aero_damping"   => average_flight_data_for_telemetry[17], 
+    "CM_yaw_from_aero_damping"   => average_flight_data_for_telemetry[18], 
+    "CM_pitch_from_aero_damping"   => average_flight_data_for_telemetry[19],
+
+    "q_pitch_rate"   => average_flight_data_for_telemetry[20],
+    "p_roll_rate" => average_flight_data_for_telemetry[21],
+    "r_yaw_rate" => average_flight_data_for_telemetry[22], 
+
+    "TAS" => average_flight_data_for_telemetry[23], 
+    "EAS" => average_flight_data_for_telemetry[24], 
+    "Mach" => average_flight_data_for_telemetry[25], 
+    "dynamic_pressure" => average_flight_data_for_telemetry[26] 
+
     )
+
 end
 
 ###########################################
@@ -6356,8 +6447,6 @@ function compute_6DOF_equations_of_motion(
         control_demand_vector_attained
     )
 
-
-
     
     # Aerodynamic forces in wind frame [CD, CL, CS]
     aerodynamic_force_vector_wind_N = initial_flight_conditions.dynamic_pressure * aircraft_data.reference_area .* [CD, CL, CS]
@@ -6382,6 +6471,9 @@ function compute_6DOF_equations_of_motion(
     # Sum propulsive + aerodynamic forces in body axes
     total_propulsive_plus_aerodynamic_force_vector_body_N = propulsive_force_vector_body_N + aerodynamic_force_vector_body_N
 
+    load_factors_body_axis = total_propulsive_plus_aerodynamic_force_vector_body_N ./ (initial_flight_conditions.aircraft_mass * GRAVITY_ACCEL)
+
+
     # Rotate sum back to the global frame
     total_propulsive_plus_aerodynamic_force_vector_global_N = rotate_vector_by_quaternion( total_propulsive_plus_aerodynamic_force_vector_body_N,  initial_flight_conditions.global_orientation_quaternion )
 
@@ -6402,7 +6494,7 @@ function compute_6DOF_equations_of_motion(
         [
             0.0,  # roll
             0.0,  # yaw,
-            aircraft_flight_physics_and_propulsive_data.wing_lift_lever_arm_wrt_CoG_over_MAC * CL
+            aircraft_flight_physics_and_propulsive_data.wing_lift_lever_arm_wrt_CoG_over_MAC * CL  # pitch
         ]
 
 
@@ -6487,18 +6579,18 @@ function compute_6DOF_equations_of_motion(
         aircraft_state_vector[5] ,   # 2)  y
         aircraft_state_vector[6] ,   # 3)  z
         
-        aircraft_CoG_acceleration_global[1],  # 4)  Vx
-        aircraft_CoG_acceleration_global[2],  # 5)  Vy
-        aircraft_CoG_acceleration_global[3],  # 6)  Vz
+        aircraft_CoG_acceleration_global[1],  # 4)  nx_global
+        aircraft_CoG_acceleration_global[2],  # 5)  ny_global
+        aircraft_CoG_acceleration_global[3],  # 6)  nz_global
 
         initial_flight_conditions.q_dot[2] ,  # 7)  qx
         initial_flight_conditions.q_dot[3] ,  # 8)  qy
         initial_flight_conditions.q_dot[4],  # 9)  qz
         initial_flight_conditions.q_dot[1],  # 10) qw
 
-        angular_acceleration_body[1],  # 11) wx
-        angular_acceleration_body[2],  # 12) wy
-        angular_acceleration_body[3],   # 13) wz
+        angular_acceleration_body[1],  # 11) wx, roll  
+        angular_acceleration_body[2],  # 12) wy, yaw 
+        angular_acceleration_body[3],   # 13) wz, pitch 
     ]
 
     total_propulsive_plus_aerodynamic_force_vector_global_N = [
@@ -6508,9 +6600,45 @@ function compute_6DOF_equations_of_motion(
     ]
 
 
+    flight_data_for_telemetry = [
+    CL, 
+    CD, 
+    CL/CD,
+    CS, 
 
-    return (new_aircraft_state_vector, total_propulsive_plus_aerodynamic_force_vector_global_N)
+    load_factors_body_axis[1],
+    load_factors_body_axis[2],
+    load_factors_body_axis[3],
 
+    vector_of_moment_coefficients_due_to_aero_forces_body[1],
+    vector_of_moment_coefficients_due_to_aero_forces_body[2],
+    vector_of_moment_coefficients_due_to_aero_forces_body[3],
+
+    vector_of_moment_coefficients_of_control_body[1],
+    vector_of_moment_coefficients_of_control_body[2],
+    vector_of_moment_coefficients_of_control_body[3],
+
+    vector_of_moment_coefficients_of_static_stability_body[1],
+    vector_of_moment_coefficients_of_static_stability_body[2],
+    vector_of_moment_coefficients_of_static_stability_body[3],
+
+    vector_of_moment_coefficients_of_aerodynamic_damping_body[1],
+    vector_of_moment_coefficients_of_aerodynamic_damping_body[2],
+    vector_of_moment_coefficients_of_aerodynamic_damping_body[3],
+
+    initial_flight_conditions.q_pitch_rate,
+    initial_flight_conditions.p_roll_rate,
+    initial_flight_conditions.r_yaw_rate,
+
+    initial_flight_conditions.TAS , 
+    initial_flight_conditions.EAS ,
+    initial_flight_conditions.Mach_number ,
+
+    initial_flight_conditions.dynamic_pressure ,
+
+    ]
+
+    return (new_aircraft_state_vector, total_propulsive_plus_aerodynamic_force_vector_global_N, flight_data_for_telemetry)
 
 end
 
@@ -6530,7 +6658,7 @@ function  handle_collisions(new_position_y, new_velocity_y )   # Handle ground c
 end
 
 ###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\2_Simulation_engine\2.4_📶_compute_initial_flight_conditions.jl
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\2_Simulation_engine\2.4_📶_compute_instantaneous_flight_conditions.jl
 ###########################################
 
 function compute_flight_conditions_from_state_vector(initial_aircraft_state_vector, aircraft_data)
@@ -6541,12 +6669,12 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     altitude  = initial_aircraft_state_vector[2]
     longitude = initial_aircraft_state_vector[3]
 
-    T, p, rho, speed_of_sound = atmosphere_isa(altitude)
+    T, p, rho, speed_of_sound, density_ratio = atmosphere_isa(altitude)
 
     vx = initial_aircraft_state_vector[4]
     vy = initial_aircraft_state_vector[5]
     vz = initial_aircraft_state_vector[6]
-
+    
     # Quaternion: [qx, qy, qz, qw]
     qx = initial_aircraft_state_vector[7]
     qy = initial_aircraft_state_vector[8]
@@ -6571,7 +6699,6 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     # q_dot = 0.5 * (global_orientation_quaternion ⨂ ω_body)
     q_dot = 0.5 * quat_multiply(global_orientation_quaternion, omega_body_quaternion)
 
-
     # === 2) FORCES & LINEAR ACCELERATIONS ===
 
     # Global velocity vector
@@ -6582,7 +6709,7 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
     v_body_magnitude = norm(v_body) + 1e-6  # Avoid division by zero
 
     # Dynamic pressure
-    dynamic_pressure = simple_dynamic_pressure(v_body_magnitude, altitude)
+    dynamic_pressure = .5 * v_body_magnitude ^2 * rho
 
     # Mach number
     Mach_number = v_body_magnitude / speed_of_sound
@@ -6607,6 +6734,9 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         vx = vx,
         vy = vy,
         vz = vz,
+
+        TAS = v_body_magnitude, 
+        EAS = v_body_magnitude * density_ratio,
 
         qx = qx,
         qy = qy,
@@ -6637,6 +6767,7 @@ function compute_flight_conditions_from_state_vector(initial_aircraft_state_vect
         q_dot = q_dot,
 
         aircraft_mass = aircraft_mass,  # this and the inertia could change due to fuel burn
+
         I_body = I_body,
         # Pre-compute the inverse of the inertia tensor matrix
         I_body_inverse = I_body_inverse     # pre-compute 3×3 inverse inertia tensor matrix to save time in RK4 evaluations
@@ -6697,27 +6828,75 @@ end
 
 # Function to reset flight data recording state
 function reset_flight_data_recording()
+    # Define the DataFrame structure with NEW valid identifier names
     global df = DataFrame(
+        # --- Original Columns ---
         time=Float64[],
-        x=Float64[],  y=Float64[],  z=Float64[],
-        vx=Float64[], vy=Float64[], vz=Float64[],
-        qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
-        wx=Float64[], wy=Float64[], wz=Float64[],
-        fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
-        alpha_DEG=Float64[], beta_DEG=Float64[],
-        pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
-        pitch_demand_attained=Float64[], roll_demand_attained=Float64[],
+        LATITUDE_m=Float64[],  # Renamed from x
+        ALTITUDE_m=Float64[],  # Renamed from y
+        LONGITUDE_m=Float64[], # Renamed from z
+        vx=Float64[],
+        VSI_ms=Float64[],    # Renamed from vy
+        vz=Float64[],
+        qx=Float64[],
+        qy=Float64[],
+        qz=Float64[],
+        qw=Float64[],
+        wx=Float64[],
+        wy=Float64[],
+        wz=Float64[],
+        fx_global=Float64[],
+        fy_global=Float64[],
+        fz_global=Float64[],
+        alpha_DEG=Float64[],
+        beta_DEG=Float64[],
+        pitch_demand=Float64[],
+        roll_demand=Float64[],
+        yaw_demand=Float64[],
+        pitch_demand_attained=Float64[],
+        roll_demand_attained=Float64[],
         yaw_demand_attained=Float64[],
-        thrust_setting_demand=Float64[], thrust_attained=Float64[]
+        thrust_setting_demand=Float64[],
+        thrust_attained=Float64[],
+
+        # --- New Columns Added ---
+        CL=Float64[],
+        CD=Float64[],
+        CL_CD_ratio=Float64[], # Renamed from CL/CD
+        CS=Float64[],
+        nx=Float64[],
+        nz=Float64[],
+        ny=Float64[],
+        CM_roll_from_aero_forces=Float64[],
+        CM_yaw_from_aero_forces=Float64[],
+        CM_pitch_from_aero_forces=Float64[],
+        CM_roll_from_control=Float64[],
+        CM_yaw_from_control=Float64[],
+        CM_pitch_from_control=Float64[],
+        CM_roll_from_aero_stiffness=Float64[],
+        CM_yaw_from_aero_stiffness=Float64[],
+        CM_pitch_from_aero_stiffness=Float64[],
+        CM_roll_from_aero_damping=Float64[],
+        CM_yaw_from_aero_damping=Float64[],
+        CM_pitch_from_aero_damping=Float64[],
+        q_pitch_rate=Float64[],
+        p_roll_rate=Float64[],
+        r_yaw_rate=Float64[],
+
+        TAS =Float64[],
+        EAS =Float64[],
+        Mach =Float64[],
+        dynamic_pressure =Float64[]
+        
     )
-    
+
     global has_written_to_csv = false
-    
+
     # Generate a new timestamp and CSV filename for this session
     timestamp = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
     global csv_file = joinpath(project_dir, "📊_Flight_Test_Data",
         "simulation_data_" * timestamp * ".csv")
-        
+
     println("Flight data recording reset with new CSV target: $csv_file")
 end
 
@@ -6726,32 +6905,48 @@ function websocket_handler(ws)
     # Reset simulation time when a new connection is established
     global sim_time = 0.0
     println("New WebSocket connection established - Simulation time reset to 0.0")
-    
+
     # Reset flight data recording
     reset_flight_data_recording()
-    
+
     try
         # Keep processing messages while the socket connection is open
         while !eof(ws.socket)
             # Read data from WebSocket connection with error handling
             aircraft_state_data, success = WebSockets.readguarded(ws)
-            
+
             # Only process valid, non-empty data
             if success && !isempty(aircraft_state_data)
                 # Parse received JSON data into Julia structure
-                current_aircraft_state_vector = JSON.parse(String(aircraft_state_data))
-                
+                current_aircraft_state_dict = JSON.parse(String(aircraft_state_data)) # Changed name for clarity
+
                 # Update aircraft state using physics simulation
-                updated_aircraft_state_vector = update_aircraft_state(current_aircraft_state_vector, aircraft_flight_physics_and_propulsive_data)
-                
+                updated_aircraft_state_dict = update_aircraft_state(current_aircraft_state_dict, aircraft_flight_physics_and_propulsive_data) # Changed name
+
                 # Send updated state back to client if available
-                if updated_aircraft_state_vector !== nothing
-                    WebSockets.writeguarded(ws, JSON.json(updated_aircraft_state_vector))
+                if updated_aircraft_state_dict !== nothing
+                    WebSockets.writeguarded(ws, JSON.json(updated_aircraft_state_dict))
                 end
             end
         end
     catch e
-        @error "WebSocket error" exception=e
+        # Ignore BrokenPipeError which commonly happens when the client disconnects
+        if !(e isa Base.IOError && e.code == Base.UV_EPIPE)
+             @error "WebSocket error" exception=e
+        else
+             println("Client disconnected (BrokenPipeError).")
+        end
+    finally
+         println("WebSocket connection closed.")
+         # Optionally save any partially recorded data here if needed
+         # if !has_written_to_csv && !isempty(df)
+         #     println("Saving partial data on disconnect...")
+         #     data_dir = dirname(csv_file)
+         #     if !isdir(data_dir); mkpath(data_dir); end
+         #     CSV.write(csv_file, df)
+         #     has_written_to_csv = true
+         #     println("Partial flight data saved to: $(csv_file)")
+         # end
     end
 end
 
@@ -6762,29 +6957,37 @@ end
 
 # Server initialization and startup function
 function establish_websockets_connection()
-    port = WebSockets_port  # Port number defined in the client-side JavaScript file, this is found in function "🎁_load_required_packages_and_find_free_port.jl"
+    port = WebSockets_port  # Port number found by 🔌_Find_free_port.jl
     println("Starting WebSocket server on port $port...")
-    
+
     # Create handler functions for HTTP and WebSocket protocols
     http_handler_func = WebSockets.RequestHandlerFunction(http_handler)
     ws_handler_func = WebSockets.WSHandlerFunction(websocket_handler)
-    
+
     # Initialize server with both handlers
     server = WebSockets.ServerWS(http_handler_func, ws_handler_func)
-    
+
     # Start server asynchronously on all interfaces
     @async WebSockets.serve(server, "0.0.0.0", port)
-    
+
     println("Server running. Press Ctrl+C to stop.")
-    # Keep server running
-    while true
-        sleep(.1)
+    # Keep server running (add a try/catch for graceful shutdown)
+    try
+        while true
+            sleep(1) # Check less frequently
+        end
+    catch e
+        if e isa InterruptException
+            println("\nCtrl+C detected. Shutting down server...")
+            # Potentially add cleanup code here if needed before exiting
+        else
+            @error "Server loop error" exception=e
+        end
+    finally
+        println("Server stopped.")
+        # You might want to explicitly close the server socket if WebSockets.serve doesn't handle it fully on interrupt
     end
 end
-
-###########################################
-# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
-###########################################
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\3_Websockets_and_flight_data\3.2_🔁_Update_and_transfer_aircraft_state.jl
@@ -6895,87 +7098,144 @@ end
 
 ###########################################
 # FILE: 3.3_📈_record_and_save_flight_data.jl
+# MODIFIED TO INCLUDE ADDITIONAL TELEMETRY DATA
 ###########################################
 
+using DataFrames
+using CSV
+using Dates
+
 const DECIMAL_PLACES = 3
-const TIMESTAMP = Dates.format(now(), "yyyy-mm-dd_@_HHh-MM-SS")
-csv_file = joinpath(project_dir, "📊_Flight_Test_Data",
-    "simulation_data_" * TIMESTAMP * ".csv")
+# Assume TIMESTAMP, csv_file, start_recording_sec, finish_recording_sec,
+# and the initial df DataFrame definition (with ALL required columns)
+# are handled elsewhere (e.g., in reset_flight_data_recording).
+# Assume has_written_to_csv is also managed elsewhere.
 
-df = DataFrame(
-    time=Float64[],
-    x=Float64[],  y=Float64[],  z=Float64[],
-    vx=Float64[], vy=Float64[], vz=Float64[],
-    qx=Float64[], qy=Float64[], qz=Float64[], qw=Float64[],
-    wx=Float64[], wy=Float64[], wz=Float64[],
-    fx_global=Float64[], fy_global=Float64[], fz_global=Float64[],
-    alpha_DEG=Float64[], beta_DEG=Float64[],
-    pitch_demand=Float64[], roll_demand=Float64[], yaw_demand=Float64[],
-    pitch_demand_attained=Float64[], roll_demand_attained=Float64[],
-    yaw_demand_attained=Float64[],
-    thrust_setting_demand=Float64[], thrust_attained=Float64[]
-)
-
-# Flag to ensure CSV is written exactly once
-has_written_to_csv = false
+# NOTE: The DataFrame 'df' passed to this function MUST be initialized
+#       with columns corresponding to ALL the fields being pushed below,
+#       including the newly added ones (CL, CD, ..., r_yaw_rate).
 
 function gather_flight_data(
-    aircraft_state_data::Dict{String,Float64},
+    # Rename input dict for clarity - it contains the *updated* state from the integrator
+    updated_aircraft_state_dict::Dict{String,Float64},
     current_sim_time::Float64,
-    df::DataFrame
+    df::DataFrame # Pass the DataFrame explicitly
 )
-    global has_written_to_csv
+    global has_written_to_csv # Flag from external scope
+    global csv_file           # File path from external scope
+    global start_recording_sec # Start time from external scope
+    global finish_recording_sec # End time from external scope
+
 
     # 1) Append data while within [start_recording_sec .. finish_recording_sec]
     if current_sim_time >= start_recording_sec &&
        current_sim_time <= finish_recording_sec
 
+        # Push data using a standard named tuple with keys matching DataFrame columns
         push!(df, (
             time = round(current_sim_time, digits=DECIMAL_PLACES),
 
-            x  = round(aircraft_state_data["x"],  digits=DECIMAL_PLACES),
-            y  = round(aircraft_state_data["y"],  digits=DECIMAL_PLACES),
-            z  = round(aircraft_state_data["z"],  digits=DECIMAL_PLACES),
+            # --- Original Position/Velocity/Orientation/Forces ---
+            LATITUDE_m  = round(updated_aircraft_state_dict["x"],  digits=DECIMAL_PLACES), # x -> LATITUDE_m
+            ALTITUDE_m  = round(updated_aircraft_state_dict["y"],  digits=DECIMAL_PLACES), # y -> ALTITUDE_m
+            LONGITUDE_m = round(updated_aircraft_state_dict["z"],  digits=DECIMAL_PLACES), # z -> LONGITUDE_m
 
-            vx = round(aircraft_state_data["vx"], digits=DECIMAL_PLACES),
-            vy = round(aircraft_state_data["vy"], digits=DECIMAL_PLACES),
-            vz = round(aircraft_state_data["vz"], digits=DECIMAL_PLACES),
+            vx = round(updated_aircraft_state_dict["vx"], digits=DECIMAL_PLACES),
+            VSI_ms = round(updated_aircraft_state_dict["vy"], digits=DECIMAL_PLACES), # vy -> VSI_ms
+            vz = round(updated_aircraft_state_dict["vz"], digits=DECIMAL_PLACES),
 
-            qx = round(aircraft_state_data["qx"], digits=DECIMAL_PLACES),
-            qy = round(aircraft_state_data["qy"], digits=DECIMAL_PLACES),
-            qz = round(aircraft_state_data["qz"], digits=DECIMAL_PLACES),
-            qw = round(aircraft_state_data["qw"], digits=DECIMAL_PLACES),
+            qx = round(updated_aircraft_state_dict["qx"], digits=DECIMAL_PLACES),
+            qy = round(updated_aircraft_state_dict["qy"], digits=DECIMAL_PLACES),
+            qz = round(updated_aircraft_state_dict["qz"], digits=DECIMAL_PLACES),
+            qw = round(updated_aircraft_state_dict["qw"], digits=DECIMAL_PLACES),
 
-            wx = round(aircraft_state_data["wx"], digits=DECIMAL_PLACES),
-            wy = round(aircraft_state_data["wy"], digits=DECIMAL_PLACES),
-            wz = round(aircraft_state_data["wz"], digits=DECIMAL_PLACES),
+            wx = round(updated_aircraft_state_dict["wx"], digits=DECIMAL_PLACES), # Angular velocities
+            wy = round(updated_aircraft_state_dict["wy"], digits=DECIMAL_PLACES),
+            wz = round(updated_aircraft_state_dict["wz"], digits=DECIMAL_PLACES),
 
-            fx_global = round(aircraft_state_data["fx_global"], digits=DECIMAL_PLACES),
-            fy_global = round(aircraft_state_data["fy_global"], digits=DECIMAL_PLACES),
-            fz_global = round(aircraft_state_data["fz_global"], digits=DECIMAL_PLACES),
+            fx_global = round(updated_aircraft_state_dict["fx_global"], digits=DECIMAL_PLACES),
+            fy_global = round(updated_aircraft_state_dict["fy_global"], digits=DECIMAL_PLACES),
+            fz_global = round(updated_aircraft_state_dict["fz_global"], digits=DECIMAL_PLACES),
 
-            alpha_DEG = round(rad2deg(aircraft_state_data["alpha_RAD"]), digits=DECIMAL_PLACES),
-            beta_DEG  = round(rad2deg(aircraft_state_data["beta_RAD"]),  digits=DECIMAL_PLACES),
+            # --- Original Angles/Demands ---
+            alpha_DEG = round(rad2deg(updated_aircraft_state_dict["alpha_RAD"]), digits=DECIMAL_PLACES),
+            beta_DEG  = round(rad2deg(updated_aircraft_state_dict["beta_RAD"]),  digits=DECIMAL_PLACES),
 
-            pitch_demand           = round(aircraft_state_data["pitch_demand"],           digits=DECIMAL_PLACES),
-            roll_demand            = round(aircraft_state_data["roll_demand"],            digits=DECIMAL_PLACES),
-            yaw_demand             = round(aircraft_state_data["yaw_demand"],             digits=DECIMAL_PLACES),
-            thrust_setting_demand  = round(aircraft_state_data["thrust_setting_demand"],  digits=DECIMAL_PLACES),
+            pitch_demand          = round(updated_aircraft_state_dict["pitch_demand"],          digits=DECIMAL_PLACES),
+            roll_demand           = round(updated_aircraft_state_dict["roll_demand"],           digits=DECIMAL_PLACES),
+            yaw_demand            = round(updated_aircraft_state_dict["yaw_demand"],            digits=DECIMAL_PLACES),
+            pitch_demand_attained = round(updated_aircraft_state_dict["pitch_demand_attained"], digits=DECIMAL_PLACES),
+            roll_demand_attained  = round(updated_aircraft_state_dict["roll_demand_attained"],  digits=DECIMAL_PLACES),
+            yaw_demand_attained   = round(updated_aircraft_state_dict["yaw_demand_attained"],   digits=DECIMAL_PLACES),
+            thrust_setting_demand = round(updated_aircraft_state_dict["thrust_setting_demand"], digits=DECIMAL_PLACES),
+            thrust_attained       = round(updated_aircraft_state_dict["thrust_attained"],       digits=DECIMAL_PLACES),
 
-            pitch_demand_attained  = round(aircraft_state_data["pitch_demand_attained"],  digits=DECIMAL_PLACES),
-            roll_demand_attained   = round(aircraft_state_data["roll_demand_attained"],   digits=DECIMAL_PLACES),
-            yaw_demand_attained    = round(aircraft_state_data["yaw_demand_attained"],    digits=DECIMAL_PLACES),
-            thrust_attained        = round(aircraft_state_data["thrust_attained"],        digits=DECIMAL_PLACES)
-        ))
+            # --- NEW: Additional Flight Data for Telemetry ---
+            CL = round(updated_aircraft_state_dict["CL"], digits=DECIMAL_PLACES),
+            CD = round(updated_aircraft_state_dict["CD"], digits=DECIMAL_PLACES),
+            CL_CD_ratio = round(updated_aircraft_state_dict["CL/CD"], digits=DECIMAL_PLACES), # Renamed key
+            CS = round(updated_aircraft_state_dict["CS"], digits=DECIMAL_PLACES),
+
+            nx = round(updated_aircraft_state_dict["nx"], digits=DECIMAL_PLACES),
+            nz = round(updated_aircraft_state_dict["nz"], digits=DECIMAL_PLACES),
+            ny = round(updated_aircraft_state_dict["ny"], digits=DECIMAL_PLACES),
+
+            CM_roll_from_aero_forces   = round(updated_aircraft_state_dict["CM_roll_from_aero_forces"],   digits=DECIMAL_PLACES),
+            CM_yaw_from_aero_forces    = round(updated_aircraft_state_dict["CM_yaw_from_aero_forces"],    digits=DECIMAL_PLACES),
+            CM_pitch_from_aero_forces  = round(updated_aircraft_state_dict["CM_pitch_from_aero_forces"],  digits=DECIMAL_PLACES),
+
+            CM_roll_from_control       = round(updated_aircraft_state_dict["CM_roll_from_control"],       digits=DECIMAL_PLACES),
+            CM_yaw_from_control        = round(updated_aircraft_state_dict["CM_yaw_from_control"],        digits=DECIMAL_PLACES),
+            CM_pitch_from_control      = round(updated_aircraft_state_dict["CM_pitch_from_control"],      digits=DECIMAL_PLACES),
+
+            CM_roll_from_aero_stiffness  = round(updated_aircraft_state_dict["CM_roll_from_aero_stiffness"],  digits=DECIMAL_PLACES),
+            CM_yaw_from_aero_stiffness   = round(updated_aircraft_state_dict["CM_yaw_from_aero_stiffness"],   digits=DECIMAL_PLACES),
+            CM_pitch_from_aero_stiffness = round(updated_aircraft_state_dict["CM_pitch_from_aero_stiffness"], digits=DECIMAL_PLACES),
+
+            CM_roll_from_aero_damping    = round(updated_aircraft_state_dict["CM_roll_from_aero_damping"],    digits=DECIMAL_PLACES),
+            CM_yaw_from_aero_damping     = round(updated_aircraft_state_dict["CM_yaw_from_aero_damping"],     digits=DECIMAL_PLACES),
+            CM_pitch_from_aero_damping   = round(updated_aircraft_state_dict["CM_pitch_from_aero_damping"],   digits=DECIMAL_PLACES),
+
+            # --- NEW: Body frame rotation rates (assuming source is average_flight_data_for_telemetry as per dict) ---
+            # Note: These might be redundant if wx, wy, wz are sufficient, but included as per the dictionary structure.
+            q_pitch_rate = round(updated_aircraft_state_dict["q_pitch_rate"], digits=DECIMAL_PLACES),
+            p_roll_rate  = round(updated_aircraft_state_dict["p_roll_rate"],  digits=DECIMAL_PLACES),
+            r_yaw_rate   = round(updated_aircraft_state_dict["r_yaw_rate"],   digits=DECIMAL_PLACES), 
+
+            TAS = round(updated_aircraft_state_dict["TAS"], digits=DECIMAL_PLACES),
+            EAS = round(updated_aircraft_state_dict["EAS"], digits=DECIMAL_PLACES),
+            Mach= round(updated_aircraft_state_dict["Mach"], digits=DECIMAL_PLACES),
+            dynamic_pressure = round(updated_aircraft_state_dict["dynamic_pressure"], digits=DECIMAL_PLACES)
+
+
+        ), promote=true) # Use promote=true just in case types are inferred narrowly initially
     end
 
     # 2) If we're *past* the interval and haven't written CSV yet, do it now
     if current_sim_time > finish_recording_sec && !has_written_to_csv
-        CSV.write(csv_file, df)
-        has_written_to_csv = true
-        println("Flight data saved to CSV file: $(csv_file)")
+        # Make sure the directory exists before writing
+        data_dir = dirname(csv_file)
+        if !isdir(data_dir)
+            try
+                mkpath(data_dir)
+                println("Created directory: $data_dir")
+            catch e
+                 @error "Failed to create directory $data_dir" exception=e
+                 return # Exit if directory creation fails
+            end
+        end
+
+        # Write the DataFrame to the CSV file
+        try
+            CSV.write(csv_file, df)
+            has_written_to_csv = true
+            println("Flight data saved to CSV file: $(csv_file)")
+        catch e
+             @error "Failed to write CSV file $csv_file" exception=e
+        end
     end
 end
+
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟣JULIA🟣\4_Atmosphere_anemometry_and_constants\4.1_🎯_physical_constants.jl
@@ -7176,8 +7436,9 @@ function atmosphere_isa(height)
 
     rho = p / (R_AIR * T)
     a   = sqrt(GAMMA_AIR * R_AIR * T)
+    sigma = rho / 1.225
 
-    return [T, p, rho, a]
+    return [T, p, rho, a, sigma]
 end
 
 ###########################################

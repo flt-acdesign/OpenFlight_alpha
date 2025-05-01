@@ -62,12 +62,25 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
             tailcone_light_pos = [-7.2, 0, 0];
             strobe_light_pos = [-1, 0.4, 0];
             break;
+          case "pc9.glb": // Treat both the same for transformations
+            scaleFactor = 1;
+            rotationX = 0; rotationY = 0; rotationZ = 0;
+            translationX = 0; translationY = 0; translationZ = 0;
+            // Add light/propeller info specifically for bucker_no_reg if needed, or keep common
+    
+                propeller_pos = [3.4, 0.22, 0]; // Example position, adjust as needed
+                propeller_diameter = 1.9; // Example diameter
+                wing_lights_pos = [-.07, 0.09, 5.07];
+                tailcone_light_pos = [-5.8, -.13, 0];
+                strobe_light_pos = [-4.7, 1.9, 0];
+            
+            break;
           case "bucker.glb":
             scaleFactor = 1;
             rotationX = 0; rotationY = -90; rotationZ = 0;
             translationX = 1; translationY = -2.5; translationZ = 0;
             // Add light/propeller info specifically for bucker_no_reg if needed, or keep common
-            if (fileName.toLowerCase() === "bucker_no_reg.glb") {
+            if (fileName.toLowerCase() === "bucker.glb") {
                 propeller_pos = [3.3, 1, 0]; // Example position, adjust as needed
                 propeller_diameter = 1.9; // Example diameter
                 // wing_lights_pos = [...]; // Example
@@ -89,7 +102,7 @@ function setup_GLB_model_transformations(scene, shadowGenerator) {
             }
             break;
           case "airliner.glb":
-            scaleFactor = 0.01;
+            scaleFactor = 1;
             rotationX = 0; rotationY = 0; rotationZ = 0;
             translationX = 0; translationY = 0; translationZ = 0;
             // Define light/propeller positions if applicable

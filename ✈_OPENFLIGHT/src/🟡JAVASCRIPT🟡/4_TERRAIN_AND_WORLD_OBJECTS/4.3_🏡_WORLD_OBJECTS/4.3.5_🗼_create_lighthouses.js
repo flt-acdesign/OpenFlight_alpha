@@ -1,5 +1,3 @@
-
-
 /***************************************************************
  * Creates a cylindrical tower with alternating white/red segments.
  * On top is a blinking sphere whose pattern follows the specified
@@ -30,15 +28,15 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
      ***************************************************************/
     const defaults = {
         basePosition: new BABYLON.Vector3(0, 0, 0), // Base position for the tower
-        towerHeightInSegments: 5,               // How many cylindrical segments
-        segmentHeight: 1,                       // Each cylinder's height
-        towerRadius: 1,                         // Cylinder radius
-        topSphereDiameter: 2,                   // Sphere diameter at top
-        morseCode: "...---...",                 // Default code: SOS
-        blinkUnit: 300,                         // ms for a dot
-        separationTime: 1000,                   // ms after full pattern
-        conicity: 1,                            // Ratio of top diameter to base diameter (default: 1 for straight tower)
-        glowIntensity: 1                        // Added default for glow
+        towerHeightInSegments: 5,                   // How many cylindrical segments
+        segmentHeight: 1,                           // Each cylinder's height
+        towerRadius: 1,                             // Cylinder radius
+        topSphereDiameter: 2,                       // Sphere diameter at top
+        morseCode: "...---...",                     // Default code: SOS
+        blinkUnit: 300,                             // ms for a dot
+        separationTime: 1000,                       // ms after full pattern
+        conicity: 1,                                // Ratio of top diameter to base diameter (default: 1 for straight tower)
+        glowIntensity: 1                            // Added default for glow
     };
     const {
         basePosition,
@@ -117,6 +115,7 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
     sphere.material = sphereMaterial;
 
     const light = new BABYLON.PointLight("morseSphereLight", sphere.getAbsolutePosition(), scene);
+    light.setEnabled(false); // <<< MODIFICATION: Disable the point light illumination
     light.intensity = 0;
     light.diffuse = yellowColor;
     light.range = towerHeightInSegments * segmentHeight * 1.5; // Adjust range based on height
@@ -182,7 +181,7 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
         // --- Update Visual State ---
         if (isOn !== shouldBeOn) {
             sphereMaterial.emissiveColor = shouldBeOn ? yellowColor : BABYLON.Color3.Black();
-            light.intensity = shouldBeOn ? 1 : 0;
+            // light.intensity = shouldBeOn ? 1 : 0; // PointLight intensity is now irrelevant as it's disabled
 
             // ** Interact with glowLayer only if it exists **
             if (glowLayer) {
@@ -203,7 +202,7 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
     return {
         towerParent, // Return the parent node
         sphere,
-        light,
+        light, // Still return the light object, even though it's disabled
         // glowLayer, // No need to return shared layer
         dispose: () => {
             scene.onBeforeRenderObservable.remove(observer);
@@ -212,8 +211,10 @@ function createMorseTower(scene, shadowGenerator, options = {}) {
                 glowLayer.removeIncludedOnlyMesh(sphere);
             }
             // ** End Dispose Logic **
+            if (light) { // Check if light was created before disposing
+                light.dispose();
+            }
             sphere.dispose();
-            light.dispose();
             // Dispose all tower segments and parent
             towerParent.dispose(false, true); // Dispose children too
         }
@@ -233,9 +234,9 @@ function create_lighthouses(scene, shadowGenerator) {
         segmentHeight: 2.5,
         towerRadius: 2,
         topSphereDiameter: 3,
-        morseCode: "-.-- --- ..-    .- .-. .    - --- ---    ... -- .- .-. -", // Added spaces for word gaps
-        blinkUnit: 300,         // ms for a dot
-        separationTime: 2000,   // Increased pause after pattern
+        morseCode: "-.-- --- ..-     .- .-. .     - --- ---     ... -- .- .-. -", // Added spaces for word gaps
+        blinkUnit: 300,        // ms for a dot
+        separationTime: 2000,    // Increased pause after pattern
         conicity: .2,
         glowIntensity: 1.5 // Example specific intensity
     });
@@ -246,8 +247,8 @@ function create_lighthouses(scene, shadowGenerator) {
         segmentHeight: 2.5,
         towerRadius: 2,
         topSphereDiameter: 3,
-        morseCode: "-.-. ..- .-. .. --- ... .. - -.--    -.- .. .-.. .-.. . -..    - .... .    -.-. .- -", // Added spaces
-        blinkUnit: 300,         // ms for a dot
+        morseCode: "-.-. ..- .-. .. --- ... .. - -.--     -.- .. .-.. .-.. . -..     - .... .     -.-. .- -", // Added spaces
+        blinkUnit: 300,        // ms for a dot
         separationTime: 2000,    // Increased pause after pattern
         glowIntensity: 1.2 // Example specific intensity
     });

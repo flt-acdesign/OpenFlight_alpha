@@ -8,12 +8,16 @@ function createSkySphere(scene, camera) {
     // Create a sphere (with inverted normals) to serve as the sky dome.
     const skySphere = BABYLON.MeshBuilder.CreateSphere(
         "skySphere",
-        { diameter: 7000, sideOrientation: BABYLON.Mesh.BACKSIDE }, // Initial base diameter
+        {
+            diameter: 7000,
+            segments: 16, // <--- Added this line. Lower value = fewer triangles.
+            sideOrientation: BABYLON.Mesh.BACKSIDE
+        },
         scene
     );
 
     // Create a dynamic texture to paint a vertical gradient.
-    const textureSize = 512;
+    const textureSize = 128;
     const skyTexture = new BABYLON.DynamicTexture(
         "skyTexture",
         { width: textureSize, height: textureSize },
@@ -49,7 +53,9 @@ function createSkySphere(scene, camera) {
     skySphere.position = BABYLON.Vector3.Zero(); // Keep centered at world origin
 
     // Optionally rotate the sky sphere (here rotated 90° around the Z-axis).
-    skySphere.rotation.z = Math.PI / 2;
+    skySphere.rotation.x = Math.PI / 2;
+    skySphere.rotation.y = 0 // Math.PI / 5;
+    skySphere.rotation.z = 0 //Math.PI / 51;
 
     return skySphere;
 }
