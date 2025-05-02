@@ -70,8 +70,9 @@ aircraft_flight_physics_and_propulsive_data = (
 
     # Static stability derivatives
     CM0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM0"),        # Zero-lift pitching moment coefficient
-    CN_beta = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CN_beta"),     # Derivative of yawing moment w.r.t. sideslip angle
-    CM_alpha = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM_alpha"),    # Derivative of pitching moment w.r.t. angle of attack
+    Cn_beta = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cn_beta"),     # Derivative of yawing moment w.r.t. sideslip angle
+    Cl_beta = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_beta"),     # Derivative of rolling moment w.r.t. sideslip angle
+    Cm_alpha = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cm_alpha"),    # Derivative of pitching moment w.r.t. angle of attack
 
     # Dynamic stability derivatives
     Cl_p = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_p"),      # Roll damping coefficient

@@ -65,8 +65,21 @@ function 🟢_yawing_moment_coefficient_due_to_aerodynamic_stiffness(
 )
     # Calculate weathercock stability contribution
     # Multiply directional stability derivative by sideslip angle
-    return aircraft_flight_physics_and_propulsive_data.CN_beta * beta_RAD
+    return aircraft_flight_physics_and_propulsive_data.Cn_beta * beta_RAD
 end
+
+function 🟢_rolling_moment_coefficient_due_to_sideslip(
+    alpha_RAD,                              # Angle of attack in radians
+    beta_RAD,                               # Sideslip angle in radians
+    Mach_number,                            # Mach number
+    aircraft_data,                          # Aircraft data struct
+    control_demand_vector_attained          # Actual control surface deflections
+)
+    # Calculate weathercock stability contribution
+    # Multiply directional stability derivative by sideslip angle
+    return aircraft_flight_physics_and_propulsive_data.Cl_beta * beta_RAD
+end
+
 
 function 🟢_pitching_moment_coefficient_due_to_aerodynamic_stiffness(
     alpha_RAD,                              # Angle of attack in radians
@@ -77,7 +90,7 @@ function 🟢_pitching_moment_coefficient_due_to_aerodynamic_stiffness(
 )
     # Calculate pitch stability contribution
     # Multiply pitch stability derivative by angle of attack
-    return aircraft_flight_physics_and_propulsive_data.CM_alpha * alpha_RAD
+    return aircraft_flight_physics_and_propulsive_data.Cm_alpha * alpha_RAD
 end
 
 # Functions to calculate dynamic stability (damping) moment coefficients

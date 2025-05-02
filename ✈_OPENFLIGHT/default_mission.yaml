@@ -3,25 +3,18 @@
 ###########################################
 
 # AIRCRAFT PARAMETERS
-
 aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
 
-initial_velocity: 30  # Initial velocity in m/s
+# FLIGHT TEST PARAMETERS
+initial_velocity: 40  # Initial velocity in m/s
 initial_altitude: 1400  # Initial altitude in m
 
-
-# FLIGHT TEST PARAMETERS
-
-start_flight_data_recording_at:  1    # start recording in seconds after start of flight
-finish_flight_data_recording_at: 50    # finish recording in seconds
-
-show_force_vectors: "true"
-show_velocity_vectors: "true"
-
-show_trajectory: "false"   # "true" or "false", to show the trajectory of the aircraft
-
+# FLIGHT RECORDING PARAMETERS
+start_flight_data_recording_at:  3    # start recording in seconds after start of flight
+finish_flight_data_recording_at: 20    # finish recording in seconds
 
 # VISUALIZATION PARAMETERS
-
-scenery_complexity: 3   #  0 = four checkered quadrants (good for old GPUs), 1 = low, 2 = medium or 3 = high detail
-
+scenery_complexity: 0   #  0 = four checkered quadrants (good for old GPUs), 1 = low, 2 = medium or 3 = high detail
+show_force_vectors: "true"
+show_velocity_vectors: "true"
+show_trajectory: "true"   # "true" or "false", to show the trajectory of the aircraft

@@ -140,13 +140,20 @@ function compute_6DOF_equations_of_motion(
                 initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
                 aircraft_data,
                 control_demand_vector_attained
-            ),
-            🟢_yawing_moment_coefficient_due_to_aerodynamic_stiffness( # CN_beta * beta_rad,
+            )  + 
+            🟢_rolling_moment_coefficient_due_to_sideslip(
+                initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
+                aircraft_data,
+                control_demand_vector_attained
+            ) 
+            
+            ,
+            🟢_yawing_moment_coefficient_due_to_aerodynamic_stiffness( # Cn_beta * beta_rad,
             initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
                 aircraft_data,
                 control_demand_vector_attained
             ),
-            🟢_pitching_moment_coefficient_due_to_aerodynamic_stiffness( # CM_alpha * alpha_rad
+            🟢_pitching_moment_coefficient_due_to_aerodynamic_stiffness( # Cm_alpha * alpha_rad
             initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
                 aircraft_data,
                 control_demand_vector_attained
