@@ -122,10 +122,10 @@ function handleKeyboardControls(scene) {
   // A) Pitch/roll => arrow keys
   //    (They control flight, not camera.)
   if (keysPressed['ArrowUp']) {
-    pitch_demand = -0.8; 
+    pitch_demand = 0.8; 
   }
   if (keysPressed['ArrowDown']) {
-    pitch_demand = 0.8;
+    pitch_demand = -0.8;
   }
   if (keysPressed['ArrowLeft']) {
     roll_demand = 0.8;
@@ -136,10 +136,10 @@ function handleKeyboardControls(scene) {
 
   // B) Yaw => Z / X
   if (keysPressed['KeyZ']) {
-    yaw_demand = -0.8;
+    yaw_demand = 0.8;
   }
   if (keysPressed['KeyX']) {
-    yaw_demand = 0.8;
+    yaw_demand = -0.8;
   }
 
   // C) Thrust => digits 0..9 => 0%..90%
@@ -237,8 +237,8 @@ function handleGamepadFlightAndCamera(scene) {
     // XBOX Mapping
     thrust_setting_demand = (-axes[1] + 1) / 2; // Left stick vertical
     roll_demand = -axes[2];                   // Right stick horizontal
-    pitch_demand = axes[3];                   // Right stick vertical
-    yaw_demand = axes[0];                     // Left stick horizontal
+    pitch_demand = -axes[3];                   // Right stick vertical
+    yaw_demand = -axes[0];                     // Left stick horizontal
 
     // Camera selection via face buttons
     if (isButtonJustPressed(gamepad, 0)) setActiveCamera(0, scene); // external
@@ -255,8 +255,8 @@ function handleGamepadFlightAndCamera(scene) {
     // PLAYSTATION/GENERIC Mapping
     thrust_setting_demand = -axes[2];
     roll_demand  = -axes[0];
-    pitch_demand = axes[1];
-    yaw_demand   = axes[5];
+    pitch_demand = -axes[1];
+    yaw_demand   = -axes[5];
 
     // Camera selection
     if (isButtonJustPressed(gamepad, 0)) setActiveCamera(0, scene);
@@ -274,9 +274,9 @@ function handleGamepadFlightAndCamera(scene) {
   } else if (type === 'JOYSTICK') {
     // JOYSTICK Mapping
     roll_demand = -axes[0] || 0;
-    pitch_demand = axes[1] || 0;
+    pitch_demand = -axes[1] || 0;
     thrust_setting_demand = axes[2] !== undefined ? (-axes[2] + 1) / 2 : 0;
-    yaw_demand = axes.length > 3 ? axes[5] : 0;
+    yaw_demand = axes.length > 3 ? -axes[5] : 0;
 
     // Camera selection
     if (isButtonJustPressed(gamepad, 0)) setActiveCamera(2, scene);
@@ -291,8 +291,8 @@ function handleGamepadFlightAndCamera(scene) {
   } else {
     // Default mapping if type not recognized
     roll_demand = -(axes[2] || 0);  // right stick horizontal
-    pitch_demand = (axes[3] || 0);  // right stick vertical
-    yaw_demand = (axes[0] || 0);    // left stick horizontal
+    pitch_demand = (-axes[3] || 0);  // right stick vertical
+    yaw_demand = (-axes[0] || 0);    // left stick horizontal
     thrust_setting_demand = (-axes[1] + 1) / 2; 
 
     // Default camera selection

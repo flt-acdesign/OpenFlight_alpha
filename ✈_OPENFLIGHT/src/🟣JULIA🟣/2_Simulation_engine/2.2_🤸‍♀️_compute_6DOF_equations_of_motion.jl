@@ -119,11 +119,16 @@ function compute_6DOF_equations_of_motion(
                 aircraft_state_vector,
                 control_demand_vector_attained
             ),
-            🟢_yawing_moment_coefficient_due_to_control_attained(
+            🟢_yawing_moment_coefficient_due_to_yaw_control_attained(
                 initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
                 aircraft_data,
                 aircraft_state_vector,
-                control_demand_vector_attained
+                control_demand_vector_attained) + 
+            🟢_yawing_moment_coefficient_due_to_roll_control_attained(
+                    initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
+                    aircraft_data,
+                    aircraft_state_vector,
+                    control_demand_vector_attained
             ),
             🟢_pitching_moment_coefficient_due_to_control_attained(
                 initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,

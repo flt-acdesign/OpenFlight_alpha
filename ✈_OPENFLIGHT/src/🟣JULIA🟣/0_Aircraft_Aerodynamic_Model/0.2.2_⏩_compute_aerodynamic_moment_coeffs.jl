@@ -10,11 +10,11 @@ function 🟢_rolling_moment_coefficient_due_to_control_attained(
 )
     # Calculate rolling moment from aileron deflection
     # Multiply control effectiveness derivative by actual aileron deflection
-    return aircraft_flight_physics_and_propulsive_data.derivative_roll_vs_aileron * 
+    return aircraft_flight_physics_and_propulsive_data.Cl_da * 
            control_demand_vector_attained.roll_demand_attained
 end
 
-function 🟢_yawing_moment_coefficient_due_to_control_attained(
+function 🟢_yawing_moment_coefficient_due_to_yaw_control_attained(
     alpha_RAD,                              # Angle of attack in radians
     beta_RAD,                               # Sideslip angle in radians
     Mach,                                   # Mach number
@@ -24,9 +24,26 @@ function 🟢_yawing_moment_coefficient_due_to_control_attained(
 )
     # Calculate yawing moment from rudder deflection
     # Multiply control effectiveness derivative by actual rudder deflection
-    return aircraft_flight_physics_and_propulsive_data.derivative_yaw_vs_rudder * 
+    return aircraft_flight_physics_and_propulsive_data.Cn_dr * 
            control_demand_vector_attained.yaw_demand_attained
 end
+
+function 🟢_yawing_moment_coefficient_due_to_roll_control_attained(
+    alpha_RAD,                              # Angle of attack in radians
+    beta_RAD,                               # Sideslip angle in radians
+    Mach,                                   # Mach number
+    aircraft_flight_physics_and_propulsive_data,  # Aircraft data struct
+    aircraft_state,                         # Current aircraft state
+    control_demand_vector_attained          # Actual control surface deflections
+)
+    # Calculate yawing moment from rudder deflection
+    # Multiply control effectiveness derivative by actual rudder deflection
+    return aircraft_flight_physics_and_propulsive_data.Cn_da * 
+           control_demand_vector_attained.roll_demand_attained
+end
+
+
+
 
 function 🟢_pitching_moment_coefficient_due_to_control_attained(
     alpha_RAD,                              # Angle of attack in radians
@@ -38,7 +55,7 @@ function 🟢_pitching_moment_coefficient_due_to_control_attained(
 )
     # Calculate pitching moment from elevator deflection plus zero-lift pitching moment
     # Combine control effectiveness with elevator deflection and add baseline moment
-    return aircraft_flight_physics_and_propulsive_data.derivative_pitch_vs_elevator * 
+    return aircraft_flight_physics_and_propulsive_data.Cm_de * 
            control_demand_vector_attained.pitch_demand_attained + 
            aircraft_flight_physics_and_propulsive_data.CM0
 end

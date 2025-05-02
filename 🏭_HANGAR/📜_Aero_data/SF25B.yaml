@@ -1,32 +1,47 @@
 constants:
+# Mass properties
   aircraft_mass: 600  # Mass of the aircraft in kilograms
   radius_of_giration_pitch: 3.5  # Radius of gyration about the pitch axis in meters
   radius_of_giration_yaw: 4  # Radius of gyration about the yaw axis in meters
   radius_of_giration_roll: 4  # Radius of gyration about the roll axis in meters
   principal_axis_pitch_up_DEG: -2  # Pitch angle of the principal axis in degrees (nose-down attitude)
   x_CoG: 2.4  # Longitudinal position of the center of gravity (CoG) in meters
+
+# Geometric references
   x_wing_aerodynamic_center: 2.9  # Position of the wing's aerodynamic center along the longitudinal axis in meters
   reference_area: 18.2  # Reference wing area in square meters
   reference_span: 10.5  # Reference wing span in meters
   AR: 13.8  # Aspect ratio of the wing
   Oswald_factor: 0.7  # Oswald efficiency factor (indicates aerodynamic efficiency)
   wing_mean_aerodynamic_chord: 1.35  # Mean aerodynamic chord of the wing in meters
-  derivative_roll_vs_aileron: 0.3  # Roll rate response derivative with respect to aileron deflection
-  derivative_pitch_vs_elevator: 0.20  # Pitch rate response derivative with respect to elevator deflection
-  derivative_yaw_vs_rudder: 0.1  # Yaw rate response derivative with respect to rudder deflection
-  CM0: 0.1  # Zero-lift pitching moment coefficient
-  Cn_beta: 0.3  # Yawing moment coefficient derivative with respect to sideslip angle
-  Cl_beta: 0.25  # Rolling moment coefficient derivative with respect to sideslip angle
-  Cm_alpha: -0.6  # Pitching moment coefficient derivative with respect to angle of attack
-  Cl_p: -2.0  # Roll damping coefficient (derivative of roll moment with respect to roll rate)
-  Cm_q: -.3  # Pitch damping coefficient (derivative of pitch moment with respect to pitch rate)
-  Cn_r: -.5  # Yaw damping coefficient (derivative of yaw moment with respect to yaw rate)
+
+# Aircraft Pitching moment coefficient at zero lift (CM0)
+  CM0: -0.01  # Zero-lift pitching moment coefficient
+
+# Aerodynamic stiffness (stability) derivatives
+  Cl_beta: -0.2  # Rolling moment coefficient derivative with respect to sideslip angle  
+  Cm_alpha: -0.7  # Pitching moment coefficient derivative with respect to angle of attack  
+  Cn_beta: 0.1  # Yawing moment coefficient derivative with respect to sideslip angle
+  
+# Aerodynamic damping coefficients
+  Cl_p: -2.0  # Roll damping coefficient (derivative of rolling moment coefficient with respect to roll rate)
+  Cm_q: -9.0  # Pitch damping coefficient (derivative of pitching moment coefficient with respect to pitch rate)
+  Cn_r: -.25  # Yaw damping coefficient (derivative of yawing moment coefficient with respect to yaw rate)
+
+# Control derivatives
+  Cl_da: 0.3  # Rolling moment coefficient derivative with respect to aileron deflection
+  Cm_de: -.4  # Pitching moment coefficient derivative with respect to elevator deflection
+  Cn_dr: -0.02  # Yawing moment coefficient derivative with respect to rudder deflection
+  Cn_da: -0.05  # Yawing moment coefficient derivative with respect to aileron deflection
+
+# Thrust data
   maximum_thrust_at_sea_level: 2500 # Maximum engine thrust at sea level in Newtons
   thrust_installation_angle_DEG: 0  # Engine installation angle relative to the longitudinal axis in degrees
   control_actuator_speed: 5  # Speed of control surface actuators in ratio of maximum deflection per second (1 means full deflection is achieved in 1 second)
   engine_spool_up_speed: 1.3  # Engine spool-up speed factor (rate of thrust increase)
   engine_spool_down_speed: 1.1  # Engine spool-down speed factor (rate of thrust decrease)
 
+# Non-linear coefficients (Only CL, CS and CD0 are used at this point, the rest are placeholders for format)
 coefficients:
   CL:  # Lift coefficient data
     parameters:

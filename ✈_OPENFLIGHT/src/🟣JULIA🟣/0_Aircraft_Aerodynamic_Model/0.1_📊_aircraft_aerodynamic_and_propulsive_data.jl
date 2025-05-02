@@ -64,9 +64,10 @@ aircraft_flight_physics_and_propulsive_data = (
     wing_mean_aerodynamic_chord = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "wing_mean_aerodynamic_chord"),
 
     # Control derivatives
-    derivative_roll_vs_aileron = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_roll_vs_aileron"),     # d_C_rolling_moment/d_aileron (per rad)
-    derivative_pitch_vs_elevator = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_pitch_vs_elevator"),  # d_C_pitching_moment/d_elevator (per rad)
-    derivative_yaw_vs_rudder = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "derivative_yaw_vs_rudder"),      # d_C_yawing_moment/d_rudder (per rad)
+    Cl_da = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cl_da"),     # d_C_rolling_moment/d_aileron (per rad)
+    Cm_de = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cm_de"),  # d_C_pitching_moment/d_elevator (per rad)
+    Cn_dr = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cn_dr"),      # d_C_yawing_moment/d_rudder (per rad)
+    Cn_da = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Cn_da"),      # d_C_yawing_moment/d_aileron (per rad)
 
     # Static stability derivatives
     CM0 = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CM0"),        # Zero-lift pitching moment coefficient

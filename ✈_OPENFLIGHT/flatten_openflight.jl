@@ -10,7 +10,7 @@ using Base.Filesystem: walkdir, basename, joinpath, splitext
 # 4. Specify folders to exclude (new feature)
 # -----------------------------------------------------------------------------
 folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT"
-extensions  = [".html", ".css", ".js", ".jl1"]
+extensions  = [".html1", ".css1", ".js1", ".jl"]
 output_file = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\openflight_concatenated_code.txt"
 exclude_folders = String[
     # Add folders to exclude (relative or absolute paths)
