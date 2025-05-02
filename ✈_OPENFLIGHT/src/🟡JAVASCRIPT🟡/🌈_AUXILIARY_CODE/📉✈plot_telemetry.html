@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Flight Data Visualization (Dual File)</title>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
@@ -662,43 +663,43 @@
                          return traces; // Return all generated traces
                      },
                      layout: { // Layout specific to this plot
-                         title: '3D Trajectory Comparison',
+                         title: '3D Trajectory ',
                          scene: { xaxis: { title: 'Longitude (m)' }, yaxis: { title: 'Latitude (m)' }, zaxis: { title: 'Altitude (m)' }, aspectmode: 'data' },
                          legend: { x: 1.0, y: 0.9, xanchor: 'right' } // Position legend
                      }
                  },
 
-                 // --- Altitude Comparison ---
+                 // --- Altitude  ---
                  { id: 'altitudePlot', requiredCols: ['ALTITUDE_m'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
                          if (d1?.ALTITUDE_m) traces.push({ x: d1.time, y: d1.ALTITUDE_m, name: 'Altitude (F1)' });
                          if (d2?.ALTITUDE_m) traces.push({ x: d2.time, y: d2.ALTITUDE_m, name: 'Altitude (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Altitude Comparison', yaxis: { title: 'Altitude (m)' } }
+                     }, layout: { title: 'Altitude ', yaxis: { title: 'Altitude (m)' } }
                  },
 
-                 // --- Horizontal Position Comparison ---
+                 // --- Horizontal Position  ---
                  { id: 'horizontalPositionPlot', requiredCols: ['LONGITUDE_m', 'LATITUDE_m'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
                          if (d1?.LONGITUDE_m && d1.LATITUDE_m) traces.push({ x: d1.LONGITUDE_m, y: d1.LATITUDE_m, name: 'Ground Track (F1)', type: 'scatter', mode: 'lines', line: { color: 'blue' } });
                          if (d2?.LONGITUDE_m && d2.LATITUDE_m) traces.push({ x: d2.LONGITUDE_m, y: d2.LATITUDE_m, name: 'Ground Track (F2)', type: 'scatter', mode: 'lines', line: { dash: 'dot', color: 'red' } });
                          return traces;
-                     }, layout: { title: 'Horizontal Position Comparison', yaxis: { title: 'Latitude (m)', scaleanchor:'x', scaleratio: 1 }, xaxis: { title: 'Longitude (m)' }, legend: { x: 1, y: 1, xanchor: 'right'} }
+                     }, layout: { title: 'Horizontal Position ', yaxis: { title: 'Latitude (m)', scaleanchor:'x', scaleratio: 1 }, xaxis: { title: 'Longitude (m)' }, legend: { x: 1, y: 1, xanchor: 'right'} }
                  },
 
-                 // --- Vertical Speed Comparison ---
+                 // --- Vertical Speed  ---
                  { id: 'verticalSpeedPlot', requiredCols: ['VSI_ms'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
                          if (d1?.VSI_ms) traces.push({ x: d1.time, y: d1.VSI_ms, name: 'VSI (F1)' });
                          if (d2?.VSI_ms) traces.push({ x: d2.time, y: d2.VSI_ms, name: 'VSI (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Vertical Speed Comparison', yaxis: { title: 'VSI (m/s)' } }
+                     }, layout: { title: 'Vertical Speed ', yaxis: { title: 'VSI (m/s)' } }
                  },
 
-                 // --- Aerodynamic Speeds Comparison ---
+                 // --- Aerodynamic Speeds  ---
                  { id: 'aerodynamicSpeedsPlot', requiredCols: ['TAS'], // Requires TAS in at least one
                    tracesFn: (d1, d2) => {
                        const traces = [];
@@ -707,30 +708,30 @@
                        if (d2?.TAS) traces.push({ x: d2.time, y: d2.TAS, name: 'TAS (F2)', line: {dash: 'dot'} });
                        if (d2?.EAS) traces.push({ x: d2.time, y: d2.EAS, name: 'EAS (F2)', line: {dash: 'longdashdot'} });
                        return traces;
-                   }, layout: { title: 'Aerodynamic Speeds Comparison', yaxis: { title: 'Speed (m/s)' } }
+                   }, layout: { title: 'Aerodynamic Speeds ', yaxis: { title: 'Speed (m/s)' } }
                  },
 
-                 // --- Mach Comparison ---
+                 // --- Mach  ---
                  { id: 'machPlot', requiredCols: ['Mach'],
                       tracesFn: (d1, d2) => {
                          const traces = [];
                          if (d1?.Mach) traces.push({ x: d1.time, y: d1.Mach, name: 'Mach (F1)'});
                          if (d2?.Mach) traces.push({ x: d2.time, y: d2.Mach, name: 'Mach (F2)', line: {dash: 'dot'} });
                          return traces;
-                      }, layout: { title: 'Mach Number Comparison', yaxis: { title: 'Mach' } }
+                      }, layout: { title: 'Mach Number ', yaxis: { title: 'Mach' } }
                  },
 
-                 // --- Dynamic Pressure Comparison ---
+                 // --- Dynamic Pressure  ---
                  { id: 'dynamicPressurePlot', requiredCols: ['dynamic_pressure'],
                       tracesFn: (d1, d2) => {
                          const traces = [];
                          if (d1?.dynamic_pressure) traces.push({ x: d1.time, y: d1.dynamic_pressure, name: 'Dyn. Press. (F1)'});
                          if (d2?.dynamic_pressure) traces.push({ x: d2.time, y: d2.dynamic_pressure, name: 'Dyn. Press. (F2)', line: {dash: 'dot'} });
                          return traces;
-                      }, layout: { title: 'Dynamic Pressure Comparison', yaxis: { title: 'Pressure (Pa)' } }
+                      }, layout: { title: 'Dynamic Pressure ', yaxis: { title: 'Pressure (Pa)' } }
                  },
 
-                 // --- Aero Angles Comparison ---
+                 // --- Aero Angles  ---
                  { id: 'aeroAnglesPlot', requiredCols: ['alpha_DEG', 'beta_DEG'],
                       tracesFn: (d1, d2) => {
                          const traces = [];
@@ -739,10 +740,10 @@
                          if (d2?.alpha_DEG) traces.push({ x: d2.time, y: d2.alpha_DEG, name: 'AoA (F2)', line: {dash: 'dot'} });
                          if (d2?.beta_DEG) traces.push({ x: d2.time, y: d2.beta_DEG, name: 'AoS (F2)', line: {dash: 'dot'} });
                          return traces;
-                      }, layout: { title: 'Aerodynamic Angles Comparison', yaxis: { title: 'Angle (deg)' } }
+                      }, layout: { title: 'Aerodynamic Angles ', yaxis: { title: 'Angle (deg)' } }
                  },
 
-                 // --- Aero Coeff Comparison ---
+                 // --- Aero Coeff  ---
                  { id: 'aeroCoeffPlot', requiredCols: ['CL', 'CD', 'CS'],
                       tracesFn: (d1, d2) => {
                          const traces = [];
@@ -753,20 +754,20 @@
                          if (d2?.CD) traces.push({ x: d2.time, y: d2.CD, name: 'CD (F2)', line: {dash: 'dot'} });
                          if (d2?.CS) traces.push({ x: d2.time, y: d2.CS, name: 'CS (F2)', line: {dash: 'dot'} });
                          return traces;
-                      }, layout: { title: 'Aerodynamic Coefficients Comparison', yaxis: { title: 'Coefficient' } }
+                      }, layout: { title: 'Aerodynamic Coefficients ', yaxis: { title: 'Coefficient' } }
                  },
 
-                 // --- Lift/Drag Ratio Comparison ---
+                 // --- Lift/Drag Ratio  ---
                  { id: 'liftDragRatioPlot', requiredCols: ['CL_CD_ratio'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
                          if (d1?.CL_CD_ratio) traces.push({ x: d1.time, y: d1.CL_CD_ratio, name: 'CL/CD (F1)' });
                          if (d2?.CL_CD_ratio) traces.push({ x: d2.time, y: d2.CL_CD_ratio, name: 'CL/CD (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Lift/Drag Ratio Comparison', yaxis: { title: 'Ratio' } }
+                     }, layout: { title: 'Lift/Drag Ratio ', yaxis: { title: 'Ratio' } }
                  },
 
-                 // --- Load Factor Comparison ---
+                 // --- Load Factor  ---
                  { id: 'loadFactorPlot', requiredCols: ['nx', 'ny', 'nz'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -777,10 +778,10 @@
                          if (d2?.ny) traces.push({ x: d2.time, y: d2.ny, name: 'ny (F2)', line: {dash: 'dot'} });
                          if (d2?.nz) traces.push({ x: d2.time, y: d2.nz, name: 'nz (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Load Factors Comparison', yaxis: { title: 'Load Factor (g)' } }
+                     }, layout: { title: 'Load Factors ', yaxis: { title: 'Load Factor (g)' } }
                  },
 
-                 // --- Body Rates Comparison ---
+                 // --- Body Rates  ---
                  { id: 'bodyRatesPlot', requiredCols: ['p_roll_rate', 'q_pitch_rate', 'r_yaw_rate'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -791,10 +792,10 @@
                          if (d2?.q_pitch_rate) traces.push({ x: d2.time, y: d2.q_pitch_rate, name: 'q (F2)', line: {dash: 'dot'} });
                          if (d2?.r_yaw_rate) traces.push({ x: d2.time, y: d2.r_yaw_rate, name: 'r (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Body Angular Rates Comparison', yaxis: { title: 'Rate (rad/s)' } }
+                     }, layout: { title: 'Body Angular Rates ', yaxis: { title: 'Rate (rad/s)' } }
                  },
 
-                 // --- Moment Coeffs (Aero Forces) Comparison ---
+                 // --- Moment Coeffs (Aero Forces)  ---
                  { id: 'aeroForceMomentsPlot', requiredCols: ['CM_roll_from_aero_forces', 'CM_yaw_from_aero_forces', 'CM_pitch_from_aero_forces'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -805,10 +806,10 @@
                          if (d2?.CM_yaw_from_aero_forces) traces.push({ x: d2.time, y: d2.CM_yaw_from_aero_forces, name: 'Yaw (F2)', line: {dash: 'dot'} });
                          if (d2?.CM_pitch_from_aero_forces) traces.push({ x: d2.time, y: d2.CM_pitch_from_aero_forces, name: 'Pitch (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Moment Coeffs (Aero Forces) Comparison', yaxis: { title: 'Coefficient' } }
+                     }, layout: { title: 'Moment Coeffs (Aero Forces) ', yaxis: { title: 'Coefficient' } }
                  },
 
-                 // --- Moment Coeffs (Control) Comparison ---
+                 // --- Moment Coeffs (Control)  ---
                  { id: 'controlMomentsPlot', requiredCols: ['CM_roll_from_control', 'CM_yaw_from_control', 'CM_pitch_from_control'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -819,10 +820,10 @@
                          if (d2?.CM_yaw_from_control) traces.push({ x: d2.time, y: d2.CM_yaw_from_control, name: 'Yaw (F2)', line: {dash: 'dot'} });
                          if (d2?.CM_pitch_from_control) traces.push({ x: d2.time, y: d2.CM_pitch_from_control, name: 'Pitch (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Moment Coeffs (Control) Comparison', yaxis: { title: 'Coefficient' } }
+                     }, layout: { title: 'Moment Coeffs (Control) ', yaxis: { title: 'Coefficient' } }
                  },
 
-                 // --- Moment Coeffs (Aero Stiffness) Comparison ---
+                 // --- Moment Coeffs (Aero Stiffness)  ---
                  { id: 'aeroStiffnessMomentsPlot', requiredCols: ['CM_roll_from_aero_stiffness', 'CM_yaw_from_aero_stiffness', 'CM_pitch_from_aero_stiffness'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -833,10 +834,10 @@
                          if (d2?.CM_yaw_from_aero_stiffness) traces.push({ x: d2.time, y: d2.CM_yaw_from_aero_stiffness, name: 'Yaw (F2)', line: {dash: 'dot'} });
                          if (d2?.CM_pitch_from_aero_stiffness) traces.push({ x: d2.time, y: d2.CM_pitch_from_aero_stiffness, name: 'Pitch (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Moment Coeffs (Aero Stiffness) Comparison', yaxis: { title: 'Coefficient' } }
+                     }, layout: { title: 'Moment Coeffs (Aero Stiffness) ', yaxis: { title: 'Coefficient' } }
                  },
 
-                 // --- Moment Coeffs (Aero Damping) Comparison ---
+                 // --- Moment Coeffs (Aero Damping)  ---
                  { id: 'aeroDampingMomentsPlot', requiredCols: ['CM_roll_from_aero_damping', 'CM_yaw_from_aero_damping', 'CM_pitch_from_aero_damping'],
                       tracesFn: (d1, d2) => {
                          const traces = [];
@@ -847,10 +848,10 @@
                          if (d2?.CM_yaw_from_aero_damping) traces.push({ x: d2.time, y: d2.CM_yaw_from_aero_damping, name: 'Yaw (F2)', line: {dash: 'dot'} });
                          if (d2?.CM_pitch_from_aero_damping) traces.push({ x: d2.time, y: d2.CM_pitch_from_aero_damping, name: 'Pitch (F2)', line: {dash: 'dot'} });
                          return traces;
-                      }, layout: { title: 'Moment Coeffs (Aero Damping) Comparison', yaxis: { title: 'Coefficient' } }
+                      }, layout: { title: 'Moment Coeffs (Aero Damping) ', yaxis: { title: 'Coefficient' } }
                  },
 
-                 // --- Pitch Control Comparison ---
+                 // --- Pitch Control  ---
                  { id: 'pitchPlot', requiredCols: ['pitch_demand', 'pitch_demand_attained'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -859,10 +860,10 @@
                          if (d2?.pitch_demand) traces.push({ x: d2.time, y: d2.pitch_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
                          if (d2?.pitch_demand_attained) traces.push({ x: d2.time, y: d2.pitch_demand_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
                          return traces;
-                     }, layout: { title: 'Pitch Control Comparison', yaxis: { title: 'Value' } }
+                     }, layout: { title: 'Pitch Control ', yaxis: { title: 'Value' } }
                  },
 
-                 // --- Roll Control Comparison ---
+                 // --- Roll Control  ---
                  { id: 'rollPlot', requiredCols: ['roll_demand', 'roll_demand_attained'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -871,10 +872,10 @@
                          if (d2?.roll_demand) traces.push({ x: d2.time, y: d2.roll_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
                          if (d2?.roll_demand_attained) traces.push({ x: d2.time, y: d2.roll_demand_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
                          return traces;
-                     }, layout: { title: 'Roll Control Comparison', yaxis: { title: 'Value' } }
+                     }, layout: { title: 'Roll Control ', yaxis: { title: 'Value' } }
                  },
 
-                 // --- Yaw Control Comparison ---
+                 // --- Yaw Control  ---
                  { id: 'yawPlot', requiredCols: ['yaw_demand', 'yaw_demand_attained'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -883,10 +884,10 @@
                          if (d2?.yaw_demand) traces.push({ x: d2.time, y: d2.yaw_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
                          if (d2?.yaw_demand_attained) traces.push({ x: d2.time, y: d2.yaw_demand_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
                          return traces;
-                     }, layout: { title: 'Yaw Control Comparison', yaxis: { title: 'Value' } }
+                     }, layout: { title: 'Yaw Control ', yaxis: { title: 'Value' } }
                  },
 
-                 // --- Thrust Control Comparison ---
+                 // --- Thrust Control  ---
                  { id: 'thrustPlot', requiredCols: ['thrust_setting_demand', 'thrust_attained'],
                       tracesFn: (d1, d2) => {
                          const traces = [];
@@ -895,10 +896,10 @@
                          if (d2?.thrust_setting_demand) traces.push({ x: d2.time, y: d2.thrust_setting_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
                          if (d2?.thrust_attained) traces.push({ x: d2.time, y: d2.thrust_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
                          return traces;
-                      }, layout: { title: 'Thrust Control Comparison', yaxis: { title: 'Value' } }
+                      }, layout: { title: 'Thrust Control ', yaxis: { title: 'Value' } }
                  },
 
-                 // --- Quaternion Comparison ---
+                 // --- Quaternion  ---
                  { id: 'quaternionPlot', requiredCols: ['qx', 'qy', 'qz', 'qw'],
                      tracesFn: (d1, d2) => {
                          const traces = [];
@@ -911,7 +912,7 @@
                          if (d2?.qz) traces.push({ x: d2.time, y: d2.qz, name: 'qz (F2)', line: {dash: 'dot'} });
                          if (d2?.qw) traces.push({ x: d2.time, y: d2.qw, name: 'qw (F2)', line: {dash: 'dot'} });
                          return traces;
-                     }, layout: { title: 'Quaternion Components Comparison', yaxis: { title: 'Component' } }
+                     }, layout: { title: 'Quaternion Components ', yaxis: { title: 'Component' } }
                  },
             ]; // End of potentialConfigs array
 

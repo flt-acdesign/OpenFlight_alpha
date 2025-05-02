@@ -7,7 +7,7 @@ aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \ðŸ
 
 # FLIGHT TEST PARAMETERS
 initial_velocity: 40  # Initial velocity in m/s
-initial_altitude: 1400  # Initial altitude in m
+initial_altitude: 1000  # Initial altitude in m
 
 # FLIGHT RECORDING PARAMETERS
 start_flight_data_recording_at:  3    # start recording in seconds after start of flight

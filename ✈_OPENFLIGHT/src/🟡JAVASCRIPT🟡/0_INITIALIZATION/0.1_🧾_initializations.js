@@ -5,7 +5,7 @@ let freeport = 8000  // default value for the server port, it will be updated by
 let aircraft_name = "SF25B.yaml"
 
 let initial_velocity = 40
-let initial_altitude = 1400
+let initial_altitude = 1000
 
 let start_flight_data_recording_at = 3
 let finish_flight_data_recording_at = 20
@@ -17,7 +17,7 @@ let show_trajectory = "true"
 let frames_per_trajectory_marker = 2
 
 // 0 = nothing, 1 = low, 2 = medium or 3 = high
-let scenery_complexity = 0
+let scenery_complexity = 3
 
 let enable_glow_effect = false;
 
