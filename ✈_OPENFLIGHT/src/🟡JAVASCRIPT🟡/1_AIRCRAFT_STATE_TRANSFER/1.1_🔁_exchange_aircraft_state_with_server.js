@@ -9,7 +9,7 @@
  ***************************************************************/
 
 // Initialize WebSocket connection
-// freeport is a variable that holds the port number of the server, defined in 
+// freeport is a variable that holds the port number of the server, defined in
 // "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" by the Julia code
 // "src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl"
 let ws = new WebSocket(`ws://localhost:${freeport}`);
@@ -54,6 +54,7 @@ function sendStateToServer() {
     // Create aircraft state object. We read the “aircraft” global state.
     // If the aircraft or orientation are undefined, skip.
     if (!aircraft || !orientation) {
+        // console.warn("sendStateToServer: Aircraft or orientation not ready."); // Avoid spamming
         return;
     }
 
@@ -80,11 +81,11 @@ function sendStateToServer() {
         wz: angularVelocity.z,
 
         // Forces demands (these come from the user’s inputs)
-        fx: forceX,
-        fy: forceY,
+        fx: forceX, // Note: forceX, forceY seem unused in input script? Check if needed.
+        fy: forceY, // Note: forceX, forceY seem unused in input script? Check if needed.
         thrust_setting_demand: thrust_setting_demand,
 
-        // Control demands
+        // Control demands (these ARE set by input script)
         roll_demand: roll_demand,
         pitch_demand: pitch_demand,
         yaw_demand: yaw_demand,
@@ -111,70 +112,78 @@ function sendStateToServer() {
 // We also store `server_time` in `window.serverElapsedTime` for the GUI.
 // --------------------------------------------------------------------------
 ws.onmessage = (event) => {
-    // Parse received JSON data
-    const responseData = JSON.parse(event.data);
-    
-    // Update aircraft position in Babylon.js space
-    aircraft.position.x = parseFloat(responseData.x);
-    aircraft.position.y = parseFloat(responseData.y);
-    aircraft.position.z = parseFloat(responseData.z);
+    try {
+        // Parse received JSON data
+        const responseData = JSON.parse(event.data);
 
-    // Update velocity vector
-    velocity.x = parseFloat(responseData.vx);
-    velocity.y = parseFloat(responseData.vy);
-    velocity.z = parseFloat(responseData.vz);
+        // Update aircraft position in Babylon.js space
+        if (aircraft && aircraft.position) { // Check if aircraft exists
+            aircraft.position.x = parseFloat(responseData.x);
+            aircraft.position.y = parseFloat(responseData.y);
+            aircraft.position.z = parseFloat(responseData.z);
+        }
 
-    // Update orientation quaternion
-    orientation.x = parseFloat(responseData.qx);
-    orientation.y = parseFloat(responseData.qy);
-    orientation.z = parseFloat(responseData.qz);
-    orientation.w = parseFloat(responseData.qw);
+        // Update velocity vector
+        velocity.x = parseFloat(responseData.vx);
+        velocity.y = parseFloat(responseData.vy);
+        velocity.z = parseFloat(responseData.vz);
 
-    // Update angular velocity
-    angularVelocity.x = parseFloat(responseData.wx);
-    angularVelocity.y = parseFloat(responseData.wy);
-    angularVelocity.z = parseFloat(responseData.wz);
+        // Update orientation quaternion
+        orientation.x = parseFloat(responseData.qx);
+        orientation.y = parseFloat(responseData.qy);
+        orientation.z = parseFloat(responseData.qz);
+        orientation.w = parseFloat(responseData.qw);
 
-    // Update global forces
-    forceGlobalX = parseFloat(responseData.fx_global);
-    forceGlobalY = parseFloat(responseData.fy_global);
-    forceGlobalZ = parseFloat(responseData.fz_global);
+        // Update angular velocity
+        angularVelocity.x = parseFloat(responseData.wx);
+        angularVelocity.y = parseFloat(responseData.wy);
+        angularVelocity.z = parseFloat(responseData.wz);
 
-    // Update 3D model rotation (Babylon uses “rotationQuaternion”)
-    aircraft.rotationQuaternion = new BABYLON.Quaternion(
-        orientation.x,
-        orientation.y,
-        orientation.z,
-        orientation.w
-    );
+        // Update global forces
+        forceGlobalX = parseFloat(responseData.fx_global);
+        forceGlobalY = parseFloat(responseData.fy_global);
+        forceGlobalZ = parseFloat(responseData.fz_global);
 
-    // Update aerodynamic angles (in radians)
-    alpha_RAD = parseFloat(responseData.alpha_RAD);
-    beta_RAD = parseFloat(responseData.beta_RAD);
+        // Update 3D model rotation (Babylon uses “rotationQuaternion”)
+        if (aircraft && aircraft.rotationQuaternion) { // Check if aircraft exists
+            aircraft.rotationQuaternion = new BABYLON.Quaternion(
+                orientation.x,
+                orientation.y,
+                orientation.z,
+                orientation.w
+            );
+        }
 
-    // Update control feedback from server solution
-    pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);
-    roll_demand_attained = parseFloat(responseData.roll_demand_attained);
-    yaw_demand_attained = parseFloat(responseData.yaw_demand_attained);
+        // Update aerodynamic angles (in radians)
+        alpha_RAD = parseFloat(responseData.alpha_RAD);
+        beta_RAD = parseFloat(responseData.beta_RAD);
 
-    // Update thrust feedback
-    thrust_attained = parseFloat(responseData.thrust_attained);
+        // Update control feedback from server solution
+        pitch_demand_attained = parseFloat(responseData.pitch_demand_attained);
+        roll_demand_attained = parseFloat(responseData.roll_demand_attained);
+        yaw_demand_attained = parseFloat(responseData.yaw_demand_attained);
 
-    // *** IMPORTANT FIX: Store server_time in a global var so the client sees it ***
-    if ("server_time" in responseData) {
-        window.serverElapsedTime = parseFloat(responseData.server_time);
-    }
+        // Update thrust feedback
+        thrust_attained = parseFloat(responseData.thrust_attained);
+
+        // *** IMPORTANT FIX: Store server_time in a global var so the client sees it ***
+        if ("server_time" in responseData) {
+            window.serverElapsedTime = parseFloat(responseData.server_time);
+        } else {
+             window.serverElapsedTime = window.serverElapsedTime || 0; // Keep existing value or 0 if never set
+        }
 
 
+        // Update velocity and force lines (just the lines, not trajectory dots)
+        // Check if functions exist before calling
+        if (show_velocity_vectors === "true" && typeof updateVelocityLine === 'function') {
+            updateVelocityLine();
+        }
 
-
-
-    // Update velocity and force lines (just the lines, not trajectory dots)
-    if (show_velocity_vectors == "true") {
-    updateVelocityLine()
-    }
-
-    if (show_force_vectors == "true") {
-    updateForceLine()
+        if (show_force_vectors === "true" && typeof updateForceLine === 'function') {
+            updateForceLine();
+        }
+    } catch (e) {
+        console.error("Error processing WebSocket message:", e, "Data:", event.data);
     }
 };

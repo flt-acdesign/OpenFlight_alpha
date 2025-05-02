@@ -1,5 +1,3 @@
-
-
 // ------------------------------------------------------------
 // GUI Creation Functions
 // ------------------------------------------------------------
@@ -31,7 +29,8 @@ function createStyledTextBlock(color = "white") {
 let fpsArray = [];
 const maxFpsArrayLength = 60;
 let lastFpsUpdateTime = performance.now();
-let fpsText;
+// GUI elements declared globally in initializations.js are assigned here:
+// let fpsText, alpha_beta_Text;
 
 /**
  * Calculates current FPS based on recent frame times
@@ -40,14 +39,15 @@ function calculateFPS() {
   const currentTime = performance.now();
   const deltaTime = currentTime - lastFpsUpdateTime;
   lastFpsUpdateTime = currentTime;
-  
+
   fpsArray.push(deltaTime);
   if (fpsArray.length > maxFpsArrayLength) {
     fpsArray.shift();
   }
-  
+
   const averageFrameTime = fpsArray.reduce((sum, time) => sum + time, 0) / fpsArray.length;
-  return Math.round(1000 / averageFrameTime);
+  // Avoid division by zero if array is empty
+  return averageFrameTime > 0 ? Math.round(1000 / averageFrameTime) : 0;
 }
 
 /**
@@ -78,17 +78,17 @@ function createGUI() {
   headerText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
   mainPanel.addControl(headerText);
 
-  // Create information text blocks.
+  // Create information text blocks and assign to global variables
   positionText = createStyledTextBlock();
   velocityText = createStyledTextBlock();
   timeText = createStyledTextBlock();
-  alpha_beta_Text = createStyledTextBlock();
+  alpha_beta_Text = createStyledTextBlock(); // Assign created block
   joystickText = createStyledTextBlock();
-  fpsText = createStyledTextBlock("#00ff00");
+  fpsText = createStyledTextBlock("#00ff00"); // Assign created block
   joystickText.fontSize = 16; // Slightly smaller for compactness
 
   [positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText].forEach(text => {
-    mainPanel.addControl(text);
+    if (text) mainPanel.addControl(text); // Add check just in case
   });
 
   // Create a horizontal container for the buttons.
@@ -102,7 +102,7 @@ function createGUI() {
 
   // Create the file load and pause buttons (smaller).
   const fileLoadBtn = createFileLoadButton();
-  pauseButton = createPauseButton(); // Global variable used in pauseSimulation.
+  pauseButton = createPauseButton(); // Assign to global variable
   buttonRow.addControl(fileLoadBtn);
   buttonRow.addControl(pauseButton);
 }
@@ -168,21 +168,8 @@ function createFileLoadButton() {
     }
   });
 
-  // MODIFIED: Setup file input event listener (now in setup_GLB_model_transformations.js)
-  // Remove the original event listener here, as it's handled in setup_GLB_model_transformations.js
-  // We still need the button to trigger the click, but the file handling logic is centralized elsewhere.
-  /*
-  const fileInput = document.getElementById("fileInput");
-  if (fileInput) {
-    fileInput.addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        console.log("Selected .glb file:", file.name);
-        // REMOVED: Loading logic is now handled by the listener in setup_GLB_model_transformations.js
-      }
-    });
-  }
-  */
+  // Note: The actual 'change' event listener for fileInput is expected
+  // to be set up in 4.3_🔼_import_parameters_for_glb_aircraft.js
 
   return fileLoadButton;
 }
@@ -203,19 +190,26 @@ function createPauseButton() {
   // Set initial background to green (for "Pause Simulation")
   pauseBtn.background = "#4CAF50";
   pauseBtn.hoverCursor = "pointer";
-  
+
   pauseBtn.onPointerEnterObservable.add(() => {
-    if (pauseBtn.textBlock.text === "Pause Simulation") {
+    // Check if textBlock exists before accessing text
+    if (pauseBtn.textBlock && pauseBtn.textBlock.text === "Pause Simulation") {
       pauseBtn.background = "#45a049";
     }
   });
   pauseBtn.onPointerOutObservable.add(() => {
-    if (pauseBtn.textBlock.text === "Pause Simulation") {
+     // Check if textBlock exists before accessing text
+    if (pauseBtn.textBlock && pauseBtn.textBlock.text === "Pause Simulation") {
       pauseBtn.background = "#4CAF50";
     }
   });
-  
-  pauseBtn.onPointerUpObservable.add(pauseSimulation);
+
+  // Ensure pauseSimulation function exists before adding listener
+  if (typeof pauseSimulation === 'function') {
+      pauseBtn.onPointerUpObservable.add(pauseSimulation);
+  } else {
+      console.error("pauseSimulation function not found for pause button.");
+  }
   return pauseBtn;
 }
 
@@ -223,7 +217,11 @@ function createPauseButton() {
  * Updates all GUI information elements with compact, formatted text.
  */
 function updateInfo() {
-    if (!aircraft) return; // Don't update if aircraft isn't created yet
+    // Check if aircraft and all text elements are initialized
+    if (!aircraft || !aircraft.position || !positionText || !velocityText || !timeText || !alpha_beta_Text || !joystickText || !fpsText) {
+        // console.warn("updateInfo: Aircraft or GUI text elements not ready."); // Avoid spamming
+        return;
+    }
 
   // Update location and altitude on separate lines.
   positionText.text =
@@ -234,18 +232,23 @@ function updateInfo() {
   velocityText.text =
     `Speed: ${(speed * 1.94384449).toFixed(0)} kt / ${(speed * 3.6).toFixed(0)} km/h / ${speed.toFixed(0)} m/s\nVario: ${velocity.y.toFixed(1)} m/s`;
 
-  // *** CHANGED BELOW: we show serverElapsedTime from the server. ***
+  // *** Uses window.serverElapsedTime set by server communication script ***
   timeText.text = `Flight time: ${(window.serverElapsedTime || 0).toFixed(1)} s`;
 
-  alpha_beta_Text.text = `α: ${rad2deg(alpha_RAD).toFixed(1)}°  β: ${rad2deg(beta_RAD).toFixed(1)}°`;
+  // Ensure rad2deg is defined before calling
+  if (typeof rad2deg === 'function') {
+      alpha_beta_Text.text = `α: ${rad2deg(alpha_RAD).toFixed(1)}°  β: ${rad2deg(beta_RAD).toFixed(1)}°`;
+  } else {
+      alpha_beta_Text.text = `α: N/A β: N/A`; // Fallback text
+  }
 
-  // Update controls information.
+  // Update controls information (make sure joystickAxes is updated elsewhere)
   joystickText.text = `Controls: ${joystickAxes.map(v => v.toFixed(2)).join(", ")}`;
-  
+
   // Update FPS counter
   const currentFPS = calculateFPS();
   fpsText.text = `FPS: ${currentFPS}`;
-  
+
   // Change color based on FPS
   if (currentFPS > 45) {
     fpsText.color = "#00ff00"; // Green for good performance
@@ -256,79 +259,98 @@ function updateInfo() {
   }
 }
 
+
+// --- Helper function defined within GUI script scope ---
+/**
+ * Creates a row for the controls help panel.
+ * @param {string} command - The control action text.
+ * @param {string} keys - The corresponding keys/buttons text.
+ * @returns {BABYLON.GUI.Grid} The created grid row.
+ */
+function createControlRow(command, keys) {
+    const row = new BABYLON.GUI.Grid();
+    row.addColumnDefinition(0.4); // Command takes 40%
+    row.addColumnDefinition(0.6); // Keys take 60%
+    row.height = "30px"; // Row height
+
+    const cmdText = new BABYLON.GUI.TextBlock();
+    cmdText.text = command;
+    cmdText.color = "white";
+    cmdText.fontSize = 21; // Font size
+    cmdText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    const keysText = new BABYLON.GUI.TextBlock();
+    keysText.text = keys;
+    keysText.color = "#FFD700"; // Gold color for keys
+    keysText.fontSize = 21; // Font size
+    keysText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+
+    row.addControl(cmdText, 0, 0);
+    row.addControl(keysText, 0, 1);
+    return row;
+}
+// --- End Helper Function ---
+
+
 function pauseSimulation() {
   isPaused = !isPaused;
   console.log(`Simulation ${isPaused ? "paused" : "resumed"}`);
 
   // If you have a global "pauseButton" in your GUI, update it
-  if (typeof pauseButton !== "undefined" && pauseButton) {
+  if (typeof pauseButton !== "undefined" && pauseButton && pauseButton.textBlock) {
     pauseButton.textBlock.text = isPaused ? "Resume" : "Pause Simulation";
     pauseButton.background = isPaused ? "#f44336" : "#4CAF50";
-    // (etc. if you want hover effects)
   }
 
-  // Show/hide a big "pauseIndicator" (Optional, currently commented out)
-  /*
-  if (isPaused) {
-    if (!window.pauseIndicator) {
-       // Create pause indicator rectangle and text...
-    } else {
-      window.pauseIndicator.isVisible = true;
-    }
-  } else {
-     // On resume, hide
-     if (window.pauseIndicator) {
-       window.pauseIndicator.isVisible = false;
-     }
-  }
-  */
 
   // On resume, reset timing to avoid large deltaTime spikes
   if (!isPaused) {
-     lastUpdateTime = performance.now();
-     lastFrameTime = Date.now();
-     timeSinceLastUpdate = 0;
+      lastUpdateTime = performance.now(); // Reset server communication timer
+      lastFrameTime = Date.now(); // Reset any internal frame timing if used
+      timeSinceLastUpdate = 0; // Reset any accumulated time
   }
 
-
   // Show/hide the "FLIGHT CONTROLS" help panel
-  if (isPaused) {
+  // Check if advancedTexture exists before creating GUI elements
+  if (isPaused && typeof advancedTexture !== 'undefined' && advancedTexture) {
     if (!window.controlsHelp) {
-      // Build the container for controls - SIGNIFICANTLY INCREASED HEIGHT TO FIT ALL CONTENT
+      // Build the container for controls
       const controlsHelpRect = new BABYLON.GUI.Rectangle("controlsHelp");
       controlsHelpRect.width = "550px";
-      controlsHelpRect.height = "800px"; // Significantly increased from original 400px
+      controlsHelpRect.height = "820px"; // Adjusted height
       controlsHelpRect.cornerRadius = 10;
       controlsHelpRect.color = "white";
       controlsHelpRect.thickness = 2;
       controlsHelpRect.background = "rgba(0,0,0,0.85)";
-      // Changed to center alignment to ensure visibility
       controlsHelpRect.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
       controlsHelpRect.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
       controlsHelpRect.top = "20px";
       controlsHelpRect.left = "-20px";
-      
-      // Title bar with clear background to match screenshot
+      controlsHelpRect.zIndex = 100; // Ensure it's on top
+
+      // Title bar
       const titleBar = new BABYLON.GUI.Rectangle("titleBar");
       titleBar.height = "60px";
       titleBar.background = "#4CAF50";
       titleBar.thickness = 0;
       titleBar.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-      
+
       const titleText = new BABYLON.GUI.TextBlock("titleText");
       titleText.text = "FLIGHT CONTROLS";
       titleText.color = "white";
-      titleText.fontSize = 28; // Increased for better visibility
+      titleText.fontSize = 28;
       titleText.fontWeight = "bold";
       titleBar.addControl(titleText);
 
-      // Main content panel to contain all controls with proper spacing
+      // Main content panel
       const contentPanel = new BABYLON.GUI.StackPanel("contentPanel");
       contentPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
       contentPanel.top = "80px"; // Position below title bar
       contentPanel.width = "500px";
-      contentPanel.spacing = 8; // Add spacing between elements
-      
+      contentPanel.paddingLeft = "20px";
+      contentPanel.paddingRight = "20px";
+      contentPanel.spacing = 8;
+
       // KEYBOARD CONTROLS SECTION
       const keyboardTitle = new BABYLON.GUI.TextBlock("keyboardTitle");
       keyboardTitle.text = "KEYBOARD CONTROLS";
@@ -338,37 +360,17 @@ function pauseSimulation() {
       keyboardTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
       contentPanel.addControl(keyboardTitle);
 
-      // Helper row maker with increased spacing and font sizes
-      function createControlRow(command, keys) {
-        const row = new BABYLON.GUI.Grid();
-        row.addColumnDefinition(0.4); // Command takes 40%
-        row.addColumnDefinition(0.6); // Keys take 60% 
-        row.height = "30px"; // Significantly increased row height
 
-        const cmdText = new BABYLON.GUI.TextBlock();
-        cmdText.text = command;
-        cmdText.color = "white";
-        cmdText.fontSize = 21; // Larger font size
-        cmdText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-
-        const keysText = new BABYLON.GUI.TextBlock();
-        keysText.text = keys;
-        keysText.color = "#FFD700"; // Gold color for keys
-        keysText.fontSize = 21; // Larger font size
-        keysText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-
-        row.addControl(cmdText, 0, 0);
-        row.addControl(keysText, 0, 1);
-        return row;
-      }
-
-      // Add rows for keyboard with padding between rows
-      contentPanel.addControl(createControlRow("Pitch:", "↑ / ↓ (arrows)"));
-      contentPanel.addControl(createControlRow("Roll:", "← / → (arrows)"));
-      contentPanel.addControl(createControlRow("Yaw:", "Z / X"));
+      // --- Keyboard rows (Reflecting current setup) ---
+      contentPanel.addControl(createControlRow("Pitch Up/Down:", "A / Q"));
+      contentPanel.addControl(createControlRow("Roll Left/Right:", "O / P"));
+      contentPanel.addControl(createControlRow("Yaw Left/Right:", "K / L"));
+      contentPanel.addControl(createControlRow("Camera Select:", "I / U / Y / T"));
       contentPanel.addControl(createControlRow("Thrust Level:", "Keys 1..9"));
       contentPanel.addControl(createControlRow("Reload/Reset:", "R"));
-      contentPanel.addControl(createControlRow("Camera Select:", "U / I / O / P"));
+      contentPanel.addControl(createControlRow("Pause/Resume:", "Spacebar"));
+      // --- END Keyboard rows ---
+
 
       // Add spacing between keyboard and gamepad sections
       const spacer = new BABYLON.GUI.Rectangle("spacer");
@@ -377,55 +379,56 @@ function pauseSimulation() {
       spacer.background = "transparent";
       contentPanel.addControl(spacer);
 
-      // GAMEPAD CONTROLS SECTION with highlighted background
+      // GAMEPAD CONTROLS SECTION
       const gamepadSection = new BABYLON.GUI.Rectangle("gamepadSection");
-      gamepadSection.height = "330px"; // Increased height for all gamepad controls
-      gamepadSection.background = "rgba(30, 30, 60, 0.5)"; // Blue tint background
+      const gamepadRows = 5; // Update if adding/removing rows
+      const gamepadRowHeight = 30;
+      const gamepadTitleHeight = 40;
+      const gamepadPadding = 20;
+      const gamepadSpacing = 5 * (gamepadRows);
+      gamepadSection.height = `${gamepadTitleHeight + (gamepadRows * gamepadRowHeight) + gamepadSpacing + gamepadPadding}px`;
+      gamepadSection.background = "rgba(30, 30, 60, 0.5)";
       gamepadSection.thickness = 1;
       gamepadSection.color = "#4CAF50";
       gamepadSection.cornerRadius = 5;
-      
+      gamepadSection.paddingBottom = "10px";
+
       const gamepadPanel = new BABYLON.GUI.StackPanel("gamepadPanel");
       gamepadPanel.spacing = 5;
-      
+      gamepadPanel.paddingLeft = "10px";
+      gamepadPanel.paddingRight = "10px";
+
       const gamepadTitle = new BABYLON.GUI.TextBlock("gamepadTitle");
-      gamepadTitle.text = "GAMEPAD CONTROLS";
+      // --- MODIFIED Gamepad Title/Desc ---
+      gamepadTitle.text = "GAMEPAD / JOYSTICK"; // More general title
       gamepadTitle.color = "#4CAF50";
       gamepadTitle.fontSize = 23;
       gamepadTitle.height = "40px";
       gamepadTitle.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-      gamepadTitle.paddingLeft = "10px";
       gamepadTitle.paddingTop = "15px";
       gamepadPanel.addControl(gamepadTitle);
 
-      // Enhanced gamepad controls with more descriptive text
-      const gamepadPitch = createControlRow("Pitch/Roll:", "Left stick");
-      const gamepadYaw = createControlRow("Yaw/Throttle:", "Right stick");
-      const gamepadPause = createControlRow("Pause/Resume:", "Start button");
-      const gamepadCamera = createControlRow("Camera Toggle:", "A / B / X / Y");
-      const gamepadReset = createControlRow("Reset Position:", "START Button");
-      const gamepadExtra = createControlRow("Pause/Resume:", "SELECT Button");
-      
-      gamepadPanel.addControl(gamepadPitch);
-      gamepadPanel.addControl(gamepadYaw);
-      gamepadPanel.addControl(gamepadPause);
-      gamepadPanel.addControl(gamepadCamera);
-      gamepadPanel.addControl(gamepadReset);
-      gamepadPanel.addControl(gamepadExtra);
-      
+      // --- MODIFIED Gamepad Rows (More General) ---
+      gamepadPanel.addControl(createControlRow("Pitch/Roll:", "Right Stick"));
+      gamepadPanel.addControl(createControlRow("Yaw/Throttle:", "Left Stick / Turn Joystick"));
+      gamepadPanel.addControl(createControlRow("Pause/Resume:", "Start/Options Button"));
+      gamepadPanel.addControl(createControlRow("Camera Toggle:", "X, Y, A, B (Varies)"));
+      gamepadPanel.addControl(createControlRow("Reload/Reset:", "Select/Back/Other (Varies)"));
+      // --- END MODIFIED ---
+
       gamepadSection.addControl(gamepadPanel);
       contentPanel.addControl(gamepadSection);
 
-      // Add a tip at the bottom
+      // Tip at the bottom
       const tipText = new BABYLON.GUI.TextBlock("tipText");
-      tipText.text = "TIP: Connect gamepad before starting the simulation";
+      tipText.text = "TIP: Mappings vary by controller type."; // Changed tip
       tipText.color = "#FFD700";
       tipText.fontSize = 18;
       tipText.height = "30px";
       tipText.paddingTop = "12px";
       contentPanel.addControl(tipText);
 
-      // Dismiss (X) button - Positioned at top right corner like in screenshot
+      // Dismiss (X) button
       const dismissButton = BABYLON.GUI.Button.CreateSimpleButton("dismissButton", "X");
       dismissButton.width = "50px";
       dismissButton.height = "50px";
@@ -437,6 +440,7 @@ function pauseSimulation() {
       dismissButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
       dismissButton.top = "10px";
       dismissButton.left = "-10px";
+      dismissButton.zIndex = 101;
       dismissButton.onPointerDownObservable.add(() => {
         controlsHelpRect.isVisible = false;
       });
@@ -447,13 +451,13 @@ function pauseSimulation() {
       controlsHelpRect.addControl(dismissButton);
 
       advancedTexture.addControl(controlsHelpRect);
-      window.controlsHelp = controlsHelpRect;
+      window.controlsHelp = controlsHelpRect; // Store reference
 
-    } else {
+    } else if (window.controlsHelp) { // Only make visible if it exists
       window.controlsHelp.isVisible = true;
     }
-  } else {
-    if (window.controlsHelp) {
+  } else { // If not paused
+    if (window.controlsHelp) { // Only hide if it exists
       window.controlsHelp.isVisible = false;
     }
   }

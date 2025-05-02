@@ -1,5 +1,3 @@
-
-
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
 let aircraft_name = "SF25B.yaml"
@@ -71,8 +69,12 @@ let beta_RAD = 0.0;
 let gamepadIndex = null;
 
 let advancedTexture;
-let positionText, velocityText, forceText, angularVelocityText, momentText, timeText, joystickText, pauseButton, alphaText, betaTextText
+// Declare GUI text blocks (will be assigned in createGUI)
+let positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText, pauseButton;
 
 let joystickAxes = [0, 0, 0, 0];
 
 let joystickButtons = [];
+
+// Add a global variable for server time, initialize to 0
+window.serverElapsedTime = 0;
