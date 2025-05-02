@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flight Data Visualization</title>
+    <title>Flight Data Visualization (Dual File)</title>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 
     <style>
@@ -18,9 +18,12 @@
             --shadow-color: rgba(0, 0, 0, 0.1);
             --success-color: #4CAF50;
             --success-hover-color: #45a049;
+            --error-color: #f44336;
+             --error-hover-color: #d32f2f;
             --modal-bg: rgba(0, 0, 0, 0.5); /* Modal background overlay */
         }
 
+        /* Basic body styling */
         body {
             margin: 0;
             padding: 0;
@@ -31,25 +34,82 @@
             line-height: 1.6;
         }
 
+        /* Main container */
         .container {
-            padding: 20px 30px; /* Adjusted padding */
+            padding: 20px 30px;
             max-width: 1600px;
             margin: 20px auto;
         }
 
+        /* Main title */
         h1 {
             text-align: center;
-            padding: 15px 0; /* Reduced padding */
+            padding: 15px 0;
             color: var(--primary-color);
             font-weight: 600;
             border-bottom: 1px solid var(--border-color);
-            margin-bottom: 25px; /* Reduced margin */
+            margin-bottom: 25px;
         }
 
-        .file-input-container, .controls-container, #visibilityControls {
+        /* --- File Input Area Styling --- */
+        .file-inputs-wrapper {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 20px; /* Space between the two input sections */
+            justify-content: center; /* Center the items */
+            margin-bottom: 20px;
+        }
+
+        .file-input-container {
             text-align: center;
-            margin: 20px auto; /* Reduced margin */
-            padding: 20px; /* Reduced padding */
+            padding: 15px; /* Adjusted padding */
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            flex: 1; /* Allow containers to grow */
+            min-width: 300px; /* Minimum width before wrapping */
+            max-width: calc(50% - 10px); /* Max width, accounting for gap */
+            display: flex; /* Use flexbox for internal layout */
+            flex-direction: column; /* Stack items vertically */
+            align-items: center; /* Center items horizontally */
+        }
+
+        /* Paragraph within file input */
+         .file-input-container p {
+             margin-top: 10px;
+             color: #667;
+             font-size: 0.9em;
+             margin-bottom: 10px; /* Space before buttons */
+             flex-grow: 1; /* Allow paragraph to push buttons down */
+             width: 90%; /* Prevent text touching edges */
+         }
+
+         /* Sub-heading for file input sections */
+          .file-input-container h3 {
+              margin-top: 0;
+              margin-bottom: 15px;
+              color: var(--primary-color);
+              font-weight: 500;
+              font-size: 1.1em;
+          }
+
+          /* Container for buttons within file input */
+          .file-input-buttons {
+              margin-top: auto; /* Push buttons to the bottom */
+              padding-top: 10px; /* Add some space above buttons */
+              width: 100%; /* Ensure buttons group takes width */
+              display: flex; /* Arrange buttons */
+              justify-content: center; /* Center buttons */
+              gap: 10px; /* Space between buttons */
+              flex-wrap: wrap; /* Allow buttons to wrap */
+           }
+
+        /* --- Controls Area Styling --- */
+        .controls-container, #visibilityControls {
+            text-align: center;
+            margin: 20px auto;
+            padding: 20px;
             border: 1px solid var(--border-color);
             border-radius: 12px;
             background-color: #ffffff;
@@ -57,58 +117,39 @@
             max-width: 95%;
         }
 
-         .file-input-container p {
-             margin-top: 10px; /* Reduced margin */
-             color: #667;
-             font-size: 0.9em; /* Slightly smaller */
-         }
-
-        /* --- Compact Controls --- */
+        /* --- Compact Controls Styling --- */
          .controls-container {
-             text-align: center; /* Keep controls centered */
-             line-height: 1.8; /* Adjust line height for spacing */
+             line-height: 1.8;
          }
 
         .control-group {
-             display: inline-block; /* Arrange label/input pairs */
-             margin: 4px 8px; /* Reduced margin around pairs */
+             display: inline-block;
+             margin: 4px 8px;
              vertical-align: middle;
          }
 
         .controls-container label {
-             margin-right: 5px; /* Space between label and input */
-             font-size: 0.9em; /* Slightly smaller label */
+             margin-right: 5px;
+             font-size: 0.9em;
              vertical-align: middle;
          }
 
          .controls-container input, .controls-container select, .controls-container button {
-             padding: 6px 10px; /* Reduced padding */
-             font-size: 13px; /* Slightly smaller font */
+             padding: 6px 10px;
+             font-size: 13px;
              vertical-align: middle;
              border-radius: 5px;
              border: 1px solid var(--border-color);
-             margin: 0; /* Remove default margins */
+             margin: 0;
          }
 
-         .controls-container input[type="number"] {
-             width: 75px; /* Adjusted width */
-         }
-         .controls-container input[type="number"].aspect-ratio-input {
-             width: 55px;
-         }
-         .controls-container select {
-             cursor: pointer;
-             background-color: white;
-             padding-right: 20px; /* Space for dropdown arrow */
-         }
+         .controls-container input[type="number"] { width: 75px; }
+         .controls-container input[type="number"].aspect-ratio-input { width: 55px; }
+         .controls-container select { cursor: pointer; background-color: white; padding-right: 20px; }
+         .controls-container button { margin-left: 10px; }
+         .controls-container br { display: none; } /* Hide manual line breaks */
 
-         .controls-container button {
-             margin-left: 10px; /* Space before buttons */
-         }
-         /* Remove explicit line break styling */
-         .controls-container br { display: none; }
-
-        /* Visibility Controls (keep original styling) */
+        /* --- Visibility Controls Styling --- */
         #visibilityControls { display: none; text-align: left; padding: 25px; }
         #visibilityControls h3 { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--primary-color); font-weight: 500; }
         .visibility-buttons { text-align: center; margin-bottom: 20px; }
@@ -118,27 +159,29 @@
         .visibility-item input[type="checkbox"] { margin-right: 8px; cursor: pointer; vertical-align: middle; accent-color: var(--primary-color); width: 15px; height: 15px; }
         .visibility-item label { vertical-align: middle; cursor: pointer; font-size: 0.95em; }
 
-        /* Plot Styling */
+        /* --- Plot Styling --- */
         .plot-container { width: 100%; margin: 0; min-height: 150px; box-sizing: border-box; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px var(--shadow-color); background-color: #ffffff; }
-        .grid-container { display: grid; gap: 25px; /* Slightly reduced gap */ padding: 20px 0; display: none; width: 100%; box-sizing: border-box; }
+        .grid-container { display: grid; gap: 25px; padding: 20px 0; display: none; width: 100%; box-sizing: border-box; }
         #loading { display: none; text-align: center; font-size: 1.3em; color: #555; margin-top: 30px; padding: 20px; }
+        #statusMessage { text-align: center; font-size: 1em; color: var(--primary-color); margin-top: 10px; padding: 5px; min-height: 1.5em;}
 
-        /* Buttons */
+
+        /* --- Button Styles --- */
         .custom-button {
-            padding: 8px 18px; /* Slightly reduced padding */
+            padding: 8px 18px;
             background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 5px; /* Match inputs */
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 13px; /* Match inputs */
+            font-size: 13px;
             transition: background-color 0.2s ease;
             vertical-align: middle;
             font-weight: 500;
+            margin-top: 5px;
         }
         .custom-button:hover { background: var(--button-hover-bg); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
 
-        /* Secondary button style (for User Guide) */
         .secondary-button {
             background-color: var(--button-secondary-bg);
             color: var(--text-color);
@@ -149,130 +192,115 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-
-        /* File Input */
-        input[type="file"] { display: none; }
-        .file-label { padding: 8px 18px; background: var(--success-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; display: inline-block; margin-bottom: 10px; transition: background-color 0.2s ease; font-weight: 500; vertical-align: middle;}
-        .file-label:hover { background: var(--success-hover-color); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
-        #fileName { margin-left: 10px; font-style: italic; color: #555; font-size: 0.9em; vertical-align: middle;}
-
-        /* --- Modal Styles --- */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto; /* Enable scroll if needed */
-            background-color: var(--modal-bg);
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 10% auto; /* 10% from the top and centered */
-            padding: 25px;
-            border: 1px solid #888;
-            width: 80%; /* Could be more or less, depending on screen size */
-            max-width: 600px; /* Maximum width */
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            position: relative;
-        }
-        .modal-close {
-            color: #aaa;
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 28px;
-            font-weight: bold;
+        /* --- File Input Specific Styles --- */
+        input[type="file"] { display: none; } /* Hide default file input */
+        .file-label { /* Style for the 'Choose File' button */
+            padding: 8px 18px;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 13px;
+            display: inline-block;
+            transition: background-color 0.2s ease;
+            font-weight: 500;
+            vertical-align: middle;
         }
-        .modal-close:hover,
-        .modal-close:focus {
-            color: black;
-            text-decoration: none;
-        }
-        .modal h2 {
-            margin-top: 0;
-            color: var(--primary-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-        .modal p, .modal ul {
-            font-size: 0.95em;
-            line-height: 1.7;
-            color: var(--text-color);
-        }
-        .modal ul {
-            padding-left: 25px;
-            margin-top: 10px;
-        }
-        .modal li {
-            margin-bottom: 8px;
-        }
-        .modal code {
-             background-color: #eee;
-             padding: 2px 5px;
-             border-radius: 3px;
-             font-family: monospace;
+        .file-label:hover { background: var(--success-hover-color); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
+
+        /* Style for displaying the selected filename */
+        .file-name {
+            font-style: italic;
+            color: #555;
+            font-size: 0.9em;
+            vertical-align: middle;
+            display: block; /* Allow full width and wrapping */
+            margin: 8px 5px; /* Spacing around the filename */
+            word-wrap: break-word; /* Allow long names to wrap */
+            max-width: 100%; /* Use container width */
+            line-height: 1.3; /* Adjust for wrapped text */
+            text-align: center; /* Center the filename text */
         }
 
-
-        /* Responsive Adjustments */
-        @media (max-width: 900px) { /* Adjust breakpoint for controls wrapping */
-             .control-group {
-                  display: block; /* Stack controls vertically */
-                  margin: 8px auto; /* Center stacked blocks */
-                  text-align: left; /* Align labels left */
-                  max-width: 300px; /* Limit width */
-             }
-             .controls-container label {
-                 display: inline-block; /* Ensure label stays with input */
-                 width: auto; /* Allow label to size naturally */
-                 margin-bottom: 3px;
-             }
-             .controls-container input[type="number"], .controls-container select {
-                 width: auto; /* Allow inputs to size based on content/css */
-                 min-width: 55px; /* Ensure minimum size */
-             }
-             .controls-container button {
-                 display: block; /* Stack buttons */
-                 margin: 10px auto; /* Center buttons */
-             }
+        /* Style for the 'Clear' button */
+        .clear-button {
+            background-color: var(--error-color);
         }
+         .clear-button:hover {
+            background-color: var(--error-hover-color);
+         }
 
-        @media (max-width: 768px) {
+
+        /* --- Modal Styles (for User Guide) --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: var(--modal-bg); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); position: relative; }
+        .modal-close { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-close:hover, .modal-close:focus { color: black; text-decoration: none; }
+        .modal h2 { margin-top: 0; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .modal p, .modal ul { font-size: 0.95em; line-height: 1.7; color: var(--text-color); }
+        .modal ul { padding-left: 25px; margin-top: 10px; }
+        .modal li { margin-bottom: 8px; }
+        .modal code { background-color: #eee; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 900px) { /* Tablet and smaller */
+             .control-group { display: block; margin: 8px auto; text-align: left; max-width: 300px; }
+             .controls-container label { display: inline-block; width: auto; margin-bottom: 3px; }
+             .controls-container input[type="number"], .controls-container select { width: auto; min-width: 55px; }
+             .controls-container button { display: block; margin: 10px auto; }
+             .file-inputs-wrapper { flex-direction: column; align-items: center; }
+              .file-input-container { max-width: 90%; }
+        }
+        @media (max-width: 768px) { /* Smaller tablets / large phones */
             .container { padding: 15px; }
             h1 { font-size: 1.8em; }
-             /* Controls already adjusted by 900px breakpoint */
             .custom-button, .file-label { font-size: 13px; padding: 8px 15px; }
             .grid-container { gap: 20px; }
-            .visibility-item { margin: 6px 10px 6px 0; } /* Slightly reduce margin */
+            .visibility-item { margin: 6px 10px 6px 0; }
             .modal-content { width: 90%; margin: 15% auto; }
         }
-
-        @media (max-width: 480px) {
-            /* Further adjust controls if needed, but 900px breakpoint handles stacking */
+        @media (max-width: 480px) { /* Phones */
              .visibility-item { display: block; margin: 8px 0; }
              .visibility-buttons button { margin: 5px; }
              .modal-content { padding: 15px; }
              .modal h2 { font-size: 1.2em; }
              .modal p, .modal ul { font-size: 0.9em; }
+             .file-input-container { max-width: 95%; }
+             .file-name { font-size: 0.85em; }
         }
 
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Flight Data Visualization</h1>
+        <h1>Flight Data Visualization (Dual File)</h1>
 
-        <div class="file-input-container">
-            <label for="csvFile" class="file-label">Choose CSV File</label>
-            <input type="file" id="csvFile" accept=".csv" onchange="handleFileSelect(event)">
-            <span id="fileName">No file selected</span>
-            <p>Select a CSV file containing flight data. Must include 'time', 'LATITUDE_m', 'LONGITUDE_m', 'ALTITUDE_m', 'TAS', 'nz'. Other columns enable corresponding plots.</p>
+        <div class="file-inputs-wrapper">
+            <div class="file-input-container" id="file-input-container-1">
+                 <h3>Data File 1</h3>
+                 <span class="file-name" id="fileName1">No file selected</span>
+                 <p>Select the first CSV data file. Requires 'time' column. Other columns enable plots.</p>
+                 <div class="file-input-buttons">
+                    <label for="csvFile1" class="file-label custom-button">Choose File 1</label>
+                    <input type="file" id="csvFile1" accept=".csv" onchange="handleFileSelect1(event)">
+                    <button id="clearFile1" class="custom-button clear-button" onclick="clearData(1)" style="display: none;">Clear</button>
+                 </div>
+             </div>
+
+             <div class="file-input-container" id="file-input-container-2">
+                 <h3>Data File 2</h3>
+                 <span class="file-name" id="fileName2">No file selected</span>
+                 <p>Select the second CSV data file (optional). Allows comparison on relevant plots.</p>
+                 <div class="file-input-buttons">
+                    <label for="csvFile2" class="file-label custom-button">Choose File 2</label>
+                    <input type="file" id="csvFile2" accept=".csv" onchange="handleFileSelect2(event)">
+                    <button id="clearFile2" class="custom-button clear-button" onclick="clearData(2)" style="display: none;">Clear</button>
+                 </div>
+             </div>
         </div>
+        <div id="statusMessage"></div>
 
         <div class="controls-container" id="plotControls" style="display: none;">
              <div class="control-group">
@@ -321,346 +349,790 @@
       <div class="modal-content">
         <span class="modal-close" id="modalCloseButton">&times;</span>
         <h2>User Guide</h2>
-        <p>This tool visualizes flight data from a CSV file.</p>
+        <p>This tool visualizes flight data from up to two CSV files.</p>
         <ul>
-            <li><strong>Choose CSV File:</strong> Select your data file. It must contain a header row starting with <code>time,...</code>. Key columns like <code>time</code>, <code>LATITUDE_m</code>, <code>LONGITUDE_m</code>, <code>ALTITUDE_m</code>, <code>TAS</code>, <code>nz</code> are needed for basic plots. Other columns (e.g., <code>EAS</code>, <code>Mach</code>, <code>VSI_ms</code>, load factors, control moments) enable their specific plots.</li>
-            <li><strong>Time Range:</strong> Enter start and end times (in seconds) to focus the plots on a specific interval.</li>
+            <li><strong>Choose File 1/2:</strong> Select your data file(s). Each must contain a header row starting with <code>time,...</code>. Key columns like <code>time</code>, <code>LATITUDE_m</code>, <code>LONGITUDE_m</code>, <code>ALTITUDE_m</code>, <code>TAS</code>, <code>nz</code> are needed for basic plots. Other columns enable their specific plots. File 2 is optional and used for comparison where applicable.</li>
+            <li><strong>Clear File 1/2:</strong> Remove the loaded data for the corresponding file.</li>
+             <li><strong>Time Range:</strong> Enter start and end times (in seconds) to focus the plots on a specific interval. Applies to all time-series plots.</li>
             <li><strong>V Lines:</strong> Enter times (in seconds) to draw vertical dashed lines on the time-series plots for reference. Red line for Time 1, Blue line for Time 2.</li>
             <li><strong>Aspect Ratio:</strong> Set the desired width-to-height ratio for the plots (e.g., 1.77 for 16:9).</li>
             <li><strong>Columns:</strong> Choose how many columns to arrange the visible plots into.</li>
             <li><strong>Update Plot:</strong> Apply changes to time range, aspect ratio, or columns.</li>
-            <li><strong>Show/Hide Plots:</strong> Use the checkboxes below the controls to toggle the visibility of individual plots. Use "Show All" / "Hide All" for quick selection.</li>
+            <li><strong>Show/Hide Plots:</strong> Use the checkboxes below the controls to toggle the visibility of individual plots. Use "Show All" / "Hide All" for quick selection. Plots are available if the required data exists in *at least one* loaded file.</li>
         </ul>
-        <p>Plots will update automatically when the file is loaded, visibility is changed, or the window is resized. Use the "Update Plot" button after changing time range, aspect ratio, or column count.</p>
+        <p>Plots will update automatically when files are loaded/cleared, visibility is changed, or the window is resized. Use the "Update Plot" button after changing time range, aspect ratio, or column count.</p>
       </div>
     </div>
 
     <script>
-        let originalData = null;
-        let masterPlotConfigs = [];
-        const DEFAULT_ASPECT_RATIO = 16 / 9; // Approx 1.77
+        // --- Global Variables ---
+        let loadedData = { file1: null, file2: null }; // Stores parsed data for file 1 and file 2
+        let fileLoading = { file1: false, file2: false }; // Tracks if a file is currently being processed
+        let masterPlotConfigs = []; // Holds configurations for available plots
+        const DEFAULT_ASPECT_RATIO = 16 / 9; // Default plot aspect ratio
 
-        // --- Modal Elements ---
+        // --- UI Element References ---
         const guideModal = document.getElementById('guideModal');
-        // Get button reference later, when controls are shown
-        let guideButton = null;
+        let guideButton = null; // Will get reference later
         const modalCloseButton = document.getElementById('modalCloseButton');
+        const loadingDiv = document.getElementById('loading');
+        const plotControlsDiv = document.getElementById('plotControls');
+        const visibilityControlsDiv = document.getElementById('visibilityControls');
+        const plotGridDiv = document.getElementById('plotGrid');
+        const statusMessageDiv = document.getElementById('statusMessage');
+        const fileInput1 = document.getElementById('csvFile1');
+        const fileName1Span = document.getElementById('fileName1');
+        const clearFile1Btn = document.getElementById('clearFile1');
+        const fileInput2 = document.getElementById('csvFile2');
+        const fileName2Span = document.getElementById('fileName2');
+        const clearFile2Btn = document.getElementById('clearFile2');
 
+        // --- Data Handling Functions ---
 
-        // --- Data Handling ---
-        async function handleFileSelect(event) {
+        // Event handlers for file input changes
+        function handleFileSelect1(event) { handleFileSelect(event, 1); }
+        function handleFileSelect2(event) { handleFileSelect(event, 2); }
+
+        /**
+         * Handles the selection of a file.
+         * @param {Event} event - The file input change event.
+         * @param {number} index - The file index (1 or 2).
+         */
+        async function handleFileSelect(event, index) {
             const file = event.target.files[0];
+            const fileNameSpan = (index === 1) ? fileName1Span : fileName2Span;
+            const clearBtn = (index === 1) ? clearFile1Btn : clearFile2Btn;
+            const fileKey = `file${index}`;
+
             if (file) {
-                document.getElementById('fileName').textContent = file.name;
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('plotGrid').style.display = 'none';
-                document.getElementById('plotControls').style.display = 'none';
-                document.getElementById('visibilityControls').style.display = 'none';
-                originalData = null; masterPlotConfigs = []; // Reset data and configs
-                // Clear plot grid content in case of error on previous load
-                document.getElementById('plotGrid').innerHTML = '';
+                fileNameSpan.textContent = file.name; // Show full name
+                fileNameSpan.title = file.name;      // Tooltip for hover
+                loadingDiv.style.display = 'block';
+                statusMessageDiv.textContent = `Loading File ${index}: ${file.name}...`;
+                fileLoading[fileKey] = true;
+                clearBtn.style.display = 'inline-block'; // Show clear button
+                loadedData[fileKey] = null; // Clear previous data for this slot
+
+                // Use FileReader to read the file content
                 const reader = new FileReader();
-                reader.onload = e => setTimeout(() => processData(e.target.result), 50);
-                reader.readAsText(file);
-            } else { document.getElementById('fileName').textContent = 'No file selected'; }
+                reader.onload = e => {
+                    const success = processData(e.target.result, index); // Process the CSV text
+                    fileLoading[fileKey] = false; // Mark loading as complete
+                    if (success) {
+                        statusMessageDiv.textContent = `File ${index} processed. Initializing plots...`;
+                    } else {
+                        statusMessageDiv.textContent = `File ${index} processing failed.`;
+                        clearData(index); // Clear UI elements if processing failed
+                        return;
+                    }
+                    // Update the UI after a short delay (allows status message to render)
+                    setTimeout(checkAndInitializeUI, 50);
+                };
+                 reader.onerror = () => { // Handle file reading errors
+                    alert(`Error reading File ${index}.`);
+                    fileNameSpan.textContent = 'Error reading file';
+                    fileLoading[fileKey] = false;
+                     clearData(index);
+                    checkAndInitializeUI();
+                };
+                reader.readAsText(file); // Read the file as text
+            } else {
+                 // If user cancels file selection, clear the data
+                 clearData(index);
+                 checkAndInitializeUI();
+            }
+             // Reset input value to allow selecting the same file again
+             event.target.value = null;
         }
 
-        function processData(csvText) {
+        /**
+         * Clears the data and resets UI elements for a given file index.
+         * @param {number} index - The file index (1 or 2).
+         */
+         function clearData(index) {
+            const fileKey = `file${index}`;
+            const fileNameSpan = (index === 1) ? fileName1Span : fileName2Span;
+            const clearBtn = (index === 1) ? clearFile1Btn : clearFile2Btn;
+             const inputEl = (index === 1) ? fileInput1 : fileInput2;
+
+            loadedData[fileKey] = null;      // Remove parsed data
+             fileLoading[fileKey] = false;    // Reset loading flag
+            fileNameSpan.textContent = 'No file selected'; // Reset filename display
+            fileNameSpan.title = '';
+            clearBtn.style.display = 'none'; // Hide clear button
+            inputEl.value = null;            // Clear the actual file input element
+             statusMessageDiv.textContent = `File ${index} cleared.`;
+             console.log(`Cleared data for file ${index}`);
+            checkAndInitializeUI(); // Re-initialize UI based on remaining data
+        }
+
+        /**
+         * Parses the CSV text content into a data object.
+         * @param {string} csvText - The CSV content as a string.
+         * @param {number} index - The file index (1 or 2) for logging.
+         * @returns {boolean} - True if parsing was successful, false otherwise.
+         */
+        function processData(csvText, index) {
+            const fileKey = `file${index}`;
+            console.log(`Processing data for ${fileKey}`);
             const lines = csvText.split('\n');
             let headerIndex = -1;
+            // Find the header row (must start with 'time,')
             for(let i = 0; i < lines.length; i++) {
-                if (lines[i].trim().toLowerCase().startsWith('time,')) {
+                if (lines[i].trim().toLowerCase().match(/^time\s*,/)) {
                     headerIndex = i;
                     break;
                 }
             }
-
+            // Handle case where header is not found
             if (headerIndex === -1) {
-                alert("Could not find the header row starting with 'time,...'. Please check the CSV format.");
-                document.getElementById('loading').style.display = 'none';
-                return;
+                alert(`Could not find header row starting with 'time,' in File ${index}. Please check CSV format.`);
+                 loadedData[fileKey] = null;
+                return false;
             }
-
+            // Extract header columns
             const header = lines[headerIndex].trim().split(',');
-            const data = {};
-            const columnNames = new Set(); // Keep track of actual columns found
-            header.forEach(h => {
-                const trimmedKey = h.trim();
-                if (trimmedKey) { // Avoid empty column names
-                    data[trimmedKey] = [];
-                    columnNames.add(trimmedKey);
-                }
-            });
+            const data = {}; // Object to store parsed data columns
+            const columnNames = new Set(); // Keep track of found columns
+            header.forEach(h => { const trimmedKey = h.trim(); if (trimmedKey) { data[trimmedKey] = []; columnNames.add(trimmedKey); } });
+            console.log(`File ${index}: Found ${header.length} columns:`, Array.from(columnNames));
 
-            console.log(`Found ${header.length} columns in header:`, Array.from(columnNames));
-
+            // Process data rows
             const rows = lines.slice(headerIndex + 1);
+            let parseErrors = 0;
             rows.forEach((row, rowIndex) => {
-                if (row.trim()) {
+                 if (row.trim()) { // Skip empty lines
                     const columns = row.split(',');
-                    if (columns.length >= header.length) {
+                    if (columns.length >= header.length) { // Check if row has enough columns
                         try {
-                            header.forEach((key, index) => {
+                            header.forEach((key, colIndex) => {
                                 const trimmedKey = key.trim();
                                 if (data.hasOwnProperty(trimmedKey)) {
-                                    const value = parseFloat(columns[index]);
+                                    // Parse value as float, store NaN if parsing fails
+                                    const value = parseFloat(columns[colIndex]);
                                     data[trimmedKey].push(isNaN(value) ? NaN : value);
                                 }
                             });
-                        } catch (e) {
-                            console.warn(`Parsing error on row ${headerIndex + 2 + rowIndex}:`, row, e);
+                        } catch (e) { // Catch potential errors during parsing
+                            if (parseErrors < 5) console.warn(`File ${index}: Parsing error on row ${headerIndex + 2 + rowIndex}:`, row, e);
+                            parseErrors++;
                         }
-                    } else if (columns.length > 0 && columns[0].trim() !== '') {
-                        console.warn(`Malformed row ${headerIndex + 2 + rowIndex}: Expected at least ${header.length} columns, got ${columns.length}`, row);
-                    }
+                    } else if (columns.length > 0 && columns[0].trim() !== '') { // Warn about malformed rows
+                         if (parseErrors < 5) console.warn(`File ${index}: Malformed row ${headerIndex + 2 + rowIndex}: Expected at least ${header.length} columns, got ${columns.length}`, row);
+                         parseErrors++;
+                     }
                 }
             });
+             if (parseErrors > 0) console.warn(`File ${index}: Encountered ${parseErrors} parsing warnings.`);
 
-            if (!data.time || data.time.length === 0 || data.time.every(isNaN)) { // Check if time is valid
-                alert("No valid numeric time data parsed. Please check the 'time' column in the CSV file.");
-                document.getElementById('loading').style.display = 'none';
+            // Validate that 'time' column was found and contains valid data
+            if (!data.time || data.time.length === 0 || data.time.every(isNaN)) {
+                alert(`No valid numeric time data parsed in File ${index}. Please check the 'time' column.`);
+                loadedData[fileKey] = null;
+                 return false;
+            }
+            // Store the successfully parsed data
+            loadedData[fileKey] = data;
+             console.log(`Successfully processed data for ${fileKey}`);
+            return true; // Indicate success
+        }
+
+        /**
+         * Checks loaded data and initializes or updates the UI (controls, plots).
+         * Runs after file loading or clearing.
+         */
+        function checkAndInitializeUI() {
+            // Don't run if any file is still loading
+            if (fileLoading.file1 || fileLoading.file2) {
+                loadingDiv.style.display = 'block';
                 return;
             }
-            originalData = data;
+            loadingDiv.style.display = 'none'; // Hide loading indicator
 
-            // Recreate plot divs in the grid container before defining configs
-            const plotGrid = document.getElementById('plotGrid');
-            plotGrid.innerHTML = ''; // Clear any previous message or plots
-            const plotDivIds = [ // List all expected plot div IDs
-                'trajectory3DPlot', 'altitudePlot', 'horizontalPositionPlot', 'verticalSpeedPlot',
-                'aerodynamicSpeedsPlot', 'machPlot', 'dynamicPressurePlot', 'aeroAnglesPlot',
-                'aeroCoeffPlot', 'liftDragRatioPlot', 'loadFactorPlot', 'bodyRatesPlot',
-                'aeroForceMomentsPlot', 'controlMomentsPlot', 'aeroStiffnessMomentsPlot',
-                'aeroDampingMomentsPlot', 'pitchPlot', 'rollPlot', 'yawPlot', 'thrustPlot',
-                'quaternionPlot', 'angularVelocityPlot'
-            ];
-            plotDivIds.forEach(id => {
-                 const div = document.createElement('div');
-                 div.id = id;
-                 div.className = 'plot-container';
-                 plotGrid.appendChild(div);
-            });
+            const hasData = loadedData.file1 || loadedData.file2; // Check if any data is loaded
 
-
-            // *** Define masterPlotConfigs ***
-            masterPlotConfigs = [
-                // ===== MODIFIED 3D TRAJECTORY PLOT =====
-                {   id: 'trajectory3DPlot',
-                    requiredCols: ['LONGITUDE_m', 'LATITUDE_m', 'ALTITUDE_m', 'nz'], // Added nz requirement
-                    tracesFn: (d) => [{
-                        x: d.LONGITUDE_m,
-                        y: d.LATITUDE_m,
-                        z: d.ALTITUDE_m,
-                        name: 'Trajectory',
-                        type: 'scatter3d',
-                        mode: 'lines+markers', // Show markers colored by nz
-                        marker: {
-                            size: 3.5,           // Adjust marker size if needed
-                            color: d.nz,       // Color points by nz value
-                            colorscale: 'Viridis', // Choose colorscale (e.g., Viridis, Plasma, Jet, Bluered, RdBu)
-                            colorbar: {
-                                title: 'nz (g)', // Label for the color bar
-                                thickness: 15,
-                                titleside: 'right'
-                            },
-                            opacity: 0.8
-                        },
-                        line: {
-                            width: 1 // Keep line thin to emphasize markers
-                            // Note: line color will also be influenced by marker colors
-                        }
-                    }],
-                    layout: {
-                        title: '3D Trajectory (Colored by nz)',
-                        scene: {
-                            xaxis: { title: 'Longitude (m)' },
-                            yaxis: { title: 'Latitude (m)' },
-                            zaxis: { title: 'Altitude (m)' },
-                            aspectmode: 'data'
-                        }
-                    }
-                },
-                // ===== END MODIFIED 3D PLOT =====
-                { id: 'altitudePlot', requiredCols: ['ALTITUDE_m'], tracesFn: (d) => [ {y: d.ALTITUDE_m, name: 'Altitude'} ], layout: { title: 'Altitude', yaxis: { title: 'Altitude (m)' } } },
-                { id: 'horizontalPositionPlot', requiredCols: ['LONGITUDE_m', 'LATITUDE_m'],
-                  tracesFn: (d) => [ { x: d.LONGITUDE_m, y: d.LATITUDE_m, name: 'Ground Track', type: 'scatter', mode: 'lines' }],
-                  layout: { title: 'Horizontal Position (Ground Track)', yaxis: { title: 'Latitude (m)', scaleanchor:'x', scaleratio: 1 }, xaxis: { title: 'Longitude (m)' } }
-                },
-                { id: 'verticalSpeedPlot', requiredCols: ['VSI_ms'], tracesFn: (d) => [ {y: d.VSI_ms, name: 'VSI'} ], layout: { title: 'Vertical Speed', yaxis: { title: 'VSI (m/s)' } } },
-                { id: 'aerodynamicSpeedsPlot', requiredCols: ['TAS'],
-                  tracesFn: (d) => {
-                      const traces = [{ y: d.TAS, name: 'TAS' }];
-                      if (d.EAS && Array.isArray(d.EAS) && d.EAS.some(val => !isNaN(val))) { traces.push({ y: d.EAS, name: 'EAS' }); }
-                      return traces;
-                  }, layout: { title: 'Aerodynamic Speeds', yaxis: { title: 'Speed (m/s)' } }
-                },
-                { id: 'machPlot', requiredCols: ['Mach'], tracesFn: (d) => [{ y: d.Mach, name: 'Mach'}], layout: { title: 'Mach Number', yaxis: { title: 'Mach' } } },
-                { id: 'dynamicPressurePlot', requiredCols: ['dynamic_pressure'], tracesFn: (d) => [{ y: d.dynamic_pressure, name: 'Dyn. Press.'}], layout: { title: 'Dynamic Pressure', yaxis: { title: 'Pressure (Pa)' } } },
-                { id: 'aeroAnglesPlot', requiredCols: ['alpha_DEG', 'beta_DEG'], tracesFn: (d) => [ {y: d.alpha_DEG, name: 'AoA (Alpha)'}, {y: d.beta_DEG, name: 'AoS (Beta)'} ], layout: { title: 'Aerodynamic Angles', yaxis: { title: 'Angle (deg)' } } },
-                { id: 'aeroCoeffPlot', requiredCols: ['CL', 'CD', 'CS'], tracesFn: (d) => [ {y: d.CL, name: 'CL'}, {y: d.CD, name: 'CD'}, {y: d.CS, name: 'CS'} ], layout: { title: 'Aerodynamic Coefficients', yaxis: { title: 'Coefficient' } } },
-                { id: 'liftDragRatioPlot', requiredCols: ['CL_CD_ratio'], tracesFn: (d) => [ {y: d.CL_CD_ratio, name: 'CL/CD'} ], layout: { title: 'Lift/Drag Ratio', yaxis: { title: 'Ratio' } } },
-                { id: 'loadFactorPlot', requiredCols: ['nx', 'ny', 'nz'], tracesFn: (d) => [ {y: d.nx, name: 'nx'}, {y: d.ny, name: 'ny'}, {y: d.nz, name: 'nz'} ], layout: { title: 'Load Factors', yaxis: { title: 'Load Factor (g)' } } },
-                { id: 'bodyRatesPlot', requiredCols: ['p_roll_rate', 'q_pitch_rate', 'r_yaw_rate'], tracesFn: (d) => [ {y: d.p_roll_rate, name: 'p (Roll)'}, {y: d.q_pitch_rate, name: 'q (Pitch)'}, {y: d.r_yaw_rate, name: 'r (Yaw)'} ], layout: { title: 'Body Angular Rates', yaxis: { title: 'Rate (rad/s)' } } },
-                { id: 'aeroForceMomentsPlot', requiredCols: ['CM_roll_from_aero_forces', 'CM_yaw_from_aero_forces', 'CM_pitch_from_aero_forces'], tracesFn: (d) => [ {y: d.CM_roll_from_aero_forces, name: 'Roll'}, {y: d.CM_yaw_from_aero_forces, name: 'Yaw'}, {y: d.CM_pitch_from_aero_forces, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Aero Forces)', yaxis: { title: 'Coefficient' } } },
-                { id: 'controlMomentsPlot', requiredCols: ['CM_roll_from_control', 'CM_yaw_from_control', 'CM_pitch_from_control'], tracesFn: (d) => [ {y: d.CM_roll_from_control, name: 'Roll'}, {y: d.CM_yaw_from_control, name: 'Yaw'}, {y: d.CM_pitch_from_control, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Control)', yaxis: { title: 'Coefficient' } } },
-                { id: 'aeroStiffnessMomentsPlot', requiredCols: ['CM_roll_from_aero_stiffness', 'CM_yaw_from_aero_stiffness', 'CM_pitch_from_aero_stiffness'], tracesFn: (d) => [ {y: d.CM_roll_from_aero_stiffness, name: 'Roll'}, {y: d.CM_yaw_from_aero_stiffness, name: 'Yaw'}, {y: d.CM_pitch_from_aero_stiffness, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Aero Stiffness)', yaxis: { title: 'Coefficient' } } },
-                { id: 'aeroDampingMomentsPlot', requiredCols: ['CM_roll_from_aero_damping', 'CM_yaw_from_aero_damping', 'CM_pitch_from_aero_damping'], tracesFn: (d) => [ {y: d.CM_roll_from_aero_damping, name: 'Roll'}, {y: d.CM_yaw_from_aero_damping, name: 'Yaw'}, {y: d.CM_pitch_from_aero_damping, name: 'Pitch'} ], layout: { title: 'Moment Coeffs (Aero Damping)', yaxis: { title: 'Coefficient' } } },
-                { id: 'pitchPlot', requiredCols: ['pitch_demand', 'pitch_demand_attained'], tracesFn: (d) => [ {y: d.pitch_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.pitch_demand_attained, name: 'Attained'} ], layout: { title: 'Pitch Control', yaxis: { title: 'Value' } } },
-                { id: 'rollPlot', requiredCols: ['roll_demand', 'roll_demand_attained'], tracesFn: (d) => [ {y: d.roll_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.roll_demand_attained, name: 'Attained'} ], layout: { title: 'Roll Control', yaxis: { title: 'Value' } } },
-                { id: 'yawPlot', requiredCols: ['yaw_demand', 'yaw_demand_attained'], tracesFn: (d) => [ {y: d.yaw_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.yaw_demand_attained, name: 'Attained'} ], layout: { title: 'Yaw Control', yaxis: { title: 'Value' } } },
-                { id: 'thrustPlot', requiredCols: ['thrust_setting_demand', 'thrust_attained'], tracesFn: (d) => [ {y: d.thrust_setting_demand, name: 'Demand', line: { dash: 'dash' }}, {y: d.thrust_attained, name: 'Attained'} ], layout: { title: 'Thrust Control', yaxis: { title: 'Value' } } },
-                { id: 'quaternionPlot', requiredCols: ['qx', 'qy', 'qz', 'qw'], tracesFn: (d) => [ {y: d.qx, name: 'qx'}, {y: d.qy, name: 'qy'}, {y: d.qz, name: 'qz'}, {y: d.qw, name: 'qw'} ], layout: { title: 'Quaternion Components', yaxis: { title: 'Component' } } },
-                { id: 'angularVelocityPlot', requiredCols: ['wx', 'wy', 'wz'], tracesFn: (d) => [ {y: d.wx, name: 'ωx'}, {y: d.wy, name: 'ωy'}, {y: d.wz, name: 'ωz'} ], layout: { title: 'Angular Velocity (World Frame)', yaxis: { title: 'Rate (rad/s)' } } },
-            ].filter(config => {
-                 // Filter based on actual data present
-                 const hasAllData = config.requiredCols.every(col => columnNames.has(col) && originalData[col].some(val => !isNaN(val)) ); // Ensure required columns exist AND have some valid data
-                 if (!hasAllData) {
-                      const missingOrEmpty = config.requiredCols.filter(col => !columnNames.has(col) || !originalData[col].some(val => !isNaN(val)));
-                      console.warn(`Configuration for plot '${config.layout.title}' (${config.id}) disabled. Missing or empty required columns: [${missingOrEmpty.join(', ')}]`);
+            if (hasData) {
+                // Determine combined time range from all loaded data
+                let minTime = Infinity, maxTime = -Infinity;
+                 if (loadedData.file1?.time) { minTime = Math.min(minTime, loadedData.file1.time[0]); maxTime = Math.max(maxTime, loadedData.file1.time[loadedData.file1.time.length - 1]); }
+                  if (loadedData.file2?.time) { minTime = Math.min(minTime, loadedData.file2.time[0]); maxTime = Math.max(maxTime, loadedData.file2.time[loadedData.file2.time.length - 1]); }
+                  if (isFinite(minTime) && isFinite(maxTime)) {
+                     // Set default start/end time inputs if they are empty or default
+                     const startTimeInput = document.getElementById('startTime');
+                     const endTimeInput = document.getElementById('endTime');
+                     if (!startTimeInput.value || startTimeInput.value === '0') startTimeInput.value = minTime.toFixed(2);
+                     if (!endTimeInput.value || endTimeInput.value === '0') endTimeInput.value = maxTime.toFixed(2);
                  }
-                  if (!document.getElementById(config.id)) {
-                      console.warn(`HTML div element for plot '${config.id}' not found.`);
-                      return false;
-                  }
-                 return hasAllData;
-            });
 
-            // Set initial control values
-            document.getElementById('startTime').value = originalData.time[0];
-            document.getElementById('endTime').value = originalData.time[originalData.time.length - 1];
-            document.getElementById('aspectRatio').value = DEFAULT_ASPECT_RATIO.toFixed(2);
+                // Define plot configurations based on available columns
+                defineMasterPlotConfigs();
+                // Ensure HTML divs exist for the plots
+                createPlotDivs();
+                // Populate the show/hide checkboxes
+                populateVisibilityControls();
 
-            populateVisibilityControls();
+                // Show the control sections
+                plotControlsDiv.style.display = 'block';
+                visibilityControlsDiv.style.display = 'block';
+                plotGridDiv.style.display = 'grid'; // Set grid display for plots
 
-            // Show controls and plot grid
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('plotControls').style.display = 'block'; // Show controls block
+                // Attach User Guide button listener if not already done
+                guideButton = document.getElementById('guideButton');
+                if (guideButton && !guideButton.onclick) { guideButton.onclick = function() { guideModal.style.display = "block"; }; }
 
-             // Get guide button reference now that controls are visible
-             guideButton = document.getElementById('guideButton');
-             if (guideButton && !guideButton.onclick) { // Attach listener only if not already attached
-                 guideButton.onclick = function() {
-                     guideModal.style.display = "block";
-                 }
-             }
-
-            document.getElementById('visibilityControls').style.display = 'block';
-            document.getElementById('plotGrid').style.display = 'grid';
-            updatePlots(); // Initial plot rendering
+                // Render the plots
+                updatePlots();
+                // Status message updated at the end of updatePlots
+            } else {
+                // No data loaded - hide controls and clear plots
+                masterPlotConfigs = [];
+                plotControlsDiv.style.display = 'none';
+                visibilityControlsDiv.style.display = 'none';
+                plotGridDiv.innerHTML = ''; // Clear plot area
+                plotGridDiv.style.display = 'none';
+                statusMessageDiv.textContent = 'Load a CSV file to begin.';
+            }
         }
+
+
+        /**
+         * Defines the masterPlotConfigs array based on columns available
+         * in *either* loadedData.file1 or loadedData.file2.
+         */
+        function defineMasterPlotConfigs() {
+            masterPlotConfigs = []; // Reset configurations
+            const availableCols = new Set(); // Track all columns from both files
+             if (loadedData.file1) Object.keys(loadedData.file1).forEach(col => availableCols.add(col));
+             if (loadedData.file2) Object.keys(loadedData.file2).forEach(col => availableCols.add(col));
+
+             // Helper to check if a specific column has valid data in a specific file
+             const hasData = (index, col) => {
+                 const data = loadedData[`file${index}`];
+                 return data && data[col] && data[col].some(v => !isNaN(v)); // Check for actual numbers
+             };
+             // Helper to check if required columns exist in at least one loaded file
+             const checkReqCols = (cols) => cols.every(col => (hasData(1, col)) || (hasData(2, col)));
+
+            // Array holding potential plot configurations
+            const potentialConfigs = [
+                // --- 3D Trajectory (Shows Both F1 & F2 - Separate Lines & Markers Strategy) ---
+                 {   id: 'trajectory3DPlot',
+                     requiredCols: ['LONGITUDE_m', 'LATITUDE_m', 'ALTITUDE_m', 'nz'],
+                     tracesFn: (d1, d2) => { // Receives filtered data for file 1 and file 2
+                         const traces = []; // Array to hold traces for this plot
+                         const markerSize = 2; const markerOpacity = 1; const colorscale = 'Jet';
+                         const lineColor1 = 'rgba(68, 121, 186, 0.7)'; const lineColor2 = 'rgba(217, 80, 54, 0.7)';
+
+                         // --- Data for File 1 ---
+                         if (d1?.LONGITUDE_m && d1.LATITUDE_m && d1.ALTITUDE_m && d1.nz) {
+                             // 1. Line trace for F1
+                             traces.push({
+                                 x: d1.LONGITUDE_m, y: d1.LATITUDE_m, z: d1.ALTITUDE_m,
+                                 name: '', type: 'scatter3d', mode: 'lines',
+                                 line: { width: 1, color: lineColor1 }, hoverinfo: 'name'
+                             });
+                             // 2. Marker trace for F1
+                             traces.push({
+                                 x: d1.LONGITUDE_m, y: d1.LATITUDE_m, z: d1.ALTITUDE_m,
+                                 name: 'nz (F1)', type: 'scatter3d', mode: 'markers',
+                                 marker: { size: markerSize, symbol: 'square', color: d1.nz, colorscale: colorscale, opacity: markerOpacity,
+                                           colorbar: { title: 'nz (g)', thickness: 15, titleside: 'right', x: 1.05 } // Colorbar only on first marker trace
+                                         },
+                                 showlegend: false, // Hide markers from legend
+                                 hoverinfo: 'name+x+y+z'
+                             });
+                         }
+                         // --- Data for File 2 ---
+                         if (d2?.LONGITUDE_m && d2.LATITUDE_m && d2.ALTITUDE_m && d2.nz) {
+                             // 3. Line trace for F2
+                             traces.push({
+                                 x: d2.LONGITUDE_m, y: d2.LATITUDE_m, z: d2.ALTITUDE_m,
+                                 name: '', type: 'scatter3d', mode: 'lines',
+                                 line: { width: 1, color: lineColor2 }, hoverinfo: 'name'
+                             });
+                             // 4. Marker trace for F2
+                             traces.push({
+                                 x: d2.LONGITUDE_m, y: d2.LATITUDE_m, z: d2.ALTITUDE_m,
+                                 name: 'nz (F2)', type: 'scatter3d', mode: 'markers',
+                                 marker: { size: markerSize, symbol: 'square', color: d2.nz, colorscale: colorscale, opacity: markerOpacity }, // No colorbar here
+                                 showlegend: false, // Hide markers from legend
+                                 hoverinfo: 'name+x+y+z'
+                             });
+                         }
+                         return traces; // Return all generated traces
+                     },
+                     layout: { // Layout specific to this plot
+                         title: '3D Trajectory Comparison',
+                         scene: { xaxis: { title: 'Longitude (m)' }, yaxis: { title: 'Latitude (m)' }, zaxis: { title: 'Altitude (m)' }, aspectmode: 'data' },
+                         legend: { x: 1.0, y: 0.9, xanchor: 'right' } // Position legend
+                     }
+                 },
+
+                 // --- Altitude Comparison ---
+                 { id: 'altitudePlot', requiredCols: ['ALTITUDE_m'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.ALTITUDE_m) traces.push({ x: d1.time, y: d1.ALTITUDE_m, name: 'Altitude (F1)' });
+                         if (d2?.ALTITUDE_m) traces.push({ x: d2.time, y: d2.ALTITUDE_m, name: 'Altitude (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Altitude Comparison', yaxis: { title: 'Altitude (m)' } }
+                 },
+
+                 // --- Horizontal Position Comparison ---
+                 { id: 'horizontalPositionPlot', requiredCols: ['LONGITUDE_m', 'LATITUDE_m'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.LONGITUDE_m && d1.LATITUDE_m) traces.push({ x: d1.LONGITUDE_m, y: d1.LATITUDE_m, name: 'Ground Track (F1)', type: 'scatter', mode: 'lines', line: { color: 'blue' } });
+                         if (d2?.LONGITUDE_m && d2.LATITUDE_m) traces.push({ x: d2.LONGITUDE_m, y: d2.LATITUDE_m, name: 'Ground Track (F2)', type: 'scatter', mode: 'lines', line: { dash: 'dot', color: 'red' } });
+                         return traces;
+                     }, layout: { title: 'Horizontal Position Comparison', yaxis: { title: 'Latitude (m)', scaleanchor:'x', scaleratio: 1 }, xaxis: { title: 'Longitude (m)' }, legend: { x: 1, y: 1, xanchor: 'right'} }
+                 },
+
+                 // --- Vertical Speed Comparison ---
+                 { id: 'verticalSpeedPlot', requiredCols: ['VSI_ms'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.VSI_ms) traces.push({ x: d1.time, y: d1.VSI_ms, name: 'VSI (F1)' });
+                         if (d2?.VSI_ms) traces.push({ x: d2.time, y: d2.VSI_ms, name: 'VSI (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Vertical Speed Comparison', yaxis: { title: 'VSI (m/s)' } }
+                 },
+
+                 // --- Aerodynamic Speeds Comparison ---
+                 { id: 'aerodynamicSpeedsPlot', requiredCols: ['TAS'], // Requires TAS in at least one
+                   tracesFn: (d1, d2) => {
+                       const traces = [];
+                       if (d1?.TAS) traces.push({ x: d1.time, y: d1.TAS, name: 'TAS (F1)' });
+                       if (d1?.EAS) traces.push({ x: d1.time, y: d1.EAS, name: 'EAS (F1)', line: {dash: 'dashdot'} });
+                       if (d2?.TAS) traces.push({ x: d2.time, y: d2.TAS, name: 'TAS (F2)', line: {dash: 'dot'} });
+                       if (d2?.EAS) traces.push({ x: d2.time, y: d2.EAS, name: 'EAS (F2)', line: {dash: 'longdashdot'} });
+                       return traces;
+                   }, layout: { title: 'Aerodynamic Speeds Comparison', yaxis: { title: 'Speed (m/s)' } }
+                 },
+
+                 // --- Mach Comparison ---
+                 { id: 'machPlot', requiredCols: ['Mach'],
+                      tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.Mach) traces.push({ x: d1.time, y: d1.Mach, name: 'Mach (F1)'});
+                         if (d2?.Mach) traces.push({ x: d2.time, y: d2.Mach, name: 'Mach (F2)', line: {dash: 'dot'} });
+                         return traces;
+                      }, layout: { title: 'Mach Number Comparison', yaxis: { title: 'Mach' } }
+                 },
+
+                 // --- Dynamic Pressure Comparison ---
+                 { id: 'dynamicPressurePlot', requiredCols: ['dynamic_pressure'],
+                      tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.dynamic_pressure) traces.push({ x: d1.time, y: d1.dynamic_pressure, name: 'Dyn. Press. (F1)'});
+                         if (d2?.dynamic_pressure) traces.push({ x: d2.time, y: d2.dynamic_pressure, name: 'Dyn. Press. (F2)', line: {dash: 'dot'} });
+                         return traces;
+                      }, layout: { title: 'Dynamic Pressure Comparison', yaxis: { title: 'Pressure (Pa)' } }
+                 },
+
+                 // --- Aero Angles Comparison ---
+                 { id: 'aeroAnglesPlot', requiredCols: ['alpha_DEG', 'beta_DEG'],
+                      tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.alpha_DEG) traces.push({ x: d1.time, y: d1.alpha_DEG, name: 'AoA (F1)'});
+                         if (d1?.beta_DEG) traces.push({ x: d1.time, y: d1.beta_DEG, name: 'AoS (F1)'});
+                         if (d2?.alpha_DEG) traces.push({ x: d2.time, y: d2.alpha_DEG, name: 'AoA (F2)', line: {dash: 'dot'} });
+                         if (d2?.beta_DEG) traces.push({ x: d2.time, y: d2.beta_DEG, name: 'AoS (F2)', line: {dash: 'dot'} });
+                         return traces;
+                      }, layout: { title: 'Aerodynamic Angles Comparison', yaxis: { title: 'Angle (deg)' } }
+                 },
+
+                 // --- Aero Coeff Comparison ---
+                 { id: 'aeroCoeffPlot', requiredCols: ['CL', 'CD', 'CS'],
+                      tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.CL) traces.push({ x: d1.time, y: d1.CL, name: 'CL (F1)'});
+                         if (d1?.CD) traces.push({ x: d1.time, y: d1.CD, name: 'CD (F1)'});
+                         if (d1?.CS) traces.push({ x: d1.time, y: d1.CS, name: 'CS (F1)'});
+                         if (d2?.CL) traces.push({ x: d2.time, y: d2.CL, name: 'CL (F2)', line: {dash: 'dot'} });
+                         if (d2?.CD) traces.push({ x: d2.time, y: d2.CD, name: 'CD (F2)', line: {dash: 'dot'} });
+                         if (d2?.CS) traces.push({ x: d2.time, y: d2.CS, name: 'CS (F2)', line: {dash: 'dot'} });
+                         return traces;
+                      }, layout: { title: 'Aerodynamic Coefficients Comparison', yaxis: { title: 'Coefficient' } }
+                 },
+
+                 // --- Lift/Drag Ratio Comparison ---
+                 { id: 'liftDragRatioPlot', requiredCols: ['CL_CD_ratio'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.CL_CD_ratio) traces.push({ x: d1.time, y: d1.CL_CD_ratio, name: 'CL/CD (F1)' });
+                         if (d2?.CL_CD_ratio) traces.push({ x: d2.time, y: d2.CL_CD_ratio, name: 'CL/CD (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Lift/Drag Ratio Comparison', yaxis: { title: 'Ratio' } }
+                 },
+
+                 // --- Load Factor Comparison ---
+                 { id: 'loadFactorPlot', requiredCols: ['nx', 'ny', 'nz'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.nx) traces.push({ x: d1.time, y: d1.nx, name: 'nx (F1)'});
+                         if (d1?.ny) traces.push({ x: d1.time, y: d1.ny, name: 'ny (F1)'});
+                         if (d1?.nz) traces.push({ x: d1.time, y: d1.nz, name: 'nz (F1)'});
+                         if (d2?.nx) traces.push({ x: d2.time, y: d2.nx, name: 'nx (F2)', line: {dash: 'dot'} });
+                         if (d2?.ny) traces.push({ x: d2.time, y: d2.ny, name: 'ny (F2)', line: {dash: 'dot'} });
+                         if (d2?.nz) traces.push({ x: d2.time, y: d2.nz, name: 'nz (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Load Factors Comparison', yaxis: { title: 'Load Factor (g)' } }
+                 },
+
+                 // --- Body Rates Comparison ---
+                 { id: 'bodyRatesPlot', requiredCols: ['p_roll_rate', 'q_pitch_rate', 'r_yaw_rate'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.p_roll_rate) traces.push({ x: d1.time, y: d1.p_roll_rate, name: 'p (F1)'});
+                         if (d1?.q_pitch_rate) traces.push({ x: d1.time, y: d1.q_pitch_rate, name: 'q (F1)'});
+                         if (d1?.r_yaw_rate) traces.push({ x: d1.time, y: d1.r_yaw_rate, name: 'r (F1)'});
+                         if (d2?.p_roll_rate) traces.push({ x: d2.time, y: d2.p_roll_rate, name: 'p (F2)', line: {dash: 'dot'} });
+                         if (d2?.q_pitch_rate) traces.push({ x: d2.time, y: d2.q_pitch_rate, name: 'q (F2)', line: {dash: 'dot'} });
+                         if (d2?.r_yaw_rate) traces.push({ x: d2.time, y: d2.r_yaw_rate, name: 'r (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Body Angular Rates Comparison', yaxis: { title: 'Rate (rad/s)' } }
+                 },
+
+                 // --- Moment Coeffs (Aero Forces) Comparison ---
+                 { id: 'aeroForceMomentsPlot', requiredCols: ['CM_roll_from_aero_forces', 'CM_yaw_from_aero_forces', 'CM_pitch_from_aero_forces'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.CM_roll_from_aero_forces) traces.push({ x: d1.time, y: d1.CM_roll_from_aero_forces, name: 'Roll (F1)'});
+                         if (d1?.CM_yaw_from_aero_forces) traces.push({ x: d1.time, y: d1.CM_yaw_from_aero_forces, name: 'Yaw (F1)'});
+                         if (d1?.CM_pitch_from_aero_forces) traces.push({ x: d1.time, y: d1.CM_pitch_from_aero_forces, name: 'Pitch (F1)'});
+                         if (d2?.CM_roll_from_aero_forces) traces.push({ x: d2.time, y: d2.CM_roll_from_aero_forces, name: 'Roll (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_yaw_from_aero_forces) traces.push({ x: d2.time, y: d2.CM_yaw_from_aero_forces, name: 'Yaw (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_pitch_from_aero_forces) traces.push({ x: d2.time, y: d2.CM_pitch_from_aero_forces, name: 'Pitch (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Moment Coeffs (Aero Forces) Comparison', yaxis: { title: 'Coefficient' } }
+                 },
+
+                 // --- Moment Coeffs (Control) Comparison ---
+                 { id: 'controlMomentsPlot', requiredCols: ['CM_roll_from_control', 'CM_yaw_from_control', 'CM_pitch_from_control'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.CM_roll_from_control) traces.push({ x: d1.time, y: d1.CM_roll_from_control, name: 'Roll (F1)'});
+                         if (d1?.CM_yaw_from_control) traces.push({ x: d1.time, y: d1.CM_yaw_from_control, name: 'Yaw (F1)'});
+                         if (d1?.CM_pitch_from_control) traces.push({ x: d1.time, y: d1.CM_pitch_from_control, name: 'Pitch (F1)'});
+                         if (d2?.CM_roll_from_control) traces.push({ x: d2.time, y: d2.CM_roll_from_control, name: 'Roll (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_yaw_from_control) traces.push({ x: d2.time, y: d2.CM_yaw_from_control, name: 'Yaw (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_pitch_from_control) traces.push({ x: d2.time, y: d2.CM_pitch_from_control, name: 'Pitch (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Moment Coeffs (Control) Comparison', yaxis: { title: 'Coefficient' } }
+                 },
+
+                 // --- Moment Coeffs (Aero Stiffness) Comparison ---
+                 { id: 'aeroStiffnessMomentsPlot', requiredCols: ['CM_roll_from_aero_stiffness', 'CM_yaw_from_aero_stiffness', 'CM_pitch_from_aero_stiffness'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.CM_roll_from_aero_stiffness) traces.push({ x: d1.time, y: d1.CM_roll_from_aero_stiffness, name: 'Roll (F1)'});
+                         if (d1?.CM_yaw_from_aero_stiffness) traces.push({ x: d1.time, y: d1.CM_yaw_from_aero_stiffness, name: 'Yaw (F1)'});
+                         if (d1?.CM_pitch_from_aero_stiffness) traces.push({ x: d1.time, y: d1.CM_pitch_from_aero_stiffness, name: 'Pitch (F1)'});
+                         if (d2?.CM_roll_from_aero_stiffness) traces.push({ x: d2.time, y: d2.CM_roll_from_aero_stiffness, name: 'Roll (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_yaw_from_aero_stiffness) traces.push({ x: d2.time, y: d2.CM_yaw_from_aero_stiffness, name: 'Yaw (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_pitch_from_aero_stiffness) traces.push({ x: d2.time, y: d2.CM_pitch_from_aero_stiffness, name: 'Pitch (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Moment Coeffs (Aero Stiffness) Comparison', yaxis: { title: 'Coefficient' } }
+                 },
+
+                 // --- Moment Coeffs (Aero Damping) Comparison ---
+                 { id: 'aeroDampingMomentsPlot', requiredCols: ['CM_roll_from_aero_damping', 'CM_yaw_from_aero_damping', 'CM_pitch_from_aero_damping'],
+                      tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.CM_roll_from_aero_damping) traces.push({ x: d1.time, y: d1.CM_roll_from_aero_damping, name: 'Roll (F1)'});
+                         if (d1?.CM_yaw_from_aero_damping) traces.push({ x: d1.time, y: d1.CM_yaw_from_aero_damping, name: 'Yaw (F1)'});
+                         if (d1?.CM_pitch_from_aero_damping) traces.push({ x: d1.time, y: d1.CM_pitch_from_aero_damping, name: 'Pitch (F1)'});
+                         if (d2?.CM_roll_from_aero_damping) traces.push({ x: d2.time, y: d2.CM_roll_from_aero_damping, name: 'Roll (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_yaw_from_aero_damping) traces.push({ x: d2.time, y: d2.CM_yaw_from_aero_damping, name: 'Yaw (F2)', line: {dash: 'dot'} });
+                         if (d2?.CM_pitch_from_aero_damping) traces.push({ x: d2.time, y: d2.CM_pitch_from_aero_damping, name: 'Pitch (F2)', line: {dash: 'dot'} });
+                         return traces;
+                      }, layout: { title: 'Moment Coeffs (Aero Damping) Comparison', yaxis: { title: 'Coefficient' } }
+                 },
+
+                 // --- Pitch Control Comparison ---
+                 { id: 'pitchPlot', requiredCols: ['pitch_demand', 'pitch_demand_attained'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.pitch_demand) traces.push({ x: d1.time, y: d1.pitch_demand, name: 'Demand (F1)', line: { dash: 'dash' }});
+                         if (d1?.pitch_demand_attained) traces.push({ x: d1.time, y: d1.pitch_demand_attained, name: 'Attained (F1)'});
+                         if (d2?.pitch_demand) traces.push({ x: d2.time, y: d2.pitch_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
+                         if (d2?.pitch_demand_attained) traces.push({ x: d2.time, y: d2.pitch_demand_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
+                         return traces;
+                     }, layout: { title: 'Pitch Control Comparison', yaxis: { title: 'Value' } }
+                 },
+
+                 // --- Roll Control Comparison ---
+                 { id: 'rollPlot', requiredCols: ['roll_demand', 'roll_demand_attained'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.roll_demand) traces.push({ x: d1.time, y: d1.roll_demand, name: 'Demand (F1)', line: { dash: 'dash' }});
+                         if (d1?.roll_demand_attained) traces.push({ x: d1.time, y: d1.roll_demand_attained, name: 'Attained (F1)'});
+                         if (d2?.roll_demand) traces.push({ x: d2.time, y: d2.roll_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
+                         if (d2?.roll_demand_attained) traces.push({ x: d2.time, y: d2.roll_demand_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
+                         return traces;
+                     }, layout: { title: 'Roll Control Comparison', yaxis: { title: 'Value' } }
+                 },
+
+                 // --- Yaw Control Comparison ---
+                 { id: 'yawPlot', requiredCols: ['yaw_demand', 'yaw_demand_attained'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.yaw_demand) traces.push({ x: d1.time, y: d1.yaw_demand, name: 'Demand (F1)', line: { dash: 'dash' }});
+                         if (d1?.yaw_demand_attained) traces.push({ x: d1.time, y: d1.yaw_demand_attained, name: 'Attained (F1)'});
+                         if (d2?.yaw_demand) traces.push({ x: d2.time, y: d2.yaw_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
+                         if (d2?.yaw_demand_attained) traces.push({ x: d2.time, y: d2.yaw_demand_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
+                         return traces;
+                     }, layout: { title: 'Yaw Control Comparison', yaxis: { title: 'Value' } }
+                 },
+
+                 // --- Thrust Control Comparison ---
+                 { id: 'thrustPlot', requiredCols: ['thrust_setting_demand', 'thrust_attained'],
+                      tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.thrust_setting_demand) traces.push({ x: d1.time, y: d1.thrust_setting_demand, name: 'Demand (F1)', line: { dash: 'dash' }});
+                         if (d1?.thrust_attained) traces.push({ x: d1.time, y: d1.thrust_attained, name: 'Attained (F1)'});
+                         if (d2?.thrust_setting_demand) traces.push({ x: d2.time, y: d2.thrust_setting_demand, name: 'Demand (F2)', line: { dash: 'dashdot' }});
+                         if (d2?.thrust_attained) traces.push({ x: d2.time, y: d2.thrust_attained, name: 'Attained (F2)', line: { dash: 'dot' }});
+                         return traces;
+                      }, layout: { title: 'Thrust Control Comparison', yaxis: { title: 'Value' } }
+                 },
+
+                 // --- Quaternion Comparison ---
+                 { id: 'quaternionPlot', requiredCols: ['qx', 'qy', 'qz', 'qw'],
+                     tracesFn: (d1, d2) => {
+                         const traces = [];
+                         if (d1?.qx) traces.push({ x: d1.time, y: d1.qx, name: 'qx (F1)'});
+                         if (d1?.qy) traces.push({ x: d1.time, y: d1.qy, name: 'qy (F1)'});
+                         if (d1?.qz) traces.push({ x: d1.time, y: d1.qz, name: 'qz (F1)'});
+                         if (d1?.qw) traces.push({ x: d1.time, y: d1.qw, name: 'qw (F1)'});
+                         if (d2?.qx) traces.push({ x: d2.time, y: d2.qx, name: 'qx (F2)', line: {dash: 'dot'} });
+                         if (d2?.qy) traces.push({ x: d2.time, y: d2.qy, name: 'qy (F2)', line: {dash: 'dot'} });
+                         if (d2?.qz) traces.push({ x: d2.time, y: d2.qz, name: 'qz (F2)', line: {dash: 'dot'} });
+                         if (d2?.qw) traces.push({ x: d2.time, y: d2.qw, name: 'qw (F2)', line: {dash: 'dot'} });
+                         return traces;
+                     }, layout: { title: 'Quaternion Components Comparison', yaxis: { title: 'Component' } }
+                 },
+            ]; // End of potentialConfigs array
+
+            // Filter the configs based on whether required columns exist in *any* loaded file
+            masterPlotConfigs = potentialConfigs.filter(config => {
+                const canCreate = checkReqCols(config.requiredCols);
+                if (!canCreate) {
+                     // Log which columns are missing if a plot config is disabled
+                     console.warn(`Config disabled: '${config.layout.title}'. Missing required columns: [${config.requiredCols.filter(c => !( (loadedData.file1 && loadedData.file1[c]?.some(v=>!isNaN(v))) || (loadedData.file2 && loadedData.file2[c]?.some(v=>!isNaN(v))) ))}]`);
+                }
+                return canCreate;
+            });
+             console.log(`Defined ${masterPlotConfigs.length} plot configurations based on loaded data.`);
+        }
+
+
+        /**
+         * Creates the necessary HTML div elements for each plot if they don't already exist.
+         * Removes divs for plots that are no longer configured (e.g., after clearing a file).
+         */
+        function createPlotDivs() {
+             // Add divs for newly available plots
+             masterPlotConfigs.forEach(config => {
+                if (!document.getElementById(config.id)) {
+                    const div = document.createElement('div');
+                    div.id = config.id;
+                    div.className = 'plot-container';
+                    plotGridDiv.appendChild(div);
+                }
+            });
+             // Remove divs for plots that are no longer valid
+             const currentDivs = plotGridDiv.querySelectorAll('.plot-container');
+             const validIds = new Set(masterPlotConfigs.map(c => c.id));
+             currentDivs.forEach(div => {
+                 if (!validIds.has(div.id)) {
+                     plotGridDiv.removeChild(div);
+                 }
+             });
+         }
 
 
         // --- Plotting Logic ---
 
+        /**
+         * Populates the visibility control checkboxes based on masterPlotConfigs.
+         */
         function populateVisibilityControls() {
-            const container = document.getElementById('visibilityControls');
-            container.innerHTML = ''; // Clear previous controls
-
+            visibilityControlsDiv.innerHTML = ''; // Clear previous controls
             if (!masterPlotConfigs || masterPlotConfigs.length === 0) {
-                 container.innerHTML = '<p style="text-align:center; color: #777;">No data loaded or no plots could be configured based on available data columns.</p>';
-                 return;
+                 visibilityControlsDiv.innerHTML = '<p style="text-align:center; color: #777;">No plots available based on loaded data columns.</p>';
+                return;
             }
-
-            const heading = document.createElement('h3');
-            heading.textContent = 'Show/Hide Plots';
-            container.appendChild(heading);
-
-            const buttonDiv = document.createElement('div');
-            buttonDiv.className = 'visibility-buttons';
-            const showAllBtn = document.createElement('button'); showAllBtn.textContent = 'Show All'; showAllBtn.addEventListener('click', handleShowAll); buttonDiv.appendChild(showAllBtn);
-            const hideAllBtn = document.createElement('button'); hideAllBtn.textContent = 'Hide All'; hideAllBtn.addEventListener('click', handleHideAll); buttonDiv.appendChild(hideAllBtn);
-            container.appendChild(buttonDiv);
-
+            // Add heading and Show/Hide All buttons
+            const heading = document.createElement('h3'); heading.textContent = 'Show/Hide Plots'; visibilityControlsDiv.appendChild(heading);
+            const buttonDiv = document.createElement('div'); buttonDiv.className = 'visibility-buttons';
+            const showAllBtn = document.createElement('button'); showAllBtn.textContent = 'Show All'; showAllBtn.onclick = handleShowAll; buttonDiv.appendChild(showAllBtn);
+            const hideAllBtn = document.createElement('button'); hideAllBtn.textContent = 'Hide All'; hideAllBtn.onclick = handleHideAll; buttonDiv.appendChild(hideAllBtn);
+            visibilityControlsDiv.appendChild(buttonDiv);
+            // Add checkbox for each configured plot
             masterPlotConfigs.forEach(config => {
                 const itemDiv = document.createElement('div'); itemDiv.className = 'visibility-item';
-                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `check-${config.id}`; checkbox.value = config.id; checkbox.className = 'plot-visibility-checkbox'; checkbox.checked = true; checkbox.addEventListener('change', updatePlots);
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `check-${config.id}`; checkbox.value = config.id; checkbox.className = 'plot-visibility-checkbox'; checkbox.checked = true; // Default visible
+                 checkbox.addEventListener('change', updatePlots); // Update plots on change
                 const label = document.createElement('label'); label.htmlFor = checkbox.id; label.textContent = config.layout.title || config.id;
-                itemDiv.appendChild(checkbox); itemDiv.appendChild(label); container.appendChild(itemDiv);
+                itemDiv.appendChild(checkbox); itemDiv.appendChild(label); visibilityControlsDiv.appendChild(itemDiv);
             });
         }
-
+        // Handlers for Show/Hide All buttons
         function handleShowAll() { document.querySelectorAll('.plot-visibility-checkbox').forEach(cb => cb.checked = true); updatePlots(); }
         function handleHideAll() { document.querySelectorAll('.plot-visibility-checkbox').forEach(cb => cb.checked = false); updatePlots(); }
 
+        /**
+         * Main function to update and render all visible plots.
+         */
         function updatePlots() {
-            if (!originalData || masterPlotConfigs.length === 0) { return; }
+            // Exit if no plots are configured or no data is loaded
+            if (masterPlotConfigs.length === 0 || (!loadedData.file1 && !loadedData.file2)) {
+                 plotGridDiv.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; color: #777; padding: 20px 0;">Load data and ensure required columns exist to see plots.</p>';
+                 plotGridDiv.style.display = 'block'; plotGridDiv.style.gridTemplateColumns = '1fr';
+                 statusMessageDiv.textContent = 'No data to plot.';
+                 return;
+            }
 
+            // Get current control values
             const startTimeInput = document.getElementById('startTime'), endTimeInput = document.getElementById('endTime'), aspectRatioInput = document.getElementById('aspectRatio'), columnsSelect = document.getElementById('gridColumns'), timeLine1Input = document.getElementById('timeLine1'), timeLine2Input = document.getElementById('timeLine2');
             let startTime = parseFloat(startTimeInput.value), endTime = parseFloat(endTimeInput.value), aspectRatio = parseFloat(aspectRatioInput.value), numColumns = parseInt(columnsSelect.value), timeLine1Value = parseFloat(timeLine1Input.value), timeLine2Value = parseFloat(timeLine2Input.value);
 
-            if (isNaN(startTime)) startTime = (originalData.time && originalData.time.length > 0) ? originalData.time[0] : 0;
-            if (isNaN(endTime)) endTime = (originalData.time && originalData.time.length > 0) ? originalData.time[originalData.time.length - 1] : 0;
+            // Determine overall time range from data if inputs are invalid
+            let overallMinTime = Infinity, overallMaxTime = -Infinity;
+             if (loadedData.file1?.time) { overallMinTime = Math.min(overallMinTime, loadedData.file1.time[0]); overallMaxTime = Math.max(overallMaxTime, loadedData.file1.time[loadedData.file1.time.length - 1]); }
+             if (loadedData.file2?.time) { overallMinTime = Math.min(overallMinTime, loadedData.file2.time[0]); overallMaxTime = Math.max(overallMaxTime, loadedData.file2.time[loadedData.file2.time.length - 1]); }
+             if (!isFinite(overallMinTime)) overallMinTime = 0; if (!isFinite(overallMaxTime)) overallMaxTime = 0;
+
+            // Validate and sanitize control values
+            if (isNaN(startTime)) startTime = overallMinTime;
+            if (isNaN(endTime)) endTime = overallMaxTime;
             if (isNaN(aspectRatio) || aspectRatio <= 0) { aspectRatio = DEFAULT_ASPECT_RATIO; aspectRatioInput.value = aspectRatio.toFixed(2); }
             if (isNaN(numColumns) || numColumns < 1 || numColumns > 4) { numColumns = 2; columnsSelect.value = '2'; }
-            if (startTime > endTime) { [startTime, endTime] = [endTime, startTime]; startTimeInput.value = startTime; endTimeInput.value = endTime; }
+            // Swap start/end time if necessary and update inputs
+             if (startTime > endTime && isFinite(startTime) && isFinite(endTime)) {
+                 [startTime, endTime] = [endTime, startTime]; startTimeInput.value = startTime.toFixed(2); endTimeInput.value = endTime.toFixed(2);
+             } else { // Ensure inputs reflect calculated bounds if they were invalid
+                 if (isNaN(parseFloat(startTimeInput.value))) startTimeInput.value = startTime.toFixed(2);
+                 if (isNaN(parseFloat(endTimeInput.value))) endTimeInput.value = endTime.toFixed(2);
+             }
 
-            const indices = [];
-            if (originalData.time) { originalData.time.forEach((t, index) => { if (t >= startTime && t <= endTime) { indices.push(index); } }); }
+            // Filter data for each file based on the selected time range
+            const filterDataByTime = (data) => {
+                if (!data || !data.time) return null;
+                const indices = data.time.reduce((acc, t, index) => { if (t >= startTime && t <= endTime) { acc.push(index); } return acc; }, []);
+                if (indices.length === 0) return null; // No data in range for this file
+                const filtered = {};
+                for (const key in data) { if (data.hasOwnProperty(key) && Array.isArray(data[key])) { filtered[key] = indices.map(index => data[key][index]); } }
+                return filtered;
+            };
+            const filteredData1 = filterDataByTime(loadedData.file1);
+            const filteredData2 = filterDataByTime(loadedData.file2);
 
-            const plotGrid = document.getElementById('plotGrid');
-            if (plotGrid.firstChild && plotGrid.firstChild.tagName === 'P') { plotGrid.innerHTML = '';
-                masterPlotConfigs.forEach(config => { if (!document.getElementById(config.id)) { const div = document.createElement('div'); div.id = config.id; div.className = 'plot-container'; plotGrid.appendChild(div); } });
+            // Check if any data remains after filtering
+            if (!filteredData1 && !filteredData2) {
+                console.warn("No data points found in selected time range for any loaded file.");
+                plotGridDiv.innerHTML = `<p style="text-align:center; grid-column: 1 / -1; color: #777; padding: 20px 0;">No data in selected time range (${startTime.toFixed(2)}s - ${endTime.toFixed(2)}s).</p>`;
+                 plotGridDiv.style.display = 'block'; plotGridDiv.style.gridTemplateColumns = '1fr';
+                 masterPlotConfigs.forEach(config => { const plotDiv = document.getElementById(config.id); if(plotDiv) plotDiv.style.display = 'none'; });
+                 statusMessageDiv.textContent = 'No data in time range.';
+                 return;
             }
 
-            if (indices.length === 0) {
-                console.warn("No data points found in selected time range.");
-                masterPlotConfigs.forEach(config => { const plotDiv = document.getElementById(config.id); if(plotDiv) plotDiv.style.display = 'none'; });
-                plotGrid.innerHTML = `<p style="text-align:center; grid-column: 1 / -1; color: #777; padding: 20px 0;">No data in selected time range (${startTime.toFixed(2)}s - ${endTime.toFixed(2)}s).</p>`;
-                plotGrid.style.display = 'block'; plotGrid.style.gridTemplateColumns = '1fr'; return;
-            } else {
-                plotGrid.style.display = 'grid'; plotGrid.style.gridTemplateColumns = `repeat(${numColumns}, 1fr)`;
-            }
+            // Configure plot grid display
+             plotGridDiv.style.display = 'grid';
+             plotGridDiv.style.gridTemplateColumns = `repeat(${numColumns}, 1fr)`;
+             // Clear any previous 'no data' message
+             const noDataMsg = plotGridDiv.querySelector('p');
+             if (noDataMsg && noDataMsg.textContent.includes('No data')) { plotGridDiv.removeChild(noDataMsg); }
 
-            const filteredData = {};
-            for (const key in originalData) { if (originalData.hasOwnProperty(key) && Array.isArray(originalData[key])) { filteredData[key] = originalData[key].length > 0 ? indices.map(index => originalData[key][index]) : []; } }
+            // Default Plotly layout settings
+            const plotlyDefaultLayout = { autosize: true, margin: { l: 60, r: 30, t: 70, b: 50 }, plot_bgcolor: 'rgba(255,255,255,0.9)', paper_bgcolor: '#ffffff', font: { family: 'Segoe UI, sans-serif', size: 12, color: '#333' }, title: { font: { size: 16, color: 'var(--primary-color)' }, x: 0.05, xanchor: 'left'}, legend: { bgcolor: 'rgba(255,255,255,0.7)', bordercolor: '#ddd', borderwidth: 1, x: 1, xanchor: 'right', y: 1, traceorder: 'normal' }, xaxis: { gridcolor: '#eee', linecolor: '#aaa', zerolinecolor: '#ccc', automargin: true }, yaxis: { gridcolor: '#eee', linecolor: '#aaa', zerolinecolor: '#ccc', automargin: true } };
 
-            const plotlyDefaultLayout = { autosize: true, margin: { l: 60, r: 30, t: 70, b: 50 }, plot_bgcolor: 'rgba(255,255,255,0.9)', paper_bgcolor: '#ffffff', font: { family: 'Segoe UI, sans-serif', size: 12, color: '#333' }, title: { font: { size: 16, color: 'var(--primary-color)' }, x: 0.05, xanchor: 'left'}, legend: { bgcolor: 'rgba(255,255,255,0.7)', bordercolor: '#ddd', borderwidth: 1, x: 1, xanchor: 'right', y: 1 }, xaxis: { gridcolor: '#eee', linecolor: '#aaa', zerolinecolor: '#ccc', automargin: true }, yaxis: { gridcolor: '#eee', linecolor: '#aaa', zerolinecolor: '#ccc', automargin: true } };
-
+            let visiblePlotCount = 0;
+            // Iterate through each configured plot
             masterPlotConfigs.forEach(config => {
-                const plotDiv = document.getElementById(config.id); const checkbox = document.getElementById(`check-${config.id}`);
+                const plotDiv = document.getElementById(config.id);
+                const checkbox = document.getElementById(`check-${config.id}`);
                 if (!plotDiv) { console.error("Plot div missing during update:", config.id); return; }
 
+                // Check if the plot's visibility checkbox is checked
                 if (checkbox && checkbox.checked) {
-                    plotDiv.style.display = 'block';
-                    let plotWidth = plotDiv.offsetWidth || (plotGrid.offsetWidth - (numColumns - 1) * 25) / numColumns || 450; let plotHeight = Math.max(150, Math.round(plotWidth / aspectRatio));
-                    let traces; let plotLayout = JSON.parse(JSON.stringify(plotlyDefaultLayout)); plotLayout = {...plotLayout, ...config.layout };
-                    if (config.layout.scene) plotLayout.scene = {...plotLayout.scene, ...config.layout.scene}; if (config.layout.xaxis) plotLayout.xaxis = {...plotLayout.xaxis, ...config.layout.xaxis}; if (config.layout.yaxis) plotLayout.yaxis = {...plotLayout.yaxis, ...config.layout.yaxis};
-                    plotLayout.height = plotHeight;
-                    let plotShapes = [];
-                    try {
-                        traces = config.tracesFn(filteredData); if (!Array.isArray(traces)) { console.error(`tracesFn for ${config.id} did not return array.`); traces = []; }
-                        // Filter traces that don't have valid data points
-                         traces = traces.filter(trace => {
-                             const dataKey = Object.keys(trace).find(k => ['y', 'z', 'x'].includes(k) && Array.isArray(trace[k]));
-                             if (dataKey) { return trace[dataKey].some(val => val !== null && !isNaN(val)); }
-                             // Special check for 3D marker color data which might be the only numeric array
-                             if(trace.marker && trace.marker.color && Array.isArray(trace.marker.color)){ return trace.marker.color.some(val => val !== null && !isNaN(val)); }
-                             return false; // If no valid data array found, filter out
-                         });
-                    } catch (e) { console.error(`Error generating traces for ${config.id}:`, e); traces = []; plotDiv.innerHTML = `<p style='color: red; padding: 10px;'>Error loading data for ${config.layout.title || config.id}.</p>`; }
+                    visiblePlotCount++;
+                    plotDiv.style.display = 'block'; // Make the plot div visible
 
+                    // Calculate plot dimensions based on aspect ratio and grid columns
+                    let plotWidth = plotDiv.offsetWidth || (plotGridDiv.offsetWidth - (numColumns - 1) * 25) / numColumns || 450;
+                    let plotHeight = Math.max(150, Math.round(plotWidth / aspectRatio));
+
+                    let traces = []; // Array to hold traces for the current plot
+                    let plotLayout = JSON.parse(JSON.stringify(plotlyDefaultLayout)); // Start with default layout
+                     plotLayout = { ...plotLayout, ...config.layout }; // Merge plot-specific layout settings
+                     // Deep merge scene/axes if they exist in the config
+                     if (config.layout.scene) plotLayout.scene = {...plotlyDefaultLayout.scene, ...config.layout.scene};
+                     if (config.layout.xaxis) plotLayout.xaxis = {...plotlyDefaultLayout.xaxis, ...config.layout.xaxis};
+                     if (config.layout.yaxis) plotLayout.yaxis = {...plotlyDefaultLayout.yaxis, ...config.layout.yaxis};
+                    plotLayout.height = plotHeight; // Set calculated height
+
+                    let plotShapes = []; // Array for vertical lines
+
+                    try {
+                        // Generate traces using the plot's tracesFn, passing filtered data
+                        traces = config.tracesFn(filteredData1, filteredData2);
+                        if (!Array.isArray(traces)) { console.error(`tracesFn for ${config.id} did not return array.`); traces = []; }
+
+                        // Filter out any generated traces that don't have valid numeric data
+                        traces = traces.filter(trace => {
+                            const dataKey = Object.keys(trace).find(k => ['x', 'y', 'z'].includes(k) && Array.isArray(trace[k]));
+                             if (dataKey) {
+                                 const primaryDataKey = ['y', 'z', 'x'].find(k => k === dataKey);
+                                 return trace[primaryDataKey]?.some(val => val !== null && !isNaN(val));
+                             }
+                             if (trace.marker?.color && Array.isArray(trace.marker.color)) { return trace.marker.color.some(val => val !== null && !isNaN(val)); }
+                             return false;
+                         });
+                    } catch (e) { // Handle errors during trace generation
+                        console.error(`Error generating traces for ${config.id}:`, e); traces = [];
+                        plotDiv.innerHTML = `<p style='color: red; padding: 10px;'>Error loading data for ${config.layout.title || config.id}.</p>`;
+                    }
+
+                    // Apply specific layout adjustments based on plot type
                     if (config.id === 'trajectory3DPlot') {
-                        // Already handled marker coloring in traceFn
-                        delete plotLayout.xaxis; delete plotLayout.yaxis; // Still remove 2D axes
-                        // Don't delete legend if colorbar is present
-                        plotLayout.margin = { l: 10, r: 10, t: 60, b: 10 };
-                    } else if (config.id === 'horizontalPositionPlot') { plotLayout.showlegend = traces.length > 1; }
-                    else {
-                        traces = traces.map(trace => ({ type: 'scatter', mode: 'lines', ...trace, x: filteredData.time }));
-                        plotLayout.xaxis = { title: 'Time (s)', range: [startTime, endTime], ...plotLayout.xaxis }; plotLayout.showlegend = traces.length > 0;
+                         if (traces.length > 0) { delete plotLayout.xaxis; delete plotLayout.yaxis; plotLayout.margin = { l: 10, r: 10, t: 60, b: 10 }; }
+                     } else if (config.id === 'horizontalPositionPlot') {
+                         plotLayout.showlegend = traces.length > 0;
+                     } else { // Standard 2D time-series plots
+                        // Ensure type/mode and set x-axis data (time) if not already set by tracesFn
+                        traces = traces.map(trace => ({ type: 'scatter', mode: trace.mode || 'lines', ...trace }));
+                        // Configure x-axis for time
+                         plotLayout.xaxis = { title: 'Time (s)', range: [startTime, endTime], ...plotLayout.xaxis };
+                         plotLayout.showlegend = traces.length > 0; // Show legend only if there are traces
+
+                        // Add vertical reference lines (V Lines)
                         if (!isNaN(timeLine1Value) && timeLine1Value >= startTime && timeLine1Value <= endTime) { plotShapes.push({ type: 'line', xref: 'x', yref: 'paper', x0: timeLine1Value, x1: timeLine1Value, y0: 0, y1: 1, line: { color: 'rgba(255, 0, 0, 0.7)', width: 1.5, dash: 'dash' } }); }
                         if (!isNaN(timeLine2Value) && timeLine2Value >= startTime && timeLine2Value <= endTime) { plotShapes.push({ type: 'line', xref: 'x', yref: 'paper', x0: timeLine2Value, x1: timeLine2Value, y0: 0, y1: 1, line: { color: 'rgba(0, 0, 255, 0.7)', width: 1.5, dash: 'dash' } }); }
                         if (plotShapes.length > 0) { plotLayout.shapes = plotShapes; }
                     }
 
-                    if (traces.length > 0) { Plotly.react(config.id, traces, plotLayout, {responsive: true, displaylogo: false}); }
-                    else { Plotly.purge(plotDiv); plotDiv.innerHTML = `<p style='text-align: center; padding: 20px; color: #777;'>No valid data to display for ${config.layout.title || config.id}.</p>`; plotDiv.style.height = `${plotHeight}px`; }
-                } else { plotDiv.style.display = 'none'; /* if (plotDiv._fullLayout) { Plotly.purge(plotDiv); } */ }
+                    // Render the plot using Plotly.react or show message if no valid traces
+                    if (traces.length > 0) {
+                        Plotly.react(plotDiv.id, traces, plotLayout, {responsive: true, displaylogo: false});
+                    } else {
+                        Plotly.purge(plotDiv); // Clear any previous plot in the div
+                        plotDiv.innerHTML = `<p style='text-align: center; padding: 20px; color: #777;'>No valid data in selected time range for ${config.layout.title || config.id}.</p>`;
+                        plotDiv.style.height = `${plotHeight}px`; // Maintain height even when empty
+                    }
+                } else {
+                    plotDiv.style.display = 'none'; // Hide the plot div if checkbox is unchecked
+                }
             });
-            if (indices.length > 0) { plotGrid.style.gridTemplateColumns = `repeat(${numColumns}, 1fr)`; }
+             // Final status update
+             statusMessageDiv.textContent = `Displayed ${visiblePlotCount} plots.`;
         }
 
         // --- Event Listeners ---
+        // Attach listeners to controls to trigger plot updates
         document.getElementById('updateButton').addEventListener('click', updatePlots);
         document.getElementById('gridColumns').addEventListener('change', updatePlots);
         document.getElementById('aspectRatio').addEventListener('change', updatePlots);
@@ -671,13 +1143,29 @@
 
         // --- Modal Event Listeners ---
         modalCloseButton.onclick = function() { guideModal.style.display = "none"; }
+        // Close modal if clicked outside the content area
         window.onclick = function(event) { if (event.target == guideModal) { guideModal.style.display = "none"; } }
-        // Note: Guide button listener is attached dynamically in processData when controls become visible
+        // Guide button listener attached dynamically in checkAndInitializeUI
 
         // --- Resize Handling ---
+        // Debounce resize events to avoid excessive plot updates
         let resizeTimeout;
-        window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(() => { if (originalData) { console.log("Window resized, updating plots..."); updatePlots(); } }, 250); });
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                 // Only update if plots are actually displayed
+                if (plotGridDiv.style.display === 'grid' && (loadedData.file1 || loadedData.file2)) {
+                    console.log("Window resized, updating plots...");
+                    updatePlots();
+                }
+            }, 250); // Update 250ms after resize stops
+        });
+
+         // --- Initial State ---
+         // Set up the initial UI state (usually shows "Load a CSV")
+         checkAndInitializeUI();
 
     </script>
 </body>
 </html>
+

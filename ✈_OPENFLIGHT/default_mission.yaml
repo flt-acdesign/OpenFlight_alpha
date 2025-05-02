@@ -14,7 +14,7 @@ start_flight_data_recording_at:  3    # start recording in seconds after start o
 finish_flight_data_recording_at: 20    # finish recording in seconds
 
 # VISUALIZATION PARAMETERS
-scenery_complexity: 0   #  0 = four checkered quadrants (good for old GPUs), 1 = low, 2 = medium or 3 = high detail
+scenery_complexity: 3   #  0 = four checkered quadrants (good for old GPUs), 1 = low, 2 = medium or 3 = high detail
 show_force_vectors: "true"
 show_velocity_vectors: "true"
 show_trajectory: "true"   # "true" or "false", to show the trajectory of the aircraft
