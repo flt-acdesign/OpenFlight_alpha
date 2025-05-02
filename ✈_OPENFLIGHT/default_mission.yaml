@@ -3,7 +3,7 @@
 ###########################################
 
 # AIRCRAFT PARAMETERS
-aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
+aircraft_name: "easy.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
 
 # FLIGHT TEST PARAMETERS
 initial_velocity: 40  # Initial velocity in m/s

@@ -62,16 +62,7 @@ end
 
 # Functions to calculate static stability (stiffness) moment coefficients
 
-function 🟢_rolling_moment_coefficient_due_to_aerodynamic_stiffness(
-    alpha_RAD,                              # Angle of attack in radians
-    beta_RAD,                               # Sideslip angle in radians
-    Mach_number,                            # Mach number
-    aircraft_data,                          # Aircraft data struct
-    control_demand_vector_attained          # Actual control surface deflections
-)
-    # Currently returns zero - no static roll stability modeled
-    return 0.0
-end
+
 
 function 🟢_yawing_moment_coefficient_due_to_aerodynamic_stiffness(
     alpha_RAD,                              # Angle of attack in radians

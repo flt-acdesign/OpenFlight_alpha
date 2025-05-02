@@ -141,11 +141,6 @@ function compute_6DOF_equations_of_motion(
     # Static stability moment coefficients in body axes
     vector_of_moment_coefficients_of_static_stability_body =
         [
-            🟢_rolling_moment_coefficient_due_to_aerodynamic_stiffness(
-                initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
-                aircraft_data,
-                control_demand_vector_attained
-            )  + 
             🟢_rolling_moment_coefficient_due_to_sideslip(
                 initial_flight_conditions.alpha_rad, initial_flight_conditions.beta_rad, initial_flight_conditions.Mach_number,
                 aircraft_data,

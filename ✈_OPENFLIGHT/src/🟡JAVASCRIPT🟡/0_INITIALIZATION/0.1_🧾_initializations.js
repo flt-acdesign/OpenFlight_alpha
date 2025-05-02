@@ -1,6 +1,6 @@
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
-let aircraft_name = "SF25B.yaml"
+let aircraft_name = "easy.yaml"
 
 let initial_velocity = 40
 let initial_altitude = 1000
