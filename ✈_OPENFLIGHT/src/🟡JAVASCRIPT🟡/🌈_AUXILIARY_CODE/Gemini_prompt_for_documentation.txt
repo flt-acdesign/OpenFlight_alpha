@@ -1,0 +1,82 @@
+Goal: Analyze the provided source code and generate a single, self-contained HTML file visualizing its structure and control flow as an interactive, responsive diagram using p5.js. The diagram should prioritize readability through clear spacing, curved connectors, and informative descriptions, and adapt its size to its container.
+
+The source code is added at the end of the prompt. 
+
+Task Breakdown:
+
+1. Analyze the Source Code:
+* Identify Logical Blocks: Thoroughly examine the code to identify distinct functional units. This includes, but is not limited to:
+* Main HTML structure/entry points.
+* JavaScript modules/files.
+* Classes and their key methods.
+* Major functions or groups of related functions.
+* Significant UI components or groups (e.g., modals, control panels).
+* Core data structures or state management stores.
+* Key event handling logic (e.g., UI interactions, library-specific events).
+* Setup/initialization routines (e.g., scene setup, library initialization).
+* External libraries or APIs being utilized.
+* Extract Block Information: For each identified block, define the following properties:
+* id: A unique, concise identifier (e.g., uiLogicModule, renderAircraftFunc). Use camelCase or snake_case consistently.
+* type: A generic category string to potentially influence styling (e.g., 'html', 'module', 'function', 'class', 'data-store', 'ui-group', 'event-handler', 'library', 'setup').
+* label: A short, human-readable name for display inside the block rectangle (e.g., "UI Logic", "Render Aircraft", "Babylon Setup").
+* description: A detailed explanation of the block's purpose, key responsibilities, functionality, how it interacts with other parts of the code, and relevant file names or specific code elements (use backticks  for code mentions like window.aircraftData or renderAircraft()). This description will be shown in the panel when the block is clicked, so it needs to be comprehensive and informative.
+* Determine Connections (Arrows): Identify the relationships and dependencies between the blocks. These represent control flow, data flow, function calls, event triggering, library usage, etc.
+* Define Arrow Properties: For each connection, define:
+* fromId: The id of the source block.
+* toId: The id of the target block.
+* label: A concise text label describing the relationship (e.g., 'calls', 'includes', 'uses', 'modifies', 'triggers', 'reads data from', 'updates', 'handles events from', 'initializes').
+* Determine Block Layout (Design Coordinates):
+* Assign x, y coordinates for the top-left corner of each block rectangle relative to a fixed design canvas size.
+* Assign w, h dimensions for each block rectangle relative to the same design canvas size.
+* Prioritize Readability: Ensure ample spacing between blocks in this design layout, both horizontally and vertically, to prevent clutter. Adjust coordinates significantly to spread the diagram out.
+* Estimate Design Canvas Size: Determine appropriate designWidth and designHeight constants (e.g., 1800x1200) that comfortably fit the spaced-out layout. These values will be used for scaling.
+* Logical Flow: Arrange blocks to suggest a logical flow where possible (e.g., initialization at the top/left, core logic in the center, UI/interaction elements grouped).
+
+2. Generate Responsive HTML Output:
+* Single HTML File: Create a complete, self-contained HTML file.
+* p5.js Library: Include p5.js via CDN (<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>).
+* CSS Styling (Responsive): Include <style> tags with CSS rules for:
+* Basic page (html, body: ensure they can size correctly, e.g., height: 100%, margin: 0).
+* Canvas container (#canvasContainer): Style to fill available space (e.g., width: 100%, height: 100% or flex-grow: 1 depending on layout), potentially with max-width and margin: auto for centering. Avoid fixed pixel dimensions.
+* Canvas element (canvas): display: block.
+* Description panel (#descriptionPanel): Positioned below the canvas, responsive width (e.g., width: 95%, max-width: ...), potentially max-height with overflow-y: auto, initially hidden (display: none), clear styling for <h4> and <code>.
+* Block rectangles: Rounded corners, border style/color, distinct fill colors based on block.type, hover/selected states.
+* Block labels: Centered text, potentially scaled font size.
+* Curved arrows: Stroke color, scaled weight/arrowhead size, opacity. Arrowheads should be filled.
+* Arrow labels: Scaled font size, color, positioned clearly next to the curve (with scaled offset).
+* JavaScript (p5.js Sketch - Responsive): Include <script> tags containing the p5.js code:
+* Define blocks and arrows arrays populated with the data and design coordinates/dimensions from the analysis step.
+* Define designWidth and designHeight constants based on the layout determination (Step 1).
+* Remove fixed canvasWidth, canvasHeight variables.
+* Define variables for scaleX, scaleY.
+* setup():
+* Get the target container element (#canvasContainer).
+* Determine actual available currentWidth and currentHeight from the container (use defaults if necessary).
+* Create canvas using currentWidth, currentHeight.
+* Parent the canvas to the container.
+* Calculate scaleX = currentWidth / designWidth and scaleY = currentHeight / designHeight.
+* Initialize blocksMap.
+* draw():
+* Clear background.
+* Reset cursor, check for block hover (using scaled coordinates for hit detection via isMouseInsideBlock), change cursor if hovering.
+* Iterate through arrows and call drawCurvedArrow(fromBlock, toBlock, label) (which must use scaling).
+* Iterate through blocks, drawing each rectangle using scaled x, y, w, h, potentially scaled border-radius and strokeWeight. Draw its centered text label with scaled position and potentially scaled textSize. Apply hover/selected styles.
+* Manage the #descriptionPanel: Get the DOM element, update its innerHTML with the selectedBlock.description (replacing backticks and newlines), and set its display style.
+* mousePressed(): Implement selection logic using scaled coordinates for hit detection (isMouseInsideBlock).
+* isMouseInsideBlock(block): Helper function for hover/click detection using scaled block boundaries (block.x * scaleX, etc.) compared to mouseX, mouseY.
+* drawCurvedArrow(fromBlock, toBlock, label):
+* Calculate all points (centers, control points, intersection points, label position) using scaled coordinates and dimensions.
+* Scale offsets, arrowhead size, and stroke weight based on scaleX, scaleY.
+* Use scaled coordinates in bezier() and text() calls.
+* getRectIntersectionPoint(scaledRect, targetX, targetY): Helper function adapted to work with already scaled rectangle dimensions and coordinates.
+* (Optional but recommended) windowResized(): Add this function to handle dynamic resizing. It should get the new container dimensions, resize the canvas using resizeCanvas(), and recalculate scaleX and scaleY.
+
+Output: Provide the result as a single, complete HTML code block enclosed in html .... Ensure the code is well-commented, especially the p5.js logic for responsiveness and scaling.
+
+Emphasis:
+
+Responsiveness: The generated HTML/Canvas must resize and scale its content appropriately to fit within its parent container (important for embedding).
+Detailed Descriptions: Ensure block descriptions are thorough and explain the block's role and interactions clearly.
+Clear Layout: Prioritize spreading blocks out significantly in the design layout for readability. Scaling will adapt this to the actual view size.
+Curved Connectors: Use Bezier curves for all connections between blocks.
+Readable Labels: Position arrow labels next to the curves, ensuring they remain legible after scaling.

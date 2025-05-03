@@ -23,6 +23,9 @@ async function createAircraft(shadowGenerator, scene, propeller_diameter) {
     // Create the main aircraft sphere (invisible physics body).
     aircraft = BABYLON.MeshBuilder.CreateSphere("aircraft", { diameter: 0.1 }, scene);
     aircraft.position.y = initial_altitude || 100; // Use initial altitude or default
+    aircraft.position.x = -250; // Use initial altitude or default
+
+
     aircraft.rotationQuaternion = new BABYLON.Quaternion(0, 0, 0, 1);
     aircraft.isVisible = false; // Make the physics sphere invisible
 

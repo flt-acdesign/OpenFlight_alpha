@@ -1,17 +1,17 @@
 let freeport = 8000  // default value for the server port, it will be updated by the server
 
-let aircraft_name = "easy.yaml"
+let aircraft_name = "SF25B.yaml"
 
-let initial_velocity = 40
-let initial_altitude = 1000
+let initial_velocity = 60
+let initial_altitude = 70
 
 let start_flight_data_recording_at = 3
 let finish_flight_data_recording_at = 20
 
-let show_force_vectors = "true"
-let show_velocity_vectors = "true"
+let show_force_vectors = "false"
+let show_velocity_vectors = "false"
 
-let show_trajectory = "true"
+let show_trajectory = "false"
 let frames_per_trajectory_marker = 2
 
 // 0 = nothing, 1 = low, 2 = medium or 3 = high
@@ -24,7 +24,7 @@ let planeNode = null; // TransformNode holding the simple plane
 let glbNode = null;   // TransformNode holding the loaded GLB
 
 let engine, scene;
-let velocity = { x: 30, y: 0, z: 0 }; // Initial velocity
+let velocity = { x: initial_velocity, y: 0, z: 0 }; // Initial velocity
 
 let angularVelocity = { x: 0, y: 0, z: 0 }; // Initial angular velocity
 let orientation = { x: 0, y: 0, z: 0, w: 1 }; // Initial orientation (quaternion)
