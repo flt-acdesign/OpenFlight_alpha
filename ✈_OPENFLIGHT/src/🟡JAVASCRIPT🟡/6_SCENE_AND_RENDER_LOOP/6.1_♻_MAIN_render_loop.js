@@ -1,78 +1,137 @@
 /***************************************************************
- * 6.1_♻_MAIN_render_loop.js
+ * 6.1_♻_MAIN_render_loop.js — FINAL REVISION
  *
- * Master render loop. We rely on "serverElapsedTime" (provided by
- * the server in onmessage) for consistent timing. If the server
- * hasn't yet responded, fallback is 0.
+ * 1  Keeps a single global `engine` and `scene` so helper scripts
+ * ("draw_forces_and_velocities.js" etc.) see the same object.
+ * 2  Calls `updateVelocityLine()` and `updateForceLine()` every
+ * frame, but only AFTER initial data is received from the server.
+ * 3  Passes the `scene` object explicitly to the update functions.
  ***************************************************************/
 
-window.addEventListener("DOMContentLoaded", function () {
-  // 1) Initialize Babylon engine
+// Wait for the DOM content to be fully loaded before initializing Babylon
+window.addEventListener("DOMContentLoaded", () => {
+  /*------------------------------------------------------------
+   * ENGINE + SCENE (use the globals declared in initialisations)
+   *-----------------------------------------------------------*/
   const canvas = document.getElementById("renderCanvas");
-  const engine = new BABYLON.Engine(canvas, true, {
-    preserveDrawingBuffer: true,
-    stencil: true,
-    limitDeviceRatio: 1.0
+
+  // Ensure canvas exists
+  if (!canvas) {
+      console.error("renderCanvas not found in the DOM!");
+      return;
+  }
+
+  // Initialize the Babylon engine (assigns to global 'engine')
+  engine = new BABYLON.Engine(canvas, true, {
+      preserveDrawingBuffer: true,
+      stencil: true,
+      limitDeviceRatio: 1.0 // Optional: Limit device pixel ratio for performance
   });
-  engine.enableOfflineSupport = false;
+  window.engine = engine; // Expose engine globally if needed elsewhere
 
-  // 2) Create the scene
-  const scene = createScene(engine, canvas);
+  // Create the Babylon scene (assigns to global 'scene' via createScene function)
+  // createScene itself should assign to window.scene
+  scene = createScene(engine, canvas);
 
-  // 3) Our main render loop
-  engine.runRenderLoop(function () {
-    // Check if paused, etc.
-    handleGamepadPauseControls();
+  // Verify scene creation
+  if (!scene) {
+      console.error("Scene creation failed!");
+      return;
+  }
+  // Ensure window.scene is set if createScene doesn't do it reliably
+  if (!window.scene) {
+      window.scene = scene;
+  }
 
-    if (!isPaused && !simulationEnded) {
-      // Update pilot controls from gamepad or keyboard
-      updateForcesFromJoystickOrKeyboard(scene);
+  /*------------------------------------------------------------
+   * MAIN RENDER LOOP
+   *-----------------------------------------------------------*/
+  engine.runRenderLoop(() => {
+      // Handle gamepad pause/resume controls first
+      // Assumes handleGamepadPauseControls uses global 'isPaused'
+      if (typeof handleGamepadPauseControls === 'function') {
+          handleGamepadPauseControls();
+      }
 
-      // Send aircraft state to the server
-      sendStateToServer();
+      // --- Simulation Logic (only when not paused) ---
+      if (!isPaused && !simulationEnded) {
+          // Get pilot inputs (keyboard/gamepad)
+          // Pass scene if the function requires it (check its definition)
+          if (typeof updateForcesFromJoystickOrKeyboard === 'function') {
+              updateForcesFromJoystickOrKeyboard(scene);
+          }
 
-      // Retrieve server time (default to 0 if not set)
-      const serverTime = window.serverElapsedTime || 0;
-      // Update trajectory with the server time
-      updateTrajectory(serverTime);
+          // Send current state to the server
+          // Checks WebSocket connection internally
+          if (typeof sendStateToServer === 'function') {
+              sendStateToServer();
+          }
 
-    } else {
-      // paused => do minimal
-    }
+          // Update trajectory visualization based on server time
+          const serverTime = window.serverElapsedTime || 0;
+          if (typeof updateTrajectory === 'function') {
+               // Pass scene if the function requires it (check its definition)
+              updateTrajectory(serverTime);
+          }
+      }
 
-    // Update textual info
-    if (aircraft) {
-      // Now the GUI’s timeText references window.serverElapsedTime.
-      updateInfo();
-    }
+      // --- Visualization Updates (run even when paused, but depend on data) ---
 
+      // Update Force & Velocity lines ONLY if initial data has been received
+      // and the corresponding display flag is true.
+      // Pass the 'scene' object explicitly.
+      if (initialDataReceived) {
+          if (typeof updateVelocityLine === 'function' && show_velocity_vectors === "true") {
+              updateVelocityLine(scene); // Pass scene
+          }
+          if (typeof updateForceLine === 'function' && show_force_vectors === "true") {
+              updateForceLine(scene); // Pass scene
+          }
+      }
 
-    /**
-    // Ensure consistent FOV for all cameras
-    scene.cameras.forEach(camera => {
-      if (camera.fov > 1.2) { // Check if FOV has expanded too much
-          camera.fov = 1.0; // Reset to default FOV
+      // Update GUI display text if aircraft exists
+      // Assumes updateInfo uses global variables like 'aircraft', 'velocity', etc.
+      if (aircraft && typeof updateInfo === 'function') {
+           updateInfo();
+      }
+
+      // Render the scene
+      if (scene && scene.isReady()) { // Check if scene is ready
+          scene.render();
       }
   });
-  */
 
-
-    // Render the scene
-    scene.render();
+  /*------------------------------------------------------------
+   * WINDOW / GAMEPAD EVENTS
+   *-----------------------------------------------------------*/
+  // Handle window resize
+  window.addEventListener("resize", () => {
+      if (engine) {
+          engine.resize();
+      }
   });
 
-  // 4) Resize handling
-  window.addEventListener("resize", function () {
-    engine.resize();
+  // Handle gamepad connection/disconnection
+  window.addEventListener("gamepadconnected", (e) => {
+      // Ensure gamepad property exists
+      if (e.gamepad) {
+          gamepadIndex = e.gamepad.index;
+          console.log(`Gamepad connected (index ${gamepadIndex}, ID: ${e.gamepad.id})`);
+      } else {
+          console.warn("Gamepad connected event fired without gamepad data.");
+      }
   });
 
-  // 5) Gamepad connect/disconnect
-  window.addEventListener("gamepadconnected", (event) => {
-    gamepadIndex = event.gamepad.index;
-    console.log(`Gamepad connected: index ${gamepadIndex}`);
-  });
-  window.addEventListener("gamepaddisconnected", () => {
-    console.log("Gamepad disconnected.");
-    gamepadIndex = null;
+  window.addEventListener("gamepaddisconnected", (e) => {
+       // Ensure gamepad property exists
+      if (e.gamepad) {
+          console.log(`Gamepad disconnected (index ${e.gamepad.index}, ID: ${e.gamepad.id})`);
+          // Only reset index if the disconnected gamepad is the one we were tracking
+          if (gamepadIndex === e.gamepad.index) {
+              gamepadIndex = null;
+          }
+      } else {
+           console.warn("Gamepad disconnected event fired without gamepad data.");
+      }
   });
 });

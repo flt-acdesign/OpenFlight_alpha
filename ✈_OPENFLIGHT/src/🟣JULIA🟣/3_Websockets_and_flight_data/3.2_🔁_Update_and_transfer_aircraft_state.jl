@@ -25,6 +25,9 @@ Main function that processes the JSON message from the client, runs an
 integration step, records flight data if within time window, then returns
 the updated aircraft state (plus "server_time") as JSON, but uses our
 internal `sim_time` for everything, NOT real wall-clock time.
+
+*** MODIFIED: Rounds Float64 values to 4 decimal places before returning. ***
+*** FIXED: Ensures returned dictionary type matches gather_flight_data expectation. ***
 """
 ###########################################
 # FILE: 3.2_🔁_Update_and_transfer_aircraft_state.jl
@@ -72,27 +75,49 @@ function update_aircraft_state(
         sim_time += deltaTime
 
         # 4) Run 6-DOF integrator
-        updated_aircraft_state_dictionary_for_JSON = Runge_Kutta_4_integrator(
+        # This returns the dictionary containing the updated state and telemetry data
+        integrator_result_dict = Runge_Kutta_4_integrator(
             aircraft_current_state_vector,
             control_demand_vector,
             deltaTime,
             aircraft_flight_physics_and_propulsive_data
         )
 
-        # 5) Record data **every time** – let the function handle intervals
+        # *** START MODIFICATION: Round float values AND ensure correct Dict type ***
+        # CHANGE HERE: Declare the dictionary type specifically as Dict{String, Float64}
+        rounded_dict = Dict{String, Float64}()
+        for (key, value) in integrator_result_dict
+            if isa(value, Number) # Check if it's any kind of number
+                # Round Float64 values, convert other numbers (like Int) to Float64
+                rounded_dict[key] = round(Float64(value), digits=4)
+            else
+                # This case should ideally not happen if integrator returns only numbers,
+                # but if it did, it would cause an error here due to the Dict type.
+                # If non-numeric data is possible, the Dict type and gather_flight_data
+                # signature would need to be Dict{String, Any}.
+                @warn "Non-numeric value found in integrator result for key '$key'. Skipping."
+                # rounded_dict[key] = value # This would error if uncommented
+            end
+        end
+        # *** END MODIFICATION ***
+
+        # 5) Record data (now passing the correctly typed Dict)
         gather_flight_data(
-            updated_aircraft_state_dictionary_for_JSON,
+            rounded_dict, # Pass the Dict{String, Float64} dictionary
             sim_time,
             df
         )
 
         # 6) Attach 'server_time' so the client sees our sim_time
-        updated_aircraft_state_dictionary_for_JSON["server_time"] = sim_time
+        #    Add this to the *rounded* dictionary before sending
+        #    Ensure it's also a Float64 to match the dictionary type
+        rounded_dict["server_time"] = round(Float64(sim_time), digits=4)
 
-        return updated_aircraft_state_dictionary_for_JSON
+        return rounded_dict # Return the dictionary with rounded Float64 values
 
     catch e
-        @error "Error processing state" exception=e
+        # Log the error with stacktrace for better debugging
+        @error "Error processing state" exception=(e, catch_backtrace())
         return nothing
     end
 end

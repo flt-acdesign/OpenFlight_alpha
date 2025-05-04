@@ -53,11 +53,13 @@ function 🟢_pitching_moment_coefficient_due_to_control_attained(
     aircraft_state,                         # Current aircraft state
     control_demand_vector_attained          # Actual control surface deflections
 )
-    # Calculate pitching moment from elevator deflection plus zero-lift pitching moment
+
+   #print( aircraft_flight_physics_and_propulsive_data.Cm_trim)
+    # Calculate pitching moment from elevator deflection plus zero-lift pitching moment plus pitching moment due to trim
     # Combine control effectiveness with elevator deflection and add baseline moment
-    return aircraft_flight_physics_and_propulsive_data.Cm_de * 
-           control_demand_vector_attained.pitch_demand_attained + 
-           aircraft_flight_physics_and_propulsive_data.CM0
+    return aircraft_flight_physics_and_propulsive_data.Cm_de * control_demand_vector_attained.pitch_demand_attained + 
+           aircraft_flight_physics_and_propulsive_data.Cm0 +
+           aircraft_flight_physics_and_propulsive_data.Cm_trim
 end
 
 # Functions to calculate static stability (stiffness) moment coefficients
@@ -85,7 +87,7 @@ function 🟢_rolling_moment_coefficient_due_to_sideslip(
 )
     # Calculate weathercock stability contribution
     # Multiply directional stability derivative by sideslip angle
-    return aircraft_flight_physics_and_propulsive_data.Cl_beta * beta_RAD
+    return aircraft_flight_physics_and_propulsive_data.Cl_beta * beta_RAD * -1   # OJO! CHECK THIS SIGN
 end
 
 

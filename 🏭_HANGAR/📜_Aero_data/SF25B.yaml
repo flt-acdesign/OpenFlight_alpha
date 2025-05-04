@@ -5,39 +5,43 @@ constants:
   radius_of_giration_yaw: 4  # Radius of gyration about the yaw axis in meters
   radius_of_giration_roll: 4  # Radius of gyration about the roll axis in meters
   principal_axis_pitch_up_DEG: -2  # Pitch angle of the principal axis in degrees (nose-down attitude)
-  x_CoG: 2.4  # Longitudinal position of the center of gravity (CoG) in meters
+  x_CoG: 1.75  # Longitudinal position of the center of gravity (CoG) in meters from the aircraft reference point (typically the nose)
 
 # Geometric references
-  x_wing_aerodynamic_center: 2.9  # Position of the wing's aerodynamic center along the longitudinal axis in meters
+  x_wing_aerodynamic_center: 2.0  # Position of the wing's aerodynamic center along the longitudinal axis in meters from the aircraft reference point (typically the nose)
   reference_area: 18.2  # Reference wing area in square meters
   reference_span: 10.5  # Reference wing span in meters
   AR: 13.8  # Aspect ratio of the wing
   Oswald_factor: 0.7  # Oswald efficiency factor (indicates aerodynamic efficiency)
   wing_mean_aerodynamic_chord: 1.35  # Mean aerodynamic chord of the wing in meters
+  Sideslip_drag_K_factor: 2  # Factor to multiply CS^2 to calculate sideslip-induced drag coefficient
 
-# Aircraft Pitching moment coefficient at zero lift (CM0)
-  CM0: -0.01  # Zero-lift pitching moment coefficient
+# Aircraft Pitching moment coefficient at zero lift (Cm0)
+  Cm0: -0.1  # Zero-lift pitching moment coefficient
+
+# Aircraft Pitching moment coefficient due to trim (not controllable by inceptor as yet)
+  Cm_trim: 0.3  # Pitching moment coefficient due to trim (normally, negative lift on the horizontal tailplane)
 
 # Aerodynamic stiffness (stability) derivatives
-  Cl_beta: 0.2  # Rolling moment coefficient derivative with respect to sideslip angle  
-  Cm_alpha: -0.7  # Pitching moment coefficient derivative with respect to angle of attack  
-  Cn_beta: 0.1  # Yawing moment coefficient derivative with respect to sideslip angle
+  Cl_beta: -0.2  # Rolling moment coefficient derivative with respect to sideslip angle  
+  Cm_alpha: -0.9  # Pitching moment coefficient derivative with respect to angle of attack  
+  Cn_beta: 0.15  # Yawing moment coefficient derivative with respect to sideslip angle
   
 # Aerodynamic damping coefficients
-  Cl_p: -2.0  # Roll damping coefficient (derivative of rolling moment coefficient with respect to roll rate)
-  Cm_q: -9.0  # Pitch damping coefficient (derivative of pitching moment coefficient with respect to pitch rate)
-  Cn_r: -.25  # Yaw damping coefficient (derivative of yawing moment coefficient with respect to yaw rate)
+  Cl_p: -.8  # Roll damping coefficient (derivative of rolling moment coefficient with respect to roll rate)
+  Cm_q: -7.0  # Pitch damping coefficient (derivative of pitching moment coefficient with respect to pitch rate)
+  Cn_r: -.3  # Yaw damping coefficient (derivative of yawing moment coefficient with respect to yaw rate)
 
 # Control derivatives
-  Cl_da: 0.3  # Rolling moment coefficient derivative with respect to aileron deflection
-  Cm_de: -.4  # Pitching moment coefficient derivative with respect to elevator deflection
-  Cn_dr: -0.02  # Yawing moment coefficient derivative with respect to rudder deflection
-  Cn_da: -0.05  # Yawing moment coefficient derivative with respect to aileron deflection
+  Cl_da: 0.1  # Rolling moment coefficient derivative with respect to aileron deflection
+  Cm_de: -.7  # Pitching moment coefficient derivative with respect to elevator deflection
+  Cn_dr: -0.04  # Yawing moment coefficient derivative with respect to rudder deflection
+  Cn_da: -0.02  # Yawing moment coefficient derivative with respect to aileron deflection
 
 # Thrust data
-  maximum_thrust_at_sea_level: 2500 # Maximum engine thrust at sea level in Newtons
+  maximum_thrust_at_sea_level: 500 # Maximum engine thrust at sea level in Newtons
   thrust_installation_angle_DEG: 0  # Engine installation angle relative to the longitudinal axis in degrees
-  control_actuator_speed: 5  # Speed of control surface actuators in ratio of maximum deflection per second (1 means full deflection is achieved in 1 second)
+  control_actuator_speed: 4  # Speed of control surface actuators in ratio of maximum deflection per second (1 means full deflection is achieved in 1 second)
   engine_spool_up_speed: 1.3  # Engine spool-up speed factor (rate of thrust increase)
   engine_spool_down_speed: 1.1  # Engine spool-down speed factor (rate of thrust decrease)
 
@@ -58,7 +62,7 @@ coefficients:
               - alpha: -15
                 CL: -0.9
               - alpha: 0
-                CL: 0
+                CL: 0.3    # CL0 (at 0 degrees angle of attack)
               - alpha: 15
                 CL: 1.1
               - alpha: 180
@@ -76,11 +80,11 @@ coefficients:
               - beta: -180
                 CS: 0
               - beta: -9
-                CS: 0.02
+                CS: 0.2
               - beta: 0
                 CS: 0
               - beta: 9
-                CS: -0.02
+                CS: -0.2
               - beta: 180
                 CS: 0
   CD0:
@@ -94,19 +98,19 @@ coefficients:
           - beta: 0
             data:
               - alpha: -180
-                CD0: 0.05
+                CD0: 0.1
               - alpha: -90
-                CD0: 1.5
-              - alpha: -10
-                CD0: 0.025
+                CD0: 1.1
+              - alpha: -14
+                CD0: 0.02
               - alpha: 0
-                CD0: 0.024
-              - alpha: 10
-                CD0: 0.025
+                CD0: 0.013   # CD0 at 0 degrees angle of attack
+              - alpha: 14
+                CD0: 0.018
               - alpha: 90
-                CD0: 1.6
+                CD0: 1.1
               - alpha: 180
-                CD0: 0.05
+                CD0: 0.1
   CP:
     parameters:
       - Mach

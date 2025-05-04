@@ -16,9 +16,9 @@ function createCar(scene, shadowGenerator) {
     carBody.material = carMaterial;
     carBody.position.y = 0.4; // Position relative to the car's transform node later
 
-    const carRoof = BABYLON.MeshBuilder.CreateBox("carRoof", { width: 1.8, height: 0.4, depth: 2.5 }, scene);
+    const carRoof = BABYLON.MeshBuilder.CreateBox("carRoof", { width: 2, height: 0.6, depth: 2.5 }, scene);
     carRoof.material = carMaterial;
-    carRoof.position.y = 0.8; // Position relative to the car body
+    carRoof.position.y = 0.7; // Position relative to the car body
 
     // --- Wheels ---
     const createWheel = (name, x, z) => {

@@ -30,7 +30,7 @@ function createRunway(scene, groundConfig) {
             // height: Realistic length of the runway (1000 m)
             height: 1000,
             // subdivisions: Number of segments for the ground mesh
-            subdivisions: 50,
+            subdivisions: 20,
             // updatable: Ensures we can modify vertex data later
             updatable: true
         },
@@ -61,7 +61,7 @@ function createRunway(scene, groundConfig) {
         const terrainHeight = compute_terrain_height(xCoord, zCoord, freqX, freqZ, amplitude, scenery_complexity);
 
         // Slightly above terrain (offset of 0.2)
-        runwayPositions[v + 1] = terrainHeight + 0.2;
+        runwayPositions[v + 1] = terrainHeight + 0.2 -7
     }
 
     // Commit updated positions to the runway mesh

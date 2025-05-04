@@ -1,0 +1,22 @@
+Please take the answer you provided previously about [Clearly identify the topic or context of the specific answer here, e.g., 'the aerodynamic model description', 'your last response containing the Python code', 'the explanation of coordinate systems'], which includes mathematical notation written in LaTeX format (using $...$ for inline and $$...$$ for display math).
+
+Generate a single, self-contained HTML code block that meets the following requirements:
+
+Content: Include the entire text and raw LaTeX markup from the specified answer within the HTML <body> tags. Use basic HTML tags like <p>, <h3>, <ul>, <li>, <b>, <code> where appropriate to structure the content similarly to the original answer.
+Rendering: Embed the necessary JavaScript (using a CDN link) and configuration for MathJax to automatically render the LaTeX notation when the HTML is loaded. Ensure the configuration recognizes both $...$ and $$...$$ delimiters.
+Styling: Include basic CSS within <style> tags for good readability (e.g., set a standard font-family, font-size, line-height, text color, heading styles, and some margin or padding for the body).
+Format: The output should be a single block of complete HTML code, starting with <!DOCTYPE html> and ending with </html>, ready to be copied and pasted directly into the 'Embed code' feature of Google Sites.
+Completeness: Ensure the HTML is well-formed (<!DOCTYPE html>, <html>, <head>, <body>).
+The goal is to create an embeddable HTML snippet that accurately displays the original answer with fully rendered mathematical equations on a Google Sites page."
+
+How to use it:
+
+Copy the text above.
+When you have an answer from me that you want to embed, start a new request.
+Paste the prompt template.
+Crucially, replace [Clearly identify the topic or context of the specific answer here...] with enough detail for me to know which answer you mean. Examples:
+"...previously about the detailed aerodynamic model description for OpenFlight.jl..."
+"...previously about your explanation of how to embed LaTeX in Google Docs..."
+"...previously about the Python code for calculating planetary orbits..."
+Or simply "...previously about your last response..." if it's immediately clear.
+Send the modified prompt. I should then generate the required HTML code block for you.

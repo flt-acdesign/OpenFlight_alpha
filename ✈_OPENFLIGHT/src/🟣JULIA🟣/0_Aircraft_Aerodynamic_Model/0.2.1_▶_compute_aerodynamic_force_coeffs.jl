@@ -23,15 +23,15 @@ end
 
 
 
-# OJO!!!  añadir efecto de derrape en resistencia
+
 function 🟩_compute_drag_coefficient(alpha_RAD, beta_RAD, Mach, aircraft_flight_physics_and_propulsive_data, CL, CS, aircraft_state, control_demand_vector_attained)
     # Again, use string keys: "CD0", "AR", "Oswald_factor"
 
-    CD0_pure_parasitic = 0.024 #fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=Mach, beta = abs(rad2deg(beta_RAD)), alpha=rad2deg(alpha_RAD))
-
+    CD0_pure_parasitic = fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "CD0", Mach=Mach, beta = abs(rad2deg(beta_RAD)), alpha=rad2deg(alpha_RAD))
 
     CDi_Lift = CL^2 / (π * aircraft_flight_physics_and_propulsive_data.AR * aircraft_flight_physics_and_propulsive_data.Oswald_factor)
-    CDi_Sideslip = abs(CS^2 )   # OJO! Still need to correct to convert sideforce to drag
+
+    CDi_Sideslip = abs(CS^2 ) * fetch_value_from_aero_database(aircraft_aero_and_propulsive_database, "Sideslip_drag_K_factor")
 
     CD_Total = CD0_pure_parasitic + CDi_Lift + CDi_Sideslip
 
