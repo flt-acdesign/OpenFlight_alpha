@@ -4,7 +4,7 @@ let aircraft_name = "SF25B.yaml"
 
 // Initial flight conditions
 let initial_velocity = 30
-let initial_altitude = 1400
+let initial_altitude = 200
 
 // Time interval (in server time seconds) for flight data recording visualization (pink trajectory)
 let start_flight_data_recording_at = 3
