@@ -1,5 +1,3 @@
-
-
 // Default value for the server port, it will be updated by the server
 let freeport = 8000  // Default aircraft configuration file name
 let aircraft_name = "SF25B.yaml"
@@ -94,9 +92,8 @@ let forceGlobalZ = 0.0;
 let alpha_RAD = 0.0; // Angle of attack in radians
 let beta_RAD = 0.0; // Sideslip angle in radians
 
-// === NEW: Load Factor Variables ===
-let loadFactor = 1.0; // The calculated load factor (n = Lift / Weight)
-let aircraftWeight = null; // The aircraft's weight (captured from initial 1G Lift)
+// === Load Factor Variables (using nz from body axis) ===
+let nz = 1.0; // Load factor in body Z-axis (normal to aircraft, received from server)
 
 // === Gamepad/Input Variables ===
 
@@ -116,7 +113,7 @@ let positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText
 let loadFactorText;
 // Babylon.GUI Button element for pausing/resuming (will be assigned in 2.1_...)
 let pauseButton;
-let gForceOverlay; // <<< NEW: Fullscreen overlay for G-force effects
+let gForceOverlay; // Fullscreen overlay for G-force effects
 
 // === Global State Flags ===
 

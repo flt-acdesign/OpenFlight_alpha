@@ -1,4 +1,3 @@
-
 // ------------------------------------------------------------
 // GUI Creation Functions
 // ------------------------------------------------------------
@@ -58,7 +57,7 @@ function createGUI() {
   // Create the fullscreen UI texture.
   advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-  // === NEW: G-Force Effect Overlay ===
+  // === G-Force Effect Overlay ===
   // Create this first so it's "under" the main panel
   gForceOverlay = new BABYLON.GUI.Rectangle("gForceOverlay");
   gForceOverlay.width = "100%";
@@ -68,7 +67,7 @@ function createGUI() {
   gForceOverlay.alpha = 0; // Start fully transparent
   gForceOverlay.zIndex = -10; // Ensure it's behind other GUI elements
   advancedTexture.addControl(gForceOverlay);
-  // === END NEW ===
+  // === END ===
 
   // Create the main container panel.
   const mainPanel = new BABYLON.GUI.StackPanel();
@@ -230,6 +229,7 @@ function createPauseButton() {
 
 /**
  * Updates all GUI information elements with compact, formatted text.
+ * MODIFIED: Uses nz for load factor display and G-force overlay effects
  */
 function updateInfo() {
     // Check if aircraft and all text elements are initialized
@@ -257,8 +257,8 @@ function updateInfo() {
       alpha_beta_Text.text = `α: N/A β: N/A`; // Fallback text
   }
 
-  // Update Load Factor Text
-  loadFactorText.text = `Load Factor (G): ${loadFactor.toFixed(2)}`;
+  // Update Load Factor Text using nz
+  loadFactorText.text = `Load Factor (G): ${nz.toFixed(2)}`;
 
   // Update controls information (make sure joystickAxes is updated elsewhere)
   joystickText.text = `Controls: ${joystickAxes.map(v => v.toFixed(2)).join(", ")}`;
@@ -276,36 +276,40 @@ function updateInfo() {
     fpsText.color = "#ff0000"; // Red for poor performance
   }
 
-  // <<< MODIFIED: G-Force Overlay Logic >>>
+  // === MODIFIED: G-Force Overlay Logic using nz ===
   if (gForceOverlay) {
-    const positiveGStart = 3.0;      // Changed from 3.0 to 3.0 (start of blackout effect)
-    const positiveGMax = 9.0;        // At 9G, overlay is at maxAlpha
-    const negativeGStart = -1.5;     // Changed from -1.0 to -1.5 (start of redout effect)
-    const negativeGMax = -3.0;       // At -3G, overlay is at maxAlpha
-    const maxAlpha = 0.75;           // Max 75% opacity
+    // Positive G (compression) - blackout effect
+    const positiveGStart = 3.0;      // Start of blackout effect at 3G
+    const positiveGMax = 9.0;        // Full blackout at 9G
+    
+    // Negative G (tension) - redout effect  
+    const negativeGStart = -1.5;     // Start of redout effect at -1.5G
+    const negativeGMax = -3.0;       // Full redout at -3G
+    
+    const maxAlpha = 0.75;           // Maximum overlay opacity (75%)
 
-    if (loadFactor > positiveGStart) {
-      // Increasingly dark (blackout)
-      let alpha = (loadFactor - positiveGStart) / (positiveGMax - positiveGStart);
+    if (nz > positiveGStart) {
+      // Positive G - increasingly dark (blackout)
+      let alpha = (nz - positiveGStart) / (positiveGMax - positiveGStart);
       alpha = Math.min(Math.max(alpha, 0), 1.0) * maxAlpha; // Clamp and scale
 
       gForceOverlay.background = "black";
       gForceOverlay.alpha = alpha;
 
-    } else if (loadFactor < negativeGStart) {
-      // Increasingly red (redout)
-      let alpha = (loadFactor - negativeGStart) / (negativeGMax - negativeGStart);
+    } else if (nz < negativeGStart) {
+      // Negative G - increasingly red (redout)
+      let alpha = (nz - negativeGStart) / (negativeGMax - negativeGStart);
       alpha = Math.min(Math.max(alpha, 0), 1.0) * maxAlpha; // Clamp and scale
 
       gForceOverlay.background = "red";
       gForceOverlay.alpha = alpha;
 
     } else {
-      // No effect - overlay hidden between -1.5G and 3.0G
+      // Normal G range (-1.5G to 3.0G) - no overlay effect
       gForceOverlay.alpha = 0;
     }
   }
-  // <<< END MODIFIED >>>
+  // === END MODIFIED ===
 }
 
 
@@ -323,6 +327,8 @@ function createControlRow(command, keys) {
     row.height = "30px"; // Row height
 
     const cmdText = new BABYLON.GUI.TextBlock();
+
+
     cmdText.text = command;
     cmdText.color = "white";
     cmdText.fontSize = 21; // Font size
@@ -448,8 +454,7 @@ function pauseSimulation() {
       gamepadPanel.paddingRight = "10px";
 
       const gamepadTitle = new BABYLON.GUI.TextBlock("gamepadTitle");
-      // --- MODIFIED Gamepad Title/Desc ---
-      gamepadTitle.text = "GAMEPAD / JOYSTICK"; // More general title
+      gamepadTitle.text = "GAMEPAD / JOYSTICK";
       gamepadTitle.color = "#4CAF50";
       gamepadTitle.fontSize = 23;
       gamepadTitle.height = "40px";
@@ -457,20 +462,20 @@ function pauseSimulation() {
       gamepadTitle.paddingTop = "15px";
       gamepadPanel.addControl(gamepadTitle);
 
-      // --- MODIFIED Gamepad Rows (More General) ---
+      // --- Gamepad Rows ---
       gamepadPanel.addControl(createControlRow("Pitch/Roll:", "Right Stick"));
       gamepadPanel.addControl(createControlRow("Yaw/Throttle:", "Left Stick / Turn Joystick"));
       gamepadPanel.addControl(createControlRow("Pause/Resume:", "Start/Options Button"));
       gamepadPanel.addControl(createControlRow("Camera Toggle:", "X, Y, A, B (Varies)"));
       gamepadPanel.addControl(createControlRow("Reload/Reset:", "Select/Back/Other (Varies)"));
-      // --- END MODIFIED ---
+      // --- END Gamepad Rows ---
 
       gamepadSection.addControl(gamepadPanel);
       contentPanel.addControl(gamepadSection);
 
       // Tip at the bottom
       const tipText = new BABYLON.GUI.TextBlock("tipText");
-      tipText.text = "TIP: Mappings vary by controller type."; // Changed tip
+      tipText.text = "TIP: Mappings vary by controller type.";
       tipText.color = "#FFD700";
       tipText.fontSize = 18;
       tipText.height = "30px";

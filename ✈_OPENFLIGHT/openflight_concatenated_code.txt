@@ -114,6 +114,8 @@ body {
 # FILE: F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\0_INITIALIZATION\0.1_🧾_initializations.js
 ###########################################
 
+
+
 // Default value for the server port, it will be updated by the server
 let freeport = 8000  // Default aircraft configuration file name
 let aircraft_name = "SF25B.yaml"
@@ -208,6 +210,10 @@ let forceGlobalZ = 0.0;
 let alpha_RAD = 0.0; // Angle of attack in radians
 let beta_RAD = 0.0; // Sideslip angle in radians
 
+// === NEW: Load Factor Variables ===
+let loadFactor = 1.0; // The calculated load factor (n = Lift / Weight)
+let aircraftWeight = null; // The aircraft's weight (captured from initial 1G Lift)
+
 // === Gamepad/Input Variables ===
 
 // Index of the currently connected gamepad
@@ -223,8 +229,10 @@ let joystickButtons = [];
 let advancedTexture;
 // Babylon.GUI TextBlock elements for displaying data (will be assigned in 2.1_...)
 let positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText;
+let loadFactorText;
 // Babylon.GUI Button element for pausing/resuming (will be assigned in 2.1_...)
 let pauseButton;
+let gForceOverlay; // <<< NEW: Fullscreen overlay for G-force effects
 
 // === Global State Flags ===
 
@@ -239,196 +247,235 @@ window.initialDataReceived = false;
 # FILE: F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\1_AIRCRAFT_STATE_TRANSFER\1.1_🔁_exchange_aircraft_state_with_server.js
 ###########################################
 
+
+
 /***************************************************************
- * 1.1_🔁_exchange_aircraft_state_with_server.js
- *
- * **MODIFIED FOR MsgPack & DOMContentLoaded**
- * Manages the WebSocket connection with the Julia server using
- * binary MsgPack format for high performance. The code is wrapped
- * in a DOMContentLoaded listener to ensure libraries are loaded first.
- ***************************************************************/
+ * 1.1_🔁_exchange_aircraft_state_with_server.js
+ *
+ * **MODIFIED FOR MsgPack & DOMContentLoaded**
+ * Manages the WebSocket connection with the Julia server using
+ * binary MsgPack format for high performance. The code is wrapped
+ * in a DOMContentLoaded listener to ensure libraries are loaded first.
+ ***************************************************************/
 
 // NEW: Wait for the DOM and all scripts to be loaded before executing.
 window.addEventListener('DOMContentLoaded', (event) => {
 
-    // Initialize WebSocket connection
-    // freeport is a variable that holds the port number of the server, defined in
-    // "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" by the Julia code
-    // "src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl"
-    let ws = new WebSocket(`ws://localhost:${freeport}`);
+    // Initialize WebSocket connection
+    // freeport is a variable that holds the port number of the server, defined in
+    // "src/🟡JAVASCRIPT🟡/0_INITIALIZATION/0.1_🧾_initializations.js" by the Julia code
+    // "src/🟣JULIA🟣/1_Maths_and_Auxiliary_Functions/1.0_📚_Check_packages_and_websockets_port/🔌_Find_free_port.jl"
+    let ws = new WebSocket(`ws://localhost:${freeport}`);
 
-    // Set the binary type to 'arraybuffer' to handle binary messages
-    ws.binaryType = "arraybuffer";
+    // Set the binary type to 'arraybuffer' to handle binary messages
+    ws.binaryType = "arraybuffer";
 
-    // Keep track of the last update time to compute a variable deltaTime for server calls.
-    let lastUpdateTime = performance.now();
+    // Keep track of the last update time to compute a variable deltaTime for server calls.
+    let lastUpdateTime = performance.now();
 
-    // Connection opened handler
-    ws.onopen = () => {
-        console.log('Connected to WebSocket server (using MsgPack)');
-    };
+    // Connection opened handler
+    ws.onopen = () => {
+        console.log('Connected to WebSocket server (using MsgPack)');
+    };
 
-    // Error handler
-    ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-    };
+    // Error handler
+    ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+    };
 
-    // Connection closed handler
-    ws.onclose = () => {
-        console.log('Disconnected from WebSocket server');
-        window.initialDataReceived = false; // Reset flag on disconnect
-    };
+    // Connection closed handler
+    ws.onclose = () => {
+        console.log('Disconnected from WebSocket server');
+        window.initialDataReceived = false; // Reset flag on disconnect
+    };
 
-    // --------------------------------------------------------------------------
-    // Function to send aircraft state to server.
-    // --------------------------------------------------------------------------
-    function sendStateToServer() {
-        const currentTime = performance.now();
-        const deltaTime = (currentTime - lastUpdateTime) / 1000.0; // ms -> s
-        lastUpdateTime = currentTime;
+    // --------------------------------------------------------------------------
+    // Function to send aircraft state to server.
+    // --------------------------------------------------------------------------
+    function sendStateToServer() {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - lastUpdateTime) / 1000.0; // ms -> s
+        lastUpdateTime = currentTime;
 
-        if (ws.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not connected');
-            return;
-        }
+        if (ws.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket is not connected');
+            return;
+        }
 
-        if (!aircraft || !orientation) {
-            return;
-        }
+        if (!aircraft || !orientation) {
+            return;
+        }
 
-        const aircraftState = {
-            x: aircraft.position.x,
-            y: aircraft.position.y,
-            z: aircraft.position.z,
-            vx: velocity.x,
-            vy: velocity.y,
-            vz: velocity.z,
-            qx: orientation.x,
-            qy: orientation.y,
-            qz: orientation.z,
-            qw: orientation.w,
-            wx: angularVelocity.x,
-            wy: angularVelocity.y,
-            wz: angularVelocity.z,
-            fx: forceX,
-            fy: forceY,
-            thrust_setting_demand: thrust_setting_demand,
-            roll_demand: roll_demand,
-            pitch_demand: pitch_demand,
-            yaw_demand: yaw_demand,
-            thrust_attained: thrust_attained,
-            roll_demand_attained: roll_demand_attained,
-            pitch_demand_attained: pitch_demand_attained,
-            yaw_demand_attained: yaw_demand_attained,
-            deltaTime: deltaTime
-        };
-        
-        // Send state as a binary MsgPack object
-        ws.send(msgpack.encode(aircraftState));
-    }
+        const aircraftState = {
+            x: aircraft.position.x,
+            y: aircraft.position.y,
+            z: aircraft.position.z,
+            vx: velocity.x,
+            vy: velocity.y,
+            vz: velocity.z,
+            qx: orientation.x,
+            qy: orientation.y,
+            qz: orientation.z,
+            qw: orientation.w,
+            wx: angularVelocity.x,
+            wy: angularVelocity.y,
+            wz: angularVelocity.z,
+            fx: forceX,
+            fy: forceY,
+            thrust_setting_demand: thrust_setting_demand,
+            roll_demand: roll_demand,
+            pitch_demand: pitch_demand,
+            yaw_demand: yaw_demand,
+            thrust_attained: thrust_attained,
+            roll_demand_attained: roll_demand_attained,
+            pitch_demand_attained: pitch_demand_attained,
+            yaw_demand_attained: yaw_demand_attained,
+            deltaTime: deltaTime
+        };
+        
+        // Send state as a binary MsgPack object
+        ws.send(msgpack.encode(aircraftState));
+    }
 
-    // --------------------------------------------------------------------------
-    // Message handler for receiving server updates.
-    // --------------------------------------------------------------------------
-    ws.onmessage = (event) => {
-        try {
-            // Parse received binary data using MsgPack.decode
-            const responseData = msgpack.decode(new Uint8Array(event.data));
-            let dataIsValid = true;
+    // --------------------------------------------------------------------------
+    // Message handler for receiving server updates.
+    // --------------------------------------------------------------------------
+    ws.onmessage = (event) => {
+        try {
+            // Parse received binary data using MsgPack.decode
+            const responseData = msgpack.decode(new Uint8Array(event.data));
+            let dataIsValid = true;
 
-            if (aircraft && aircraft.position) {
-                const newX = parseFloat(responseData.x);
-                const newY = parseFloat(responseData.y);
-                const newZ = parseFloat(responseData.z);
-                if (!isNaN(newX)) aircraft.position.x = newX; else dataIsValid = false;
-                if (!isNaN(newY)) aircraft.position.y = newY; else dataIsValid = false;
-                if (!isNaN(newZ)) aircraft.position.z = newZ; else dataIsValid = false;
-            } else {
-                dataIsValid = false;
-            }
+            if (aircraft && aircraft.position) {
+                const newX = parseFloat(responseData.x);
+                const newY = parseFloat(responseData.y);
+                const newZ = parseFloat(responseData.z);
+                if (!isNaN(newX)) aircraft.position.x = newX; else dataIsValid = false;
+                if (!isNaN(newY)) aircraft.position.y = newY; else dataIsValid = false;
+                if (!isNaN(newZ)) aircraft.position.z = newZ; else dataIsValid = false;
+            } else {
+                dataIsValid = false;
+            }
 
-            const newVx = parseFloat(responseData.vx);
-            const newVy = parseFloat(responseData.vy);
-            const newVz = parseFloat(responseData.vz);
-            if (!isNaN(newVx)) velocity.x = newVx; else dataIsValid = false;
-            if (!isNaN(newVy)) velocity.y = newVy; else dataIsValid = false;
-            if (!isNaN(newVz)) velocity.z = newVz; else dataIsValid = false;
+            const newVx = parseFloat(responseData.vx);
+            const newVy = parseFloat(responseData.vy);
+            const newVz = parseFloat(responseData.vz);
+            if (!isNaN(newVx)) velocity.x = newVx; else dataIsValid = false;
+            if (!isNaN(newVy)) velocity.y = newVy; else dataIsValid = false;
+            if (!isNaN(newVz)) velocity.z = newVz; else dataIsValid = false;
 
-            const newQx = parseFloat(responseData.qx);
-            const newQy = parseFloat(responseData.qy);
-            const newQz = parseFloat(responseData.qz);
-            const newQw = parseFloat(responseData.qw);
-            if (!isNaN(newQx)) orientation.x = newQx; else dataIsValid = false;
-            if (!isNaN(newQy)) orientation.y = newQy; else dataIsValid = false;
-            if (!isNaN(newQz)) orientation.z = newQz; else dataIsValid = false;
-            if (!isNaN(newQw)) orientation.w = newQw; else dataIsValid = false;
+            const newQx = parseFloat(responseData.qx);
+            const newQy = parseFloat(responseData.qy);
+            const newQz = parseFloat(responseData.qz);
+            const newQw = parseFloat(responseData.qw);
+            if (!isNaN(newQx)) orientation.x = newQx; else dataIsValid = false;
+            if (!isNaN(newQy)) orientation.y = newQy; else dataIsValid = false;
+            if (!isNaN(newQz)) orientation.z = newQz; else dataIsValid = false;
+            if (!isNaN(newQw)) orientation.w = newQw; else dataIsValid = false;
 
-            const newWx = parseFloat(responseData.wx);
-            const newWy = parseFloat(responseData.wy);
-            const newWz = parseFloat(responseData.wz);
-            if (!isNaN(newWx)) angularVelocity.x = newWx; else dataIsValid = false;
-            if (!isNaN(newWy)) angularVelocity.y = newWy; else dataIsValid = false;
-            if (!isNaN(newWz)) angularVelocity.z = newWz; else dataIsValid = false;
+            const newWx = parseFloat(responseData.wx);
+            const newWy = parseFloat(responseData.wy);
+            const newWz = parseFloat(responseData.wz);
+            if (!isNaN(newWx)) angularVelocity.x = newWx; else dataIsValid = false;
+            if (!isNaN(newWy)) angularVelocity.y = newWy; else dataIsValid = false;
+            if (!isNaN(newWz)) angularVelocity.z = newWz; else dataIsValid = false;
 
-            const newFx = parseFloat(responseData.fx_global);
-            const newFy = parseFloat(responseData.fy_global);
-            const newFz = parseFloat(responseData.fz_global);
-            if (!isNaN(newFx)) forceGlobalX = newFx; else dataIsValid = false;
-            if (!isNaN(newFy)) forceGlobalY = newFy; else dataIsValid = false;
-            if (!isNaN(newFz)) forceGlobalZ = newFz; else dataIsValid = false;
+            const newFx = parseFloat(responseData.fx_global);
+            const newFy = parseFloat(responseData.fy_global);
+            const newFz = parseFloat(responseData.fz_global);
+            if (!isNaN(newFx)) forceGlobalX = newFx; else dataIsValid = false;
+            if (!isNaN(newFy)) forceGlobalY = newFy; else dataIsValid = false;
+            if (!isNaN(newFz)) forceGlobalZ = newFz; else dataIsValid = false;
 
-            if (aircraft && aircraft.rotationQuaternion && dataIsValid) {
-                aircraft.rotationQuaternion.x = orientation.x;
-                aircraft.rotationQuaternion.y = orientation.y;
-                aircraft.rotationQuaternion.z = orientation.z;
-                aircraft.rotationQuaternion.w = orientation.w;
-            }
+            if (aircraft && aircraft.rotationQuaternion && dataIsValid) {
+                // <<< START RECOMMENDED QUATERNION FIX >>>
+                // Create a temporary quaternion from the server data
+                const tempQuaternion = new BABYLON.Quaternion(
+                    orientation.x,
+                    orientation.y,
+                    orientation.z,
+                    orientation.w
+                );
 
-            const newAlpha = parseFloat(responseData.alpha_RAD);
-            const newBeta = parseFloat(responseData.beta_RAD);
-            if (!isNaN(newAlpha)) alpha_RAD = newAlpha; else dataIsValid = false;
-            if (!isNaN(newBeta)) beta_RAD = newBeta; else dataIsValid = false;
+                // Normalize it to ensure it's a pure rotation (magnitude = 1)
+                tempQuaternion.normalize();
 
-            const newPitchAtt = parseFloat(responseData.pitch_demand_attained);
-            const newRollAtt = parseFloat(responseData.roll_demand_attained);
-            const newYawAtt = parseFloat(responseData.yaw_demand_attained);
-            if (!isNaN(newPitchAtt)) pitch_demand_attained = newPitchAtt; else dataIsValid = false;
-            if (!isNaN(newRollAtt)) roll_demand_attained = newRollAtt; else dataIsValid = false;
-            if (!isNaN(newYawAtt)) yaw_demand_attained = newYawAtt; else dataIsValid = false;
+                // Assign the normalized values
+                aircraft.rotationQuaternion.x = tempQuaternion.x;
+                aircraft.rotationQuaternion.y = tempQuaternion.y;
+                aircraft.rotationQuaternion.z = tempQuaternion.z;
+                aircraft.rotationQuaternion.w = tempQuaternion.w;
+                // <<< END RECOMMENDED QUATERNION FIX >>>
+            }
 
-            const newThrustAtt = parseFloat(responseData.thrust_attained);
-            if (!isNaN(newThrustAtt)) thrust_attained = newThrustAtt; else dataIsValid = false;
+            const newAlpha = parseFloat(responseData.alpha_RAD);
+            const newBeta = parseFloat(responseData.beta_RAD);
+            if (!isNaN(newAlpha)) alpha_RAD = newAlpha; else dataIsValid = false;
+            if (!isNaN(newBeta)) beta_RAD = newBeta; else dataIsValid = false;
 
-            if ("server_time" in responseData) {
-                const serverTime = parseFloat(responseData.server_time);
-                if (!isNaN(serverTime)) {
-                    window.serverElapsedTime = serverTime;
-                } else {
-                    dataIsValid = false;
-                }
-            } else {
-                window.serverElapsedTime = window.serverElapsedTime || 0;
-            }
+            const newPitchAtt = parseFloat(responseData.pitch_demand_attained);
+            const newRollAtt = parseFloat(responseData.roll_demand_attained);
+            const newYawAtt = parseFloat(responseData.yaw_demand_attained);
+            if (!isNaN(newPitchAtt)) pitch_demand_attained = newPitchAtt; else dataIsValid = false;
+            if (!isNaN(newRollAtt)) roll_demand_attained = newRollAtt; else dataIsValid = false;
+            if (!isNaN(newYawAtt)) yaw_demand_attained = newYawAtt; else dataIsValid = false;
 
-            if (!window.initialDataReceived && dataIsValid) {
-                window.initialDataReceived = true;
-                console.log("Initial VALID data received from server. Enabling line updates.");
-            }
+            const newThrustAtt = parseFloat(responseData.thrust_attained);
+            if (!isNaN(newThrustAtt)) thrust_attained = newThrustAtt; else dataIsValid = false;
 
-        } catch (e) {
-            console.error("Error processing WebSocket message:", e, "Data:", event.data);
-        }
-    };
-    
-    // **NEW: Make the sendStateToServer function globally accessible**
-    // The main render loop in 6.1_...js needs to be able to call it.
-    window.sendStateToServer = sendStateToServer;
+            if ("server_time" in responseData) {
+                const serverTime = parseFloat(responseData.server_time);
+                if (!isNaN(serverTime)) {
+                    window.serverElapsedTime = serverTime;
+                } else {
+                    dataIsValid = false;
+                }
+            } else {
+                window.serverElapsedTime = window.serverElapsedTime || 0;
+            }
+
+            // --- NEW: Load Factor Calculation ---
+            // If we have a valid weight, calculate the load factor
+            // Assumption: forceGlobalY is the Lift force.
+            if (aircraftWeight !== null && aircraftWeight > 0.01) {
+                if (!isNaN(forceGlobalY)) {
+                    loadFactor = forceGlobalY / aircraftWeight;
+                }
+            } else {
+                loadFactor = 1.0; // Default to 1.0 until weight is captured
+            }
+            // --- End Load Factor ---
+
+            if (!window.initialDataReceived && dataIsValid) {
+                window.initialDataReceived = true;
+                console.log("Initial VALID data received from server. Enabling line updates.");
+
+                // --- NEW: Capture Aircraft Weight on First Valid Packet ---
+                // Assumption: forceGlobalY is Lift, and sim starts at 1G.
+                if (aircraftWeight === null && forceGlobalY > 0) {
+                    aircraftWeight = forceGlobalY;
+                    console.log(`Captured aircraft weight (from 1G Lift): ${aircraftWeight.toFixed(2)} N`);
+                } else if (aircraftWeight === null) {
+                    console.warn("Could not capture weight. Initial forceGlobalY is not positive.");
+                }
+                // --- End Weight Capture ---
+            }
+
+        } catch (e) {
+            console.error("Error processing WebSocket message:", e, "Data:", event.data);
+        }
+    };
+    
+    // **NEW: Make the sendStateToServer function globally accessible**
+    // The main render loop in 6.1_...js needs to be able to call it.
+    window.sendStateToServer = sendStateToServer;
 
 }); // NEW: Close the DOMContentLoaded listener
 
 ###########################################
 # FILE: F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\2_GUI\2.1_📟_gui.js
 ###########################################
+
 
 // ------------------------------------------------------------
 // GUI Creation Functions
@@ -489,6 +536,18 @@ function createGUI() {
   // Create the fullscreen UI texture.
   advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
+  // === NEW: G-Force Effect Overlay ===
+  // Create this first so it's "under" the main panel
+  gForceOverlay = new BABYLON.GUI.Rectangle("gForceOverlay");
+  gForceOverlay.width = "100%";
+  gForceOverlay.height = "100%";
+  gForceOverlay.thickness = 0;
+  gForceOverlay.background = "black"; // Start with black, color will be changed
+  gForceOverlay.alpha = 0; // Start fully transparent
+  gForceOverlay.zIndex = -10; // Ensure it's behind other GUI elements
+  advancedTexture.addControl(gForceOverlay);
+  // === END NEW ===
+
   // Create the main container panel.
   const mainPanel = new BABYLON.GUI.StackPanel();
   mainPanel.width = "350px";
@@ -497,7 +556,7 @@ function createGUI() {
   mainPanel.padding = "20px";
   mainPanel.spacing = 8;
   mainPanel.background = "rgba(44, 62, 80, 0.8)";
-  advancedTexture.addControl(mainPanel);
+  advancedTexture.addControl(mainPanel); // Add this *after* the overlay
 
   // Create a small toggle button to hide/show the panel.
   createPanelToggleButton(advancedTexture, mainPanel);
@@ -517,9 +576,11 @@ function createGUI() {
   alpha_beta_Text = createStyledTextBlock(); // Assign created block
   joystickText = createStyledTextBlock();
   fpsText = createStyledTextBlock("#00ff00"); // Assign created block
+  loadFactorText = createStyledTextBlock("#FFFFFF");
   joystickText.fontSize = 16; // Slightly smaller for compactness
 
-  [positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText].forEach(text => {
+  // Add all text blocks to the main panel
+  [positionText, velocityText, timeText, alpha_beta_Text, loadFactorText, joystickText, fpsText].forEach(text => {
     if (text) mainPanel.addControl(text); // Add check just in case
   });
 
@@ -650,7 +711,7 @@ function createPauseButton() {
  */
 function updateInfo() {
     // Check if aircraft and all text elements are initialized
-    if (!aircraft || !aircraft.position || !positionText || !velocityText || !timeText || !alpha_beta_Text || !joystickText || !fpsText) {
+    if (!aircraft || !aircraft.position || !positionText || !velocityText || !timeText || !alpha_beta_Text || !joystickText || !fpsText || !loadFactorText) {
         // console.warn("updateInfo: Aircraft or GUI text elements not ready."); // Avoid spamming
         return;
     }
@@ -674,6 +735,9 @@ function updateInfo() {
       alpha_beta_Text.text = `α: N/A β: N/A`; // Fallback text
   }
 
+  // Update Load Factor Text
+  loadFactorText.text = `Load Factor (G): ${loadFactor.toFixed(2)}`;
+
   // Update controls information (make sure joystickAxes is updated elsewhere)
   joystickText.text = `Controls: ${joystickAxes.map(v => v.toFixed(2)).join(", ")}`;
 
@@ -689,6 +753,37 @@ function updateInfo() {
   } else {
     fpsText.color = "#ff0000"; // Red for poor performance
   }
+
+  // <<< MODIFIED: G-Force Overlay Logic >>>
+  if (gForceOverlay) {
+    const positiveGStart = 3.0;      // Changed from 3.0 to 3.0 (start of blackout effect)
+    const positiveGMax = 9.0;        // At 9G, overlay is at maxAlpha
+    const negativeGStart = -1.5;     // Changed from -1.0 to -1.5 (start of redout effect)
+    const negativeGMax = -3.0;       // At -3G, overlay is at maxAlpha
+    const maxAlpha = 0.75;           // Max 75% opacity
+
+    if (loadFactor > positiveGStart) {
+      // Increasingly dark (blackout)
+      let alpha = (loadFactor - positiveGStart) / (positiveGMax - positiveGStart);
+      alpha = Math.min(Math.max(alpha, 0), 1.0) * maxAlpha; // Clamp and scale
+
+      gForceOverlay.background = "black";
+      gForceOverlay.alpha = alpha;
+
+    } else if (loadFactor < negativeGStart) {
+      // Increasingly red (redout)
+      let alpha = (loadFactor - negativeGStart) / (negativeGMax - negativeGStart);
+      alpha = Math.min(Math.max(alpha, 0), 1.0) * maxAlpha; // Clamp and scale
+
+      gForceOverlay.background = "red";
+      gForceOverlay.alpha = alpha;
+
+    } else {
+      // No effect - overlay hidden between -1.5G and 3.0G
+      gForceOverlay.alpha = 0;
+    }
+  }
+  // <<< END MODIFIED >>>
 }
 
 
@@ -5256,7 +5351,6 @@ function setupLights_and_shadows(scene) {
 # FILE: F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\6_SCENE_AND_RENDER_LOOP\6.4_🎦_create_cameras.js
 ###########################################
 
-
 /**
  * Sets up and configures all cameras for the scene.
  *
@@ -5275,25 +5369,18 @@ function setupCameras(scene, canvas, shadowGenerator) {
     new BABYLON.Vector3(170, 110, -70), // Target position.
     scene
   );
-  // Use a near plane of 1 and a far plane of 4000 to reduce depth buffer issues.
   arcRotateCamera.minZ = 10;
   arcRotateCamera.maxZ = 5000;
-  arcRotateCamera.fov = 0.47;
+  arcRotateCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
+  arcRotateCamera.fov = 0.8; // Standard FOV (~45 degrees)
   arcRotateCamera.attachControl(canvas, true);
   arcRotateCamera.upperBetaLimit = Math.PI;
   arcRotateCamera.lowerBetaLimit = 0;
   arcRotateCamera.inertia = 0.9;
-  // Increase the lower radius limit so the camera does not zoom in too close,
-  // which can cause z-fighting with nearby objects.
-  arcRotateCamera.lowerRadiusLimit = 10; // Changed from 0.1 to 10
+  arcRotateCamera.lowerRadiusLimit = 10;
   arcRotateCamera.upperRadiusLimit = 1650;
   arcRotateCamera.wheelPrecision = 8;
 
-  // Fix FOV mode to prevent aspect distortion
-  arcRotateCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
-  arcRotateCamera.fov = 1.0; // ~57 degrees in radians
-
-  // Adjust panning sensitivity if available.
   if (arcRotateCamera.inputs.attached.pointers) {
     arcRotateCamera.inputs.attached.pointers.panningSensibility = 10;
   }
@@ -5301,123 +5388,76 @@ function setupCameras(scene, canvas, shadowGenerator) {
   // Create and configure the follow (chase) camera.
   const followCamera = new BABYLON.FollowCamera(
     "FollowCamera",
-    new BABYLON.Vector3(0, 10, -1), // Initial position.
+    new BABYLON.Vector3(0, 10, -1),
     scene
   );
-  followCamera.heightOffset = 5;         // Height above target.
-  followCamera.rotationOffset = 180;     // Rotate 180° around the target.
-  followCamera.cameraAcceleration = 0.01; // Smoothing factor.
-  followCamera.maxCameraSpeed = 60;       // Maximum speed.
-  followCamera.radius = -10;              // Distance from target.
-  // Set clipping planes to match other cameras.
+  followCamera.heightOffset = 5;
+  followCamera.rotationOffset = 180;
+  followCamera.cameraAcceleration = 0.01;
+  followCamera.maxCameraSpeed = 60;
+  followCamera.radius = -10;
   followCamera.minZ = 10;
   followCamera.maxZ = 5000;
-
-  // Fix FOV mode to prevent aspect distortion
   followCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
-  followCamera.fov = 1.0; // ~57 degrees in radians
-
-  // Force the FollowCamera to use the world's Y-axis as its up direction
-  // This prevents scene distortion during aircraft rolls.
+  followCamera.fov = 0.8; // Match arc rotate camera
+  // **CRITICAL FIX**: Set upVector ONCE during setup, not every frame
   followCamera.upVector = new BABYLON.Vector3(0, 1, 0);
 
   // Create the cockpit camera (first-person view).
   const cockpitCamera = new BABYLON.UniversalCamera(
     "CockpitCamera",
-    new BABYLON.Vector3(0, 0, 0), // Initial position.
+    new BABYLON.Vector3(0, 0, 0),
     scene
   );
   cockpitCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
-
-  // Fix FOV mode to prevent aspect distortion
   cockpitCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
-  cockpitCamera.fov = 0.87;
-
-  // Set clipping planes for cockpit view.
-  cockpitCamera.minZ = 1;
+  cockpitCamera.fov = 0.87; // Slightly wider for cockpit immersion
+  cockpitCamera.minZ = 0.1; // Closer near plane for cockpit details
   cockpitCamera.maxZ = 5000;
 
   // Create the wing camera (external view).
   const wingCamera = new BABYLON.UniversalCamera(
     "WingCamera",
-    new BABYLON.Vector3(0, 0, 0), // Initial position.
+    new BABYLON.Vector3(0, 0, 0),
     scene
   );
   wingCamera.rotationQuaternion = BABYLON.Quaternion.Identity();
-  wingCamera.minZ = 1;
+  wingCamera.minZ = 0.1;
   wingCamera.maxZ = 5000;
-
-  // Fix FOV mode to prevent aspect distortion
   wingCamera.fovMode = BABYLON.Camera.FOVMODE_VERTICAL_FIXED;
-  wingCamera.fov = 1.9;
+  wingCamera.fov = 1.2; // Wider for dramatic wing view (reduced from 1.9)
 
   // Register all cameras with the scene.
   scene.cameras.push(arcRotateCamera, cockpitCamera, followCamera, wingCamera);
 
   /**
    * Updates camera positions and targets based on the aircraft's position.
-   *
-   * @param {BABYLON.Mesh | BABYLON.TransformNode} aircraft - The aircraft mesh or node to follow.
    */
   function updateCamerasForAircraft(aircraft) {
     if (!aircraft) return;
 
-    // Update locked targets for the orbital and follow cameras.
     arcRotateCamera.lockedTarget = aircraft;
     followCamera.lockedTarget = aircraft;
-    // Ensure FollowCamera upVector is set (might be redundant if already set above, but safe)
-    followCamera.upVector = new BABYLON.Vector3(0, 1, 0);
 
-
-    // Configure the cockpit camera (first-person view).
+    // Configure cockpit camera
     cockpitCamera.parent = aircraft;
-    cockpitCamera.position.set(0.5, 1, 0); // Position relative to aircraft origin
-    cockpitCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
-      0,
-      Math.PI / 2, // Rotate 90° around the LOCAL Y axis to face forward (assuming aircraft +X is forward)
-      0
-    );
+    cockpitCamera.position.set(0.5, 1, 0);
+    cockpitCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
 
-    // --- REMOVED THIS LINE ---
-    // We rely on the onBeforeRenderObservable to set the upVector for the active cockpit camera
-    // cockpitCamera.upVector = new BABYLON.Vector3(0, 1, 0);
-    // ------------------------
-
-    // Configure the wing camera (external view).
+    // Configure wing camera
     wingCamera.parent = aircraft;
-    wingCamera.position.set(-1.5, 0.5, -3.2); // Position relative to aircraft origin
-    wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0); // Slight rotation
-
-    // --- REMOVED THIS LINE ---
-    // We rely on the onBeforeRenderObservable to set the upVector for the active wing camera
-    // wingCamera.upVector = new BABYLON.Vector3(0, 1, 0);
-    // ------------------------
+    wingCamera.position.set(-1.5, 0.5, -3.2);
+    wingCamera.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(0, -0.1, 0);
   }
 
-  // If an aircraft is defined, perform an initial update.
   if (typeof aircraft !== "undefined" && aircraft) {
     updateCamerasForAircraft(aircraft);
   }
 
-  // Add a scene observer to maintain camera stability during rendering
-  scene.onBeforeRenderObservable.add(() => {
-    // Force consistent up vectors on the cameras that are parented or following WHEN ACTIVE
-    if (scene.activeCamera) {
-      // Apply to Cockpit and Wing cameras ALWAYS when they are active
-      if (scene.activeCamera.name === "CockpitCamera" ||
-          scene.activeCamera.name === "WingCamera") {
-        scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
-      }
-      // Note: FollowCamera upVector is set during setup and should persist.
-      // If issues remain with FollowCamera, uncommenting the following might help,
-      // but could impact performance slightly if checked every frame.
-      // else if (scene.activeCamera.name === "FollowCamera") {
-      //  scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
-      //}
-    }
-  });
+  // **CRITICAL FIX**: Remove the onBeforeRenderObservable that was forcing upVector every frame
+  // This was causing the aspect ratio distortion during rolls
+  // The upVector should only be set once during initialization
 
-  // Expose the update function on the scene for external access.
   scene.updateCamerasForAircraft = updateCamerasForAircraft;
 
   return {
@@ -5430,9 +5470,6 @@ function setupCameras(scene, canvas, shadowGenerator) {
 
 /**
  * Switches the active camera in the scene.
- *
- * @param {number} index - The index of the camera to activate.
- * @param {BABYLON.Scene} scene - The Babylon.js scene.
  */
 function setActiveCamera(index, scene) {
   if (index < 0 || index >= scene.cameras.length) {
@@ -5441,42 +5478,19 @@ function setActiveCamera(index, scene) {
   }
   scene.activeCamera = scene.cameras[index];
 
-  // Reset FOV to original values to maintain consistency
-  if (scene.activeCamera.name === "ArcRotateCamera") {
-    scene.activeCamera.fov = 1.0;
-  } else if (scene.activeCamera.name === "FollowCamera") {
-    scene.activeCamera.fov = 1.0;
-  } else if (scene.activeCamera.name === "CockpitCamera") {
-    scene.activeCamera.fov = 0.87;
-  } else if (scene.activeCamera.name === "WingCamera") {
-    scene.activeCamera.fov = 1.9;
-  }
+  // **REMOVED**: Don't reset FOV here - maintain original values set during setup
 
-  // Force the up vector to be world-aligned for stability immediately on switch
-  // This complements the onBeforeRenderObservable which handles it frame-by-frame
-  if (scene.activeCamera.name === "CockpitCamera" ||
-      scene.activeCamera.name === "WingCamera" ||
-      scene.activeCamera.name === "FollowCamera") {
-      scene.activeCamera.upVector = new BABYLON.Vector3(0, 1, 0);
-  }
+  // Toggle aircraft model visibility for cockpit view
+  const isCockpitView = (index === 2);
 
-
-  // Toggle aircraft model visibility for cockpit view.
-  // Assumes 'glbNode' is a global mesh/node representing the loaded aircraft model.
-  // Assumes 'planeNode' is the default simple aircraft model.
-  const isCockpitView = (index === 2); // Assuming index 2 is CockpitCamera
-
-  // Hide loaded GLB model in cockpit view
   if (typeof glbNode !== "undefined" && glbNode) {
      glbNode.setEnabled(!isCockpitView);
   }
-  // Also ensure the default planeNode (if visible) is hidden in cockpit view
   if (typeof planeNode !== "undefined" && planeNode) {
-     // Only hide planeNode if glbNode is NOT loaded, otherwise glbNode logic takes precedence
      if (!glbNode) {
          planeNode.setEnabled(!isCockpitView);
      } else {
-         planeNode.setEnabled(false); // Ensure default is hidden if GLB is loaded
+         planeNode.setEnabled(false);
      }
   }
 }
