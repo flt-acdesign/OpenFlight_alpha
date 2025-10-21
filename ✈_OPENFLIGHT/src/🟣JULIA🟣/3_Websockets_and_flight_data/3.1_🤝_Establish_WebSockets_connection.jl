@@ -1,3 +1,6 @@
+# NEW: Import the MsgPack library
+using MsgPack
+
 # Function to reset flight data recording state
 function reset_flight_data_recording()
     # Define the DataFrame structure with NEW valid identifier names
@@ -59,7 +62,6 @@ function reset_flight_data_recording()
         EAS =Float64[],
         Mach =Float64[],
         dynamic_pressure =Float64[]
-        
     )
 
     global has_written_to_csv = false
@@ -84,20 +86,24 @@ function websocket_handler(ws)
     try
         # Keep processing messages while the socket connection is open
         while !eof(ws.socket)
-            # Read data from WebSocket connection with error handling
+            # Read data from WebSocket connection
             aircraft_state_data, success = WebSockets.readguarded(ws)
 
             # Only process valid, non-empty data
             if success && !isempty(aircraft_state_data)
-                # Parse received JSON data into Julia structure
-                current_aircraft_state_dict = JSON.parse(String(aircraft_state_data)) # Changed name for clarity
+                # Unpack the MsgPack data, which creates a Dict{Any, Any}
+                unpacked_data = MsgPack.unpack(aircraft_state_data)
+
+                # **MODIFIED: Explicitly construct a Dict{String, Any} to match the function signature.**
+                current_aircraft_state_dict = Dict{String, Any}(String(k) => v for (k, v) in unpacked_data)
 
                 # Update aircraft state using physics simulation
-                updated_aircraft_state_dict = update_aircraft_state(current_aircraft_state_dict, aircraft_flight_physics_and_propulsive_data) # Changed name
+                updated_aircraft_state_dict = update_aircraft_state(current_aircraft_state_dict, aircraft_flight_physics_and_propulsive_data)
 
                 # Send updated state back to client if available
                 if updated_aircraft_state_dict !== nothing
-                    WebSockets.writeguarded(ws, JSON.json(updated_aircraft_state_dict))
+                    # Send data as binary MsgPack
+                    WebSockets.writeguarded(ws, MsgPack.pack(updated_aircraft_state_dict))
                 end
             end
         end
@@ -110,15 +116,6 @@ function websocket_handler(ws)
         end
     finally
          println("WebSocket connection closed.")
-         # Optionally save any partially recorded data here if needed
-         # if !has_written_to_csv && !isempty(df)
-         #     println("Saving partial data on disconnect...")
-         #     data_dir = dirname(csv_file)
-         #     if !isdir(data_dir); mkpath(data_dir); end
-         #     CSV.write(csv_file, df)
-         #     has_written_to_csv = true
-         #     println("Partial flight data saved to: $(csv_file)")
-         # end
     end
 end
 
@@ -151,12 +148,10 @@ function establish_websockets_connection()
     catch e
         if e isa InterruptException
             println("\nCtrl+C detected. Shutting down server...")
-            # Potentially add cleanup code here if needed before exiting
         else
             @error "Server loop error" exception=e
         end
     finally
         println("Server stopped.")
-        # You might want to explicitly close the server socket if WebSockets.serve doesn't handle it fully on interrupt
     end
 end

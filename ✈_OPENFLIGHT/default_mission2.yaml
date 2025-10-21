@@ -1,0 +1,20 @@
+###########################################
+# FILE: F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\default_mission.yaml
+###########################################
+
+# AIRCRAFT PARAMETERS
+aircraft_name: "SF25B.yaml"  # Name of the aircraft aerodynamic data file in \🏭_HANGAR\📜_Aero_data
+
+# FLIGHT TEST PARAMETERS
+initial_velocity: 32  # Initial velocity in m/s
+initial_altitude: 500  # Initial altitude in m
+
+# FLIGHT RECORDING PARAMETERS
+start_flight_data_recording_at:  3    # start recording in seconds after start of flight
+finish_flight_data_recording_at: 30    # finish recording in seconds
+
+# VISUALIZATION PARAMETERS
+scenery_complexity: 0   #  0 = four checkered quadrants (good for old GPUs), 1 = low, 2 = medium or 3 = high detail
+show_force_vectors: "true"
+show_velocity_vectors: "true"
+show_trajectory: "true"   # "true" or "false", to show the trajectory of the aircraft

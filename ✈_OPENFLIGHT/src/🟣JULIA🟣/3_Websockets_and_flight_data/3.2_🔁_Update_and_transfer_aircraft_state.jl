@@ -111,7 +111,7 @@ function update_aircraft_state(
         # 6) Attach 'server_time' so the client sees our sim_time
         #    Add this to the *rounded* dictionary before sending
         #    Ensure it's also a Float64 to match the dictionary type
-        rounded_dict["server_time"] = round(Float64(sim_time), digits=4)
+        rounded_dict["server_time"] = round(Float64(sim_time), digits=2)
 
         return rounded_dict # Return the dictionary with rounded Float64 values
 

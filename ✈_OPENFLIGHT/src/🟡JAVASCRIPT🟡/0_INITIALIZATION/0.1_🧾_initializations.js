@@ -1,19 +1,21 @@
+
+
 // Default value for the server port, it will be updated by the server
 let freeport = 8000  // Default aircraft configuration file name
 let aircraft_name = "SF25B.yaml"
 
 // Initial flight conditions
 let initial_velocity = 30
-let initial_altitude = 30
+let initial_altitude = 1400
 
 // Time interval (in server time seconds) for flight data recording visualization (pink trajectory)
 let start_flight_data_recording_at = 3
-let finish_flight_data_recording_at = 50
+let finish_flight_data_recording_at = 15
 
 // Flags to control 3D visualization elements
-let show_force_vectors = "true"
-let show_velocity_vectors = "true"
-let show_trajectory = "true"
+let show_force_vectors = "false"
+let show_velocity_vectors = "false"
+let show_trajectory = "false"
 let frames_per_trajectory_marker = 2; // Add a trajectory dot every N frames
 
 // Scenery complexity level: 0 = checkered ground only, 1 = low, 2 = medium, 3 = high
@@ -92,6 +94,10 @@ let forceGlobalZ = 0.0;
 let alpha_RAD = 0.0; // Angle of attack in radians
 let beta_RAD = 0.0; // Sideslip angle in radians
 
+// === NEW: Load Factor Variables ===
+let loadFactor = 1.0; // The calculated load factor (n = Lift / Weight)
+let aircraftWeight = null; // The aircraft's weight (captured from initial 1G Lift)
+
 // === Gamepad/Input Variables ===
 
 // Index of the currently connected gamepad
@@ -107,8 +113,10 @@ let joystickButtons = [];
 let advancedTexture;
 // Babylon.GUI TextBlock elements for displaying data (will be assigned in 2.1_...)
 let positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText;
+let loadFactorText;
 // Babylon.GUI Button element for pausing/resuming (will be assigned in 2.1_...)
 let pauseButton;
+let gForceOverlay; // <<< NEW: Fullscreen overlay for G-force effects
 
 // === Global State Flags ===
 

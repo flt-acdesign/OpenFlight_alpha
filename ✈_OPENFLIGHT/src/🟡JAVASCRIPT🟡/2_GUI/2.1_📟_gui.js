@@ -1,3 +1,4 @@
+
 // ------------------------------------------------------------
 // GUI Creation Functions
 // ------------------------------------------------------------
@@ -57,6 +58,18 @@ function createGUI() {
   // Create the fullscreen UI texture.
   advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
+  // === NEW: G-Force Effect Overlay ===
+  // Create this first so it's "under" the main panel
+  gForceOverlay = new BABYLON.GUI.Rectangle("gForceOverlay");
+  gForceOverlay.width = "100%";
+  gForceOverlay.height = "100%";
+  gForceOverlay.thickness = 0;
+  gForceOverlay.background = "black"; // Start with black, color will be changed
+  gForceOverlay.alpha = 0; // Start fully transparent
+  gForceOverlay.zIndex = -10; // Ensure it's behind other GUI elements
+  advancedTexture.addControl(gForceOverlay);
+  // === END NEW ===
+
   // Create the main container panel.
   const mainPanel = new BABYLON.GUI.StackPanel();
   mainPanel.width = "350px";
@@ -65,7 +78,7 @@ function createGUI() {
   mainPanel.padding = "20px";
   mainPanel.spacing = 8;
   mainPanel.background = "rgba(44, 62, 80, 0.8)";
-  advancedTexture.addControl(mainPanel);
+  advancedTexture.addControl(mainPanel); // Add this *after* the overlay
 
   // Create a small toggle button to hide/show the panel.
   createPanelToggleButton(advancedTexture, mainPanel);
@@ -85,9 +98,11 @@ function createGUI() {
   alpha_beta_Text = createStyledTextBlock(); // Assign created block
   joystickText = createStyledTextBlock();
   fpsText = createStyledTextBlock("#00ff00"); // Assign created block
+  loadFactorText = createStyledTextBlock("#FFFFFF");
   joystickText.fontSize = 16; // Slightly smaller for compactness
 
-  [positionText, velocityText, timeText, alpha_beta_Text, joystickText, fpsText].forEach(text => {
+  // Add all text blocks to the main panel
+  [positionText, velocityText, timeText, alpha_beta_Text, loadFactorText, joystickText, fpsText].forEach(text => {
     if (text) mainPanel.addControl(text); // Add check just in case
   });
 
@@ -218,7 +233,7 @@ function createPauseButton() {
  */
 function updateInfo() {
     // Check if aircraft and all text elements are initialized
-    if (!aircraft || !aircraft.position || !positionText || !velocityText || !timeText || !alpha_beta_Text || !joystickText || !fpsText) {
+    if (!aircraft || !aircraft.position || !positionText || !velocityText || !timeText || !alpha_beta_Text || !joystickText || !fpsText || !loadFactorText) {
         // console.warn("updateInfo: Aircraft or GUI text elements not ready."); // Avoid spamming
         return;
     }
@@ -242,6 +257,9 @@ function updateInfo() {
       alpha_beta_Text.text = `α: N/A β: N/A`; // Fallback text
   }
 
+  // Update Load Factor Text
+  loadFactorText.text = `Load Factor (G): ${loadFactor.toFixed(2)}`;
+
   // Update controls information (make sure joystickAxes is updated elsewhere)
   joystickText.text = `Controls: ${joystickAxes.map(v => v.toFixed(2)).join(", ")}`;
 
@@ -257,6 +275,37 @@ function updateInfo() {
   } else {
     fpsText.color = "#ff0000"; // Red for poor performance
   }
+
+  // <<< MODIFIED: G-Force Overlay Logic >>>
+  if (gForceOverlay) {
+    const positiveGStart = 3.0;      // Changed from 3.0 to 3.0 (start of blackout effect)
+    const positiveGMax = 9.0;        // At 9G, overlay is at maxAlpha
+    const negativeGStart = -1.5;     // Changed from -1.0 to -1.5 (start of redout effect)
+    const negativeGMax = -3.0;       // At -3G, overlay is at maxAlpha
+    const maxAlpha = 0.75;           // Max 75% opacity
+
+    if (loadFactor > positiveGStart) {
+      // Increasingly dark (blackout)
+      let alpha = (loadFactor - positiveGStart) / (positiveGMax - positiveGStart);
+      alpha = Math.min(Math.max(alpha, 0), 1.0) * maxAlpha; // Clamp and scale
+
+      gForceOverlay.background = "black";
+      gForceOverlay.alpha = alpha;
+
+    } else if (loadFactor < negativeGStart) {
+      // Increasingly red (redout)
+      let alpha = (loadFactor - negativeGStart) / (negativeGMax - negativeGStart);
+      alpha = Math.min(Math.max(alpha, 0), 1.0) * maxAlpha; // Clamp and scale
+
+      gForceOverlay.background = "red";
+      gForceOverlay.alpha = alpha;
+
+    } else {
+      // No effect - overlay hidden between -1.5G and 3.0G
+      gForceOverlay.alpha = 0;
+    }
+  }
+  // <<< END MODIFIED >>>
 }
 
 

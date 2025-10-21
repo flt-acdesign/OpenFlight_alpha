@@ -12,7 +12,7 @@ constants:
   reference_area: 18.2  # Reference wing area in square meters
   reference_span: 10.5  # Reference wing span in meters
   AR: 13.8  # Aspect ratio of the wing
-  Oswald_factor: 0.7  # Oswald efficiency factor (indicates aerodynamic efficiency)
+  Oswald_factor: 0.8  # Oswald efficiency factor (indicates aerodynamic efficiency)
   wing_mean_aerodynamic_chord: 1.35  # Mean aerodynamic chord of the wing in meters
   Sideslip_drag_K_factor: 2  # Factor to multiply CS^2 to calculate sideslip-induced drag coefficient
 
@@ -20,7 +20,7 @@ constants:
   Cm0: -0.1  # Zero-lift pitching moment coefficient
 
 # Aircraft Pitching moment coefficient due to trim (not controllable by inceptor as yet)
-  Cm_trim: 0.3  # Pitching moment coefficient due to trim (normally, negative lift on the horizontal tailplane)
+  Cm_trim: 0.25  # Pitching moment coefficient due to trim (normally, negative lift on the horizontal tailplane)
 
 # Aerodynamic stiffness (stability) derivatives
   Cl_beta: -0.2  # Rolling moment coefficient derivative with respect to sideslip angle  
@@ -39,7 +39,7 @@ constants:
   Cn_da: -0.02  # Yawing moment coefficient derivative with respect to aileron deflection
 
 # Thrust data
-  maximum_thrust_at_sea_level: 500 # Maximum engine thrust at sea level in Newtons
+  maximum_thrust_at_sea_level: 600 # Maximum engine thrust at sea level in Newtons
   thrust_installation_angle_DEG: 0  # Engine installation angle relative to the longitudinal axis in degrees
   control_actuator_speed: 4  # Speed of control surface actuators in ratio of maximum deflection per second (1 means full deflection is achieved in 1 second)
   engine_spool_up_speed: 1.3  # Engine spool-up speed factor (rate of thrust increase)
@@ -60,11 +60,11 @@ coefficients:
               - alpha: -180
                 CL: 0  # Lift coefficient at -180 degrees angle of attack
               - alpha: -15
-                CL: -0.9
+                CL: -.9
               - alpha: 0
                 CL: 0.3    # CL0 (at 0 degrees angle of attack)
               - alpha: 15
-                CL: 1.1
+                CL: 1.2
               - alpha: 180
                 CL: 0
   CS:

@@ -9,9 +9,11 @@ using Base.Filesystem: walkdir, basename, joinpath, splitext
 # 3. Specify the output file.
 # 4. Specify folders to exclude (new feature)
 # -----------------------------------------------------------------------------
-folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL"
+folder      = raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\🛫_CREATE_AIRCRAFT_MODEL"
+
 extensions  = [".html", ".css", ".js"]
-output_file = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\🛫_CREATE_AIRCRAFT_MODEL\concatenated_code.txt"
+output_file = raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\🛫_CREATE_AIRCRAFT_MODEL\concatenated_code.txt"
+
 exclude_folders = String[
     # Add folders to exclude (relative or absolute paths)
     # Example: "node_modules", joinpath(folder, "build")

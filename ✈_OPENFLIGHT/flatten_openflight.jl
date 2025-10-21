@@ -9,16 +9,34 @@ using Base.Filesystem: walkdir, basename, joinpath, splitext
 # 3. Specify the output file.
 # 4. Specify folders to exclude (new feature)
 # -----------------------------------------------------------------------------
-folder      = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT"
-extensions  = [".html", ".css", ".js", ".jl1"]
-output_file = raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\openflight_concatenated_code.txt"
+folder      = raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT"
+extensions  = [".html", ".css", ".js", ".jlxx"]
+output_file = raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\openflight_concatenated_code.txt"
 exclude_folders = String[
     # Add folders to exclude (relative or absolute paths)
     # Example: "node_modules", joinpath(folder, "build")
 
-raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\🌈_AUXILIARY_CODE", 
-raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\🛑_EXTERNAL_LIBRARIES",
-raw"F:\UEM\DEV\JS\Flight_Simulator\▶OpenFlight_Git_folder\✈_OPENFLIGHT\📊_Flight_Test_Data",
+raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\🌈_AUXILIARY_CODE", 
+raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\🛑_EXTERNAL_LIBRARIES",
+raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\📊_Flight_Test_Data",
+
+
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\0_INITIALIZATION",
+
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\1_AIRCRAFT_STATE_TRANSFER",
+    
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\2_GUI",
+
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\3_INCEPTORS",
+    
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.3_🏡_WORLD_OBJECTS",
+    
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\4_TERRAIN_AND_WORLD_OBJECTS\4.4_✈_AIRCRAFT_GEOMETRY",
+
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\5_3D_FLIGHT_DATA_VISUALIZATION",
+
+#raw"F:\UEM\DEV\JS\001_Flight_Simulator_Working_Folders\▶OpenFlight_Git_Working_folder\✈_OPENFLIGHT\src\🟡JAVASCRIPT🟡\6_SCENE_AND_RENDER_LOOP",
+
 
 ]
 

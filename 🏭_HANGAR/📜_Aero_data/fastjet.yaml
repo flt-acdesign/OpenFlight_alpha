@@ -1,0 +1,286 @@
+constants:
+# Mass properties
+  aircraft_mass: 2600  # Mass of the aircraft in kilograms
+  radius_of_giration_pitch: 3.5  # Radius of gyration about the pitch axis in meters
+  radius_of_giration_yaw: 4  # Radius of gyration about the yaw axis in meters
+  radius_of_giration_roll: 4  # Radius of gyration about the roll axis in meters
+  principal_axis_pitch_up_DEG: -2  # Pitch angle of the principal axis in degrees (nose-down attitude)
+  x_CoG: 1.75  # Longitudinal position of the center of gravity (CoG) in meters from the aircraft reference point (typically the nose)
+
+# Geometric references
+  x_wing_aerodynamic_center: 2.0  # Position of the wing's aerodynamic center along the longitudinal axis in meters from the aircraft reference point (typically the nose)
+  reference_area: 18.2  # Reference wing area in square meters
+  reference_span: 10.5  # Reference wing span in meters
+  AR: 13.8  # Aspect ratio of the wing
+  Oswald_factor: 0.8  # Oswald efficiency factor (indicates aerodynamic efficiency)
+  wing_mean_aerodynamic_chord: 1.35  # Mean aerodynamic chord of the wing in meters
+  Sideslip_drag_K_factor: 2  # Factor to multiply CS^2 to calculate sideslip-induced drag coefficient
+
+# Aircraft Pitching moment coefficient at zero lift (Cm0)
+  Cm0: -0.0  # Zero-lift pitching moment coefficient
+
+# Aircraft Pitching moment coefficient due to trim (not controllable by inceptor as yet)
+  Cm_trim: 0.  # Pitching moment coefficient due to trim (normally, negative lift on the horizontal tailplane)
+
+# Aerodynamic stiffness (stability) derivatives
+  Cl_beta: -0.2  # Rolling moment coefficient derivative with respect to sideslip angle  
+  Cm_alpha: -0.9  # Pitching moment coefficient derivative with respect to angle of attack  
+  Cn_beta: 0.15  # Yawing moment coefficient derivative with respect to sideslip angle
+  
+# Aerodynamic damping coefficients
+  Cl_p: -.8  # Roll damping coefficient (derivative of rolling moment coefficient with respect to roll rate)
+  Cm_q: -7.0  # Pitch damping coefficient (derivative of pitching moment coefficient with respect to pitch rate)
+  Cn_r: -.3  # Yaw damping coefficient (derivative of yawing moment coefficient with respect to yaw rate)
+
+# Control derivatives
+  Cl_da: 0.1  # Rolling moment coefficient derivative with respect to aileron deflection
+  Cm_de: -.7  # Pitching moment coefficient derivative with respect to elevator deflection
+  Cn_dr: -0.04  # Yawing moment coefficient derivative with respect to rudder deflection
+  Cn_da: -0.02  # Yawing moment coefficient derivative with respect to aileron deflection
+
+# Thrust data
+  maximum_thrust_at_sea_level: 20000 # Maximum engine thrust at sea level in Newtons
+  thrust_installation_angle_DEG: 0  # Engine installation angle relative to the longitudinal axis in degrees
+  control_actuator_speed: 4  # Speed of control surface actuators in ratio of maximum deflection per second (1 means full deflection is achieved in 1 second)
+  engine_spool_up_speed: 1.3  # Engine spool-up speed factor (rate of thrust increase)
+  engine_spool_down_speed: 1.1  # Engine spool-down speed factor (rate of thrust decrease)
+
+# Non-linear coefficients (Only CL, CS and CD0 are used at this point, the rest are placeholders for format)
+coefficients:
+  CL:  # Lift coefficient data
+    parameters:
+      - Mach  # Mach number (speed as a fraction of the speed of sound)
+      - beta  # Sideslip angle in degrees
+      - alpha  # Angle of attack in degrees
+    data:
+      - Mach: 0  # At Mach 0
+        data:
+          - beta: 0
+            data:
+              - alpha: -180
+                CL: 0  # Lift coefficient at -180 degrees angle of attack
+              - alpha: -15
+                CL: -.9
+              - alpha: 0
+                CL: 0.3    # CL0 (at 0 degrees angle of attack)
+              - alpha: 15
+                CL: 1.2
+              - alpha: 180
+                CL: 0
+  CS:
+    parameters:
+      - Mach
+      - alpha
+      - beta
+    data:
+      - Mach: 0
+        data:
+          - alpha: 0
+            data:
+              - beta: -180
+                CS: 0
+              - beta: -9
+                CS: 0.2
+              - beta: 0
+                CS: 0
+              - beta: 9
+                CS: -0.2
+              - beta: 180
+                CS: 0
+  CD0:
+    parameters:
+      - Mach
+      - beta
+      - alpha
+    data:
+      - Mach: 0
+        data:
+          - beta: 0
+            data:
+              - alpha: -180
+                CD0: 0.1
+              - alpha: -90
+                CD0: 1.1
+              - alpha: -14
+                CD0: 0.02
+              - alpha: 0
+                CD0: 0.013   # CD0 at 0 degrees angle of attack
+              - alpha: 14
+                CD0: 0.018
+              - alpha: 90
+                CD0: 1.1
+              - alpha: 180
+                CD0: 0.1
+  CP:
+    parameters:
+      - Mach
+      - beta
+      - alpha
+      - p
+    data:
+      - Mach: 0.1
+        data:
+          - beta: 0
+            data:
+              - alpha: 0
+                data:
+                  - p: -1
+                    CP: -0.1
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.1
+              - alpha: 10
+                data:
+                  - p: -1
+                    CP: -0.15
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.15
+          - beta: 5
+            data:
+              - alpha: 0
+                data:
+                  - p: -1
+                    CP: -0.12
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.12
+              - alpha: 10
+                data:
+                  - p: -1
+                    CP: -0.17
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.17
+      - Mach: 0.4
+        data:
+          - beta: 0
+            data:
+              - alpha: 0
+                data:
+                  - p: -1
+                    CP: -0.12
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.14
+              - alpha: 10
+                data:
+                  - p: -1
+                    CP: -0.145
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.125
+          - beta: 5
+            data:
+              - alpha: 0
+                data:
+                  - p: -1
+                    CP: -0.1
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.123
+              - alpha: 10
+                data:
+                  - p: -1
+                    CP: -0.12
+                  - p: 0
+                    CP: 0
+                  - p: 1
+                    CP: 0.137
+  Cx:
+    parameters:
+      - Mach
+    data:
+      - Mach: 0
+        CD0: 0.024
+  CM:
+    parameters:
+      - Mach
+      - alpha
+      - dq
+    data:
+      - Mach: 0.1
+        data:
+          - alpha: 0
+            data:
+              - dq: -0.4
+                CM: -0.2
+              - dq: 0
+                CM: 0
+              - dq: 0.4
+                CM: 0.2
+          - alpha: 10
+            data:
+              - dq: -0.4
+                CM: -0.25
+              - dq: 0
+                CM: 0
+              - dq: 0.4
+                CM: 0.25
+      - Mach: 0.7
+        data:
+          - alpha: 0
+            data:
+              - dq: -0.4
+                CM: -0.15
+              - dq: 0
+                CM: 0
+              - dq: 0.4
+                CM: 0.15
+          - alpha: 10
+            data:
+              - dq: -0.4
+                CM: -0.18
+              - dq: 0
+                CM: 0
+              - dq: 0.4
+                CM: 0.18
+  CT:
+    parameters:
+      - alpha
+      - beta
+      - tau
+    data:
+      - alpha: 0
+        data:
+          - beta: 0
+            data:
+              - tau: 0
+                CT: 0
+              - tau: 0.5
+                CT: 0.3
+              - tau: 1
+                CT: 0.6
+          - beta: 5
+            data:
+              - tau: 0
+                CT: 0
+              - tau: 0.5
+                CT: 0.28
+              - tau: 1
+                CT: 0.55
+      - alpha: 10
+        data:
+          - beta: 0
+            data:
+              - tau: 0
+                CT: 0
+              - tau: 0.5
+                CT: 0.25
+              - tau: 1
+                CT: 0.5
+          - beta: 5
+            data:
+              - tau: 0
+                CT: 0
+              - tau: 0.5
+                CT: 0.23
+              - tau: 1
+                CT: 0.45
