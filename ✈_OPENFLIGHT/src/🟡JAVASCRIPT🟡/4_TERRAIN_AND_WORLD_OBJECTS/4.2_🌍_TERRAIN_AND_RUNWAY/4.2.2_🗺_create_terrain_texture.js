@@ -5,63 +5,63 @@
  * location, terrain derivatives, and special region conditions.
  *
  * 1. Underwater Regions:
- *    - Deep Underwater (yVal < –16):
- *        * Use a deep blue (RGB (0.020, 0.0, 0.08)) with slight randomization.
- *        * Occasionally (10% chance) add a small random white tint.
- *    - Shallow Underwater (–16 ≤ yVal < 0):
- *        * Blend between deep blue and tropical blue (RGB (0.0, 0.4, 0.6)).
- *        * Blend factor: (yVal + 16) / 16.
- *        * Apply random variations and extra white tint based on probability.
+ * - Deep Underwater (yVal < –16):
+ * * Use a deep blue (RGB (0.020, 0.0, 0.08)) with slight randomization.
+ * * Occasionally (10% chance) add a small random white tint.
+ * - Shallow Underwater (–16 ≤ yVal < 0):
+ * * Blend between deep blue and a deeper ocean blue (RGB (0.0, 0.1, 0.4)). (MODIFIED)
+ * * Blend factor: (yVal + 16) / 16.
+ * * Apply random variations and extra white tint based on probability.
  *
  * 2. Near Sea-Level (0 ≤ yVal < 4):
- *    - Use a sand-like color (RGB (0.76, 0.70, 0.50)) with slight variation.
+ * - Use a sand-like color (RGB (0.76, 0.70, 0.50)) with slight variation.
  *
  * 3. Land Regions (yVal ≥ 4):
- *    A. Inside Crops Region:
- *       - For low hills (yVal < threshold): use a consistent patch color via getPatchColor().
- *       - For higher regions (yVal ≥ threshold): apply a gradient based on height:
- *         * yVal < 0.3 * amplitude: orange-like (RGB (0.90, 0.3, 0.0)).
- *         * 0.3 * amplitude ≤ yVal < 0.5 * amplitude: lighter tone (RGB (0.4, 0.4, 0.2)).
- *         * 0.5 * amplitude ≤ yVal < 0.8 * amplitude: dark brown (RGB (0.3, 0.12, 0.01)).
- *         * Otherwise: white (RGB (1.0, 1.0, 1.0)) with slight randomization.
+ * A. Inside Crops Region:
+ * - For low hills (yVal < threshold): use a consistent patch color via getPatchColor().
+ * - For higher regions (yVal ≥ threshold): apply a gradient based on height:
+ * * yVal < 0.3 * amplitude: orange-like (RGB (0.90, 0.3, 0.0)).
+ * * 0.3 * amplitude ≤ yVal < 0.5 * amplitude: lighter tone (RGB (0.4, 0.4, 0.2)).
+ * * 0.5 * amplitude ≤ yVal < 0.8 * amplitude: dark brown (RGB (0.3, 0.12, 0.01)).
+ * * Otherwise: white (RGB (1.0, 1.0, 1.0)) with slight randomization.
  *
- *    B. Outside Crops Region:
- *       - Low Altitudes (yVal < 44): dark green (RGB (0.0, 0.5, 0.0)) with variation.
- *       - Mid-Range Altitudes (44 ≤ yVal < 194):
- *         * Blend from dark green to dark brown (RGB (0.3, 0.2, 0.1)).
- *         * Occasionally spawn a barren tree and darken the color.
- *       - High Altitudes (yVal ≥ 194):
- *         * For yVal < 374: blend from dark brown to light gray (RGB (0.8, 0.8, 0.8)).
- *         * For yVal ≥ 374: use a top color (preset as a randomized color).
+ * B. Outside Crops Region:
+ * - Low Altitudes (yVal < 44): dark green (RGB (0.0, 0.5, 0.0)) with variation.
+ * - Mid-Range Altitudes (44 ≤ yVal < 194):
+ * * Blend from dark green to dark brown (RGB (0.3, 0.2, 0.1)).
+ * * Occasionally spawn a barren tree and darken the color.
+ * - High Altitudes (yVal ≥ 194):
+ * * For yVal < 374: blend from dark brown to light gray (RGB (0.8, 0.8, 0.8)).
+ * * For yVal ≥ 374: use a top color (preset as a randomized color).
  *
  * 4. Snow Patch Adjustment (for land regions outside crops, yVal ≥ 150):
- *    - Compute a snow blend factor from 0 at 180 m to 1 at 270 m.
- *    - If in shadow (negative dot product with light), boost blend factor by 50%.
- *    - Based on a probability test, blend the vertex color toward white.
+ * - Compute a snow blend factor from 0 at 180 m to 1 at 270 m.
+ * - If in shadow (negative dot product with light), boost blend factor by 50%.
+ * - Based on a probability test, blend the vertex color toward white.
  *
  * 5. Shading Adjustments (for land regions, yVal ≥ 4):
- *    - Normal-Based Darkening: Darken the vertex based on the dot product of the surface normal and light direction.
- *    - Curvature-Based Tinting: For gently curved surfaces (yVal between 1 and 180), blend toward a brownish tint.
- *      * Also, if in shadow and not in crops, sometimes spawn a fertile tree and darken the color.
+ * - Normal-Based Darkening: Darken the vertex based on the dot product of the surface normal and light direction.
+ * - Curvature-Based Tinting: For gently curved surfaces (yVal between 1 and 180), blend toward a brownish tint.
+ * * Also, if in shadow and not in crops, sometimes spawn a fertile tree and darken the color.
  *
  * 6. Region-Specific Overrides:
- *    - Runway Margins: Override with a distinct greenish shade (RGB (0.133, 0.412, 0.075)).
- *    - Platform Areas: Override with a gray tone (RGB (0.5, 0.5, 0.5)).
+ * - Runway Margins: Override with a distinct greenish shade (RGB (0.133, 0.412, 0.075)).
+ * - Platform Areas: Override with a gray tone (RGB (0.5, 0.5, 0.5)).
  *
  * @param {Object} params - Contains the following properties:
- *   - yVal: Number (terrain height at the vertex)
- *   - worldX, worldZ: Number (world coordinates of the vertex)
- *   - threshold: Number (height threshold used in crop regions)
- *   - amplitude: Number (overall vertical scale)
- *   - inside_crops: Boolean (true if vertex is in a designated crops region)
- *   - inside_platform: Boolean (true if vertex is in the platform area)
- *   - inside_runway_margins: Boolean (true if vertex is near the runway)
- *   - freqX, freqZ: Numbers (frequencies for the terrain function)
- *   - dVec: BABYLON.Vector3 (predefined light direction for shading)
- *   - treePositions: Array (array to which new tree positions may be added)
- *   - probability_of_spawning_a_tree_fertile: Number (chance to spawn a fertile tree)
- *   - probability_of_spawning_a_tree_barren: Number (chance to spawn a barren tree)
- *   - getPatchColor: Function (retrieves a patch color based on worldX and worldZ)
+ * - yVal: Number (terrain height at the vertex)
+ * - worldX, worldZ: Number (world coordinates of the vertex)
+ * - threshold: Number (height threshold used in crop regions)
+ * - amplitude: Number (overall vertical scale)
+ * - inside_crops: Boolean (true if vertex is in a designated crops region)
+ * - inside_platform: Boolean (true if vertex is in the platform area)
+ * - inside_runway_margins: Boolean (true if vertex is near the runway)
+ * - freqX, freqZ: Numbers (frequencies for the terrain function)
+ * - dVec: BABYLON.Vector3 (predefined light direction for shading)
+ * - treePositions: Array (array to which new tree positions may be added)
+ * - probability_of_spawning_a_tree_fertile: Number (chance to spawn a fertile tree)
+ * - probability_of_spawning_a_tree_barren: Number (chance to spawn a barren tree)
+ * - getPatchColor: Function (retrieves a patch color based on worldX and worldZ)
  *
  * @returns {BABYLON.Color3} The final computed vertex color.
  ***************************************************************/
@@ -99,10 +99,11 @@ function calculateVertexColor(params) {
     }
     vertColor = deepestBlue;
   } else if (yVal < 0) {
-    // Shallow underwater: blend between deep blue and tropical blue.
+    // Shallow underwater: blend between deep blue and a deeper ocean blue.
     const t = (yVal + 16) / 16;
     const deepBlue = new BABYLON.Color3(0.020, 0.0, 0.08);
-    const tropicalBlue = new BABYLON.Color3(0.0, 0.4, 0.6);
+    // MODIFIED: Changed from (0.0, 0.2, 0.5) to an even deeper blue.
+    const tropicalBlue = new BABYLON.Color3(0.0, 0.1, 0.4);
     let finalColor = lerpColor(deepBlue, tropicalBlue, t);
     finalColor = randomizeColor(finalColor, 0.03);
     if (Math.random() < 0.1 + t * 0.15) {
@@ -230,8 +231,7 @@ function calculateVertexColor(params) {
  *
  * Creates the ground by dividing it into segments, deforming it
  * with a procedural terrain function, and applying per-vertex colors.
- * 
- * MODIFICATION: Now works with terrain height that returns -100 for
+ * * MODIFICATION: Now works with terrain height that returns -100 for
  * underwater surfaces, keeping them separated from water surface layer.
  ***************************************************************/
 function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, scenery_complexity) {
@@ -241,9 +241,9 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, 
   // Determine tree spawning probabilities based on graphic settings.
   function getTreeSpawnProbability(scenery_complexity) {
     const complexityMapping = {
-      0: 0,      // No trees
-      1: 0.0,    // No trees
-      2: 0.01,   // Some trees
+      0: 0,     // No trees
+      1: 0.0,   // No trees
+      2: 0.01,  // Some trees
       3: 0.2    // Nominal number of trees
     };
     return complexityMapping[scenery_complexity] || 0;
@@ -388,24 +388,131 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, 
 }
 
 // --- OPTIMIZED Water Surface Configuration ---
-const WATER_PATCH_SIZE = 4000;        // Much larger patches for better performance
+// MODIFIED: Increased patch size
+const WATER_PATCH_SIZE = 8000;        // Large patches for better performance
 const WATER_CHECK_RADIUS = 2;         // Fewer patches around camera
-const WATER_PATCH_RESOLUTION = 20;    // Lower resolution - no animation needed
+const WATER_PATCH_RESOLUTION = 50;    // Moderate resolution for normal map detail
 
 let activeWaterPatches = {};          // Track active water patches
 let waterMaterial = null;             // Shared material for all water patches
+let waterNormalTexture = null;        // Shared normal map texture
+
+/**
+ * createProceduralWaterNormalMap
+ * * Creates a procedural normal map texture for water waves.
+ * Uses multiple sine wave layers to create realistic wave normals.
+ */
+function createProceduralWaterNormalMap(scene) {
+  const textureSize = 1024;
+  const normalTexture = new BABYLON.DynamicTexture(
+    "waterNormalMap",
+    { width: textureSize, height: textureSize },
+    scene,
+    false
+  );
+
+  const ctx = normalTexture.getContext();
+  const imageData = ctx.createImageData(textureSize, textureSize);
+  const data = imageData.data;
+
+  // Generate procedural normal map
+  for (let y = 0; y < textureSize; y++) {
+    for (let x = 0; x < textureSize; x++) {
+      const idx = (y * textureSize + x) * 4;
+
+      // Normalized coordinates (0 to 1)
+      const u = x / textureSize;
+      const v = y / textureSize;
+
+      // Create multiple wave layers with different frequencies and directions
+      // Higher frequencies for finer detail
+      const wave1 = Math.sin(u * Math.PI * 20) * Math.cos(v * Math.PI * 15);
+      const wave2 = Math.sin(u * Math.PI * 30 + v * Math.PI * 25) * 0.7;
+      const wave3 = Math.sin((u + v) * Math.PI * 40) * 0.5;
+      const wave4 = Math.sin((u - v) * Math.PI * 35) * 0.4;
+      const wave5 = Math.sin(u * Math.PI * 50) * Math.cos(v * Math.PI * 45) * 0.3;
+
+      const combinedWave = wave1 + wave2 + wave3 + wave4 + wave5;
+
+      // Calculate gradients (derivatives)
+      const dx = Math.cos(u * Math.PI * 20) * Math.PI * 20 * Math.cos(v * Math.PI * 15) +
+               Math.cos(u * Math.PI * 30 + v * Math.PI * 25) * Math.PI * 30 * 0.7 +
+               Math.cos((u + v) * Math.PI * 40) * Math.PI * 40 * 0.5 +
+               Math.cos((u - v) * Math.PI * 35) * Math.PI * 35 * 0.4 +
+               Math.cos(u * Math.PI * 50) * Math.PI * 50 * Math.cos(v * Math.PI * 45) * 0.3;
+
+      const dy = Math.sin(u * Math.PI * 20) * (-Math.sin(v * Math.PI * 15)) * Math.PI * 15 +
+               Math.cos(u * Math.PI * 30 + v * Math.PI * 25) * Math.PI * 25 * 0.7 +
+               Math.cos((u + v) * Math.PI * 40) * Math.PI * 40 * 0.5 +
+               -Math.cos((u - v) * Math.PI * 35) * Math.PI * 35 * 0.4 +
+               Math.sin(u * Math.PI * 50) * (-Math.sin(v * Math.PI * 45)) * Math.PI * 45 * 0.3;
+
+      // Normal vector calculation: (-dx, -dy, 1) then normalize
+      const nx = -dx * 0.9;  // Scale down for subtle effect
+      const ny = -dy * 0.9;
+      const nz = 1.0;
+
+      const length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      const normalizedX = nx / length;
+      const normalizedY = ny / length;
+      const normalizedZ = nz / length;
+
+      // Convert from [-1, 1] to [0, 255] color space
+      data[idx] = Math.floor((normalizedX * 0.5 + 0.5) * 255);      // R channel
+      data[idx + 1] = Math.floor((normalizedY * 0.5 + 0.5) * 255);  // G channel
+      data[idx + 2] = Math.floor((normalizedZ * 0.5 + 0.5) * 255);  // B channel
+      data[idx + 3] = 55; // Alpha
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  normalTexture.update();
+
+  // Set texture properties for tiling
+  normalTexture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
+  normalTexture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
+  normalTexture.uScale = 11;  // Tile the normal map for higher frequency detail
+  normalTexture.vScale = 24;
+
+  return normalTexture;
+}
 
 /**
  * enableDynamicWaterGeneration
  *
  * Initializes dynamic water surface generation.
- * OPTIMIZED: Uses larger patches, lower resolution, simple material.
+ * ENHANCED: Now includes reflections, normal maps, and high-frequency patterns.
  */
 function enableDynamicWaterGeneration(scene) {
+  // Create procedural normal map for waves
+  waterNormalTexture = createProceduralWaterNormalMap(scene);
+
   // Create a single shared material for all water patches (performance optimization)
   waterMaterial = new BABYLON.StandardMaterial("sharedWaterMaterial", scene);
+  
+  // Use vertex colors for base color variation
   waterMaterial.useVertexColors = true;
-  waterMaterial.specularColor = new BABYLON.Color3(0, 0, 0); // No specular
+  
+  // Add reflection for water surface
+  waterMaterial.reflectionTexture = new BABYLON.MirrorTexture(
+    "waterReflection",
+    512,  // Reflection texture size
+    scene,
+    true
+  );
+  waterMaterial.reflectionTexture.mirrorPlane = new BABYLON.Plane(0, -1, 0, 0); // Reflect along Y=0 plane
+  waterMaterial.reflectionTexture.level = 0.1;  // Reflection intensity
+  
+  // Apply normal map for wave detail
+  waterMaterial.bumpTexture = waterNormalTexture;
+  waterMaterial.bumpTexture.level = 150;  // Normal map strength
+  
+  // Specular highlights for sun reflections
+  waterMaterial.specularColor = new BABYLON.Color3(1.0, 1.0, 1.0);
+  // MODIFIED: Increased power from 128 to 256 for sharper highlights
+  waterMaterial.specularPower = 256; // Very sharp highlights
+  
+  // Enable fog
   waterMaterial.fogEnabled = true;
   waterMaterial.backFaceCulling = false;
 
@@ -444,6 +551,12 @@ function updateWaterPatches(scene) {
         const waterPatch = createWaterPatch(scene, patchX, patchZ);
         if (waterPatch) {
           activeWaterPatches[patchKey] = waterPatch;
+          
+          // Add water patch to reflection render list
+          if (waterMaterial.reflectionTexture && waterMaterial.reflectionTexture.renderList) {
+            // Reflection should show sky and terrain
+            // Don't add the water patches themselves to avoid infinite reflection
+          }
         }
       }
       newActivePatches[patchKey] = activeWaterPatches[patchKey];
@@ -465,8 +578,8 @@ function updateWaterPatches(scene) {
 /**
  * createWaterPatch
  *
- * Creates a water surface patch using the same approach as the island terrain.
- * OPTIMIZED: Static geometry, vertex colors only, no animations, no transparency.
+ * Creates a water surface patch with high-frequency wave patterns in vertex colors.
+ * ENHANCED: Higher frequency patterns, normal mapping, and reflections.
  *
  * @param {BABYLON.Scene} scene - The scene object.
  * @param {Number} patchX - The patch grid X-coordinate.
@@ -477,14 +590,14 @@ function createWaterPatch(scene, patchX, patchZ) {
   const posX = patchX * WATER_PATCH_SIZE;
   const posZ = patchZ * WATER_PATCH_SIZE;
 
-  // Create simple ground plane with low resolution
+  // Create ground plane with moderate resolution for normal map detail
   const waterPatch = BABYLON.MeshBuilder.CreateGround(
     `waterPatch_${patchX}_${patchZ}`,
     {
       width: WATER_PATCH_SIZE,
       height: WATER_PATCH_SIZE,
       subdivisions: WATER_PATCH_RESOLUTION,
-      updatable: false, // Static - no updates needed
+      updatable: false,
     },
     scene
   );
@@ -492,7 +605,7 @@ function createWaterPatch(scene, patchX, patchZ) {
   // Position at sea level (y=0)
   waterPatch.position.set(posX, 0, posZ);
 
-  // Use shared material (all water patches share same material)
+  // Use shared material with reflections and normal maps
   waterPatch.material = waterMaterial;
 
   // Get vertex data for coloring
@@ -500,45 +613,63 @@ function createWaterPatch(scene, patchX, patchZ) {
   const indices = waterPatch.getIndices();
   const colors = [];
 
-  // Apply vertex colors using same procedural approach as island water
+  // Apply HIGH-FREQUENCY vertex colors for detailed wave appearance
   for (let v = 0; v < positions.length; v += 3) {
     const localX = positions[v];
     const localZ = positions[v + 2];
     const worldX = localX + posX;
     const worldZ = localZ + posZ;
 
-    // Create wave-like pattern using spatial position (similar to original island water)
-    // Use multiple sine waves to create varied water surface appearance
-    const spatialPattern1 = Math.sin(worldX * 0.05) * Math.cos(worldZ * 0.05);
-    const spatialPattern2 = Math.sin(worldX * 0.08 + worldZ * 0.03) * 0.5;
-    const spatialPattern3 = Math.sin((worldX + worldZ) * 0.04) * 0.3;
-    const combinedPattern = spatialPattern1 + spatialPattern2 + spatialPattern3;
+    // HIGHER FREQUENCY wave patterns (increased from previous version)
+    // Multiple overlapping sine waves at higher frequencies
+    const spatialPattern1 = Math.sin(worldX * 0.15) * Math.cos(worldZ * 0.15);
+    const spatialPattern2 = Math.sin(worldX * 0.25 + worldZ * 0.20) * 0.6;
+    const spatialPattern3 = Math.sin((worldX + worldZ) * 0.18) * 0.5;
+    const spatialPattern4 = Math.sin((worldX - worldZ) * 0.22) * 0.4;
+    const spatialPattern5 = Math.sin(worldX * 0.30) * Math.cos(worldZ * 0.28) * 0.35;
+    const spatialPattern6 = Math.sin(worldX * 0.35 + worldZ * 0.32) * 0.3;
+    
+    const combinedPattern = spatialPattern1 + spatialPattern2 + spatialPattern3 + 
+                            spatialPattern4 + spatialPattern5 + spatialPattern6;
 
-    // Base deep blue color (similar to original underwater deep blue)
-    let waterColor = new BABYLON.Color3(0.020, 0.0, 0.08);
+    // MODIFIED: Base deep blue color (changed from 0.0, 0.02, 0.10)
+    let waterColor = new BABYLON.Color3(0.0, 0.01, 0.08);
 
     // Add variation based on spatial pattern to simulate waves/ripples
-    // Higher pattern values = lighter blue (wave crests)
-    if (combinedPattern > 0.5) {
-      const lightAmount = (combinedPattern - 0.5) * 0.4;
+    // More dramatic variation for higher frequency appearance
+    if (combinedPattern > 0.3) {
+      const lightAmount = (combinedPattern - 0.3) * 0.5;
+      // MODIFIED: Adapted to new, darker base color
       waterColor = new BABYLON.Color3(
-        0.020 + lightAmount * 0.1,
-        0.0 + lightAmount * 0.5,
-        0.08 + lightAmount * 0.7
+        0.0 + lightAmount * 0.10,
+        0.01 + lightAmount * 0.15,
+        0.08 + lightAmount * 0.50
+      );
+    } else if (combinedPattern < -0.3) {
+      // Darker for wave troughs
+      const darkAmount = Math.abs(combinedPattern + 0.3) * 0.3;
+      // MODIFIED: Adapted to new, darker base color
+      waterColor = new BABYLON.Color3(
+        0.0, // Clamp at 0
+        0.01 - darkAmount * 0.01,
+        0.08 - darkAmount * 0.04
       );
     }
 
-    // Occasionally add white highlights (foam/wave crests)
-    const foamPattern = Math.sin(worldX * 0.15) * Math.cos(worldZ * 0.12);
-    if (foamPattern > 0.85) {
-      const whiteAmount = (foamPattern - 0.85) * 2.0;
-      waterColor.r += whiteAmount * 0.15;
-      waterColor.g += whiteAmount * 0.15;
-      waterColor.b += whiteAmount * 0.15;
+    // HIGH FREQUENCY foam/wave crests with tighter pattern
+    const foamPattern1 = Math.sin(worldX * 0.40) * Math.cos(worldZ * 0.38);
+    const foamPattern2 = Math.sin((worldX + worldZ) * 0.45);
+    const combinedFoam = foamPattern1 + foamPattern2;
+    
+    if (combinedFoam > 1.5) {
+      const whiteAmount = (combinedFoam - 1.5) * 0.8;
+      waterColor.r += whiteAmount * 0.25;
+      waterColor.g += whiteAmount * 0.25;
+      waterColor.b += whiteAmount * 0.25;
     }
 
-    // Add slight randomization (similar to original code)
-    waterColor = randomizeColor(waterColor, 0.02);
+    // Slight randomization for natural variation
+    waterColor = randomizeColor(waterColor, 0.015);
 
     // Push RGBA values (fully opaque)
     colors.push(waterColor.r, waterColor.g, waterColor.b, 1.0);
@@ -547,7 +678,7 @@ function createWaterPatch(scene, patchX, patchZ) {
   // Apply colors to mesh
   waterPatch.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, false);
 
-  // Recompute normals
+  // Recompute normals (these will be perturbed by the normal map)
   const normals = [];
   BABYLON.VertexData.ComputeNormals(positions, indices, normals);
   waterPatch.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, false);
