@@ -121,7 +121,7 @@ let aircraft_name = "SF25B.yaml"
 
 // Initial flight conditions
 let initial_velocity = 30
-let initial_altitude = 1400
+let initial_altitude = 200
 
 // Time interval (in server time seconds) for flight data recording visualization (pink trajectory)
 let start_flight_data_recording_at = 3
@@ -2013,7 +2013,7 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, 
 // --- Dynamic Sea Generation Configuration ---
 const SEA_PATCH_SIZE = 4000;         // Size of each sea patch
 const SEA_CHECK_RADIUS = 3;            // Number of patches to generate around the camera
-const SEA_PATCH_RESOLUTION = 10;       // Low resolution for performance
+const SEA_PATCH_RESOLUTION = 100;       // Low resolution for performance
 
 let activeSeaPatches = {};             // Track active sea patches
 
@@ -2076,10 +2076,16 @@ function updateSeaPatches(scene) {
   activeSeaPatches = newActivePatches;
 }
 
+
+
+
+
+
 /**
  * createSeaPatch
  *
- * Creates a low-resolution sea patch at the specified grid coordinates.
+ * Creates a low-resolution sea patch at the specified grid coordinates
+ * using the EXACT same coloring logic as the main island at yVal = -20.
  *
  * @param {BABYLON.Scene} scene - The scene object.
  * @param {Number} patchX - The patch grid X-coordinate.
@@ -2103,25 +2109,74 @@ function createSeaPatch(scene, patchX, patchZ, main_patch_side_length) {
     return null;
   }
 
-  // Create the sea patch mesh.
+  // Create the sea patch mesh with higher subdivision for better detail
   const seaPatch = BABYLON.MeshBuilder.CreateGround(`seaPatch_${patchX}_${patchZ}`, {
     width: SEA_PATCH_SIZE,
     height: SEA_PATCH_SIZE,
-    subdivisions: SEA_PATCH_RESOLUTION,
-    updatable: false,
+    subdivisions: 32,
+    updatable: true,
   }, scene);
 
   seaPatch.position.set(posX, -2, posZ);
 
-  // Create and apply the sea material.
+  // Get vertex data for color manipulation
+  const positions = seaPatch.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  const indices = seaPatch.getIndices();
+  const colors = [];
+
+  // EXACT same logic as main island for yVal < -16 (Deep underwater)
+  const yVal = -20; // Fixed height for sea patches (deep water)
+
+  // Process each vertex using the SAME calculateVertexColor logic
+  for (let v = 0; v < positions.length; v += 3) {
+    const worldX = positions[v] + posX;
+    const worldZ = positions[v + 2] + posZ;
+
+    // --- Base Color Calculation Based on Height (yVal) ---
+    // Deep underwater: use deep blue with slight randomization.
+    const deepestBlue = randomizeColor(new BABYLON.Color3(0.020, 0.0, 0.08), 0.02);
+    
+    // Use spatial position-based pattern for higher frequency white specks
+    // This creates consistent wave crest patterns based on world coordinates
+    const spatialPattern = Math.sin(worldX * 10.5) * Math.cos(worldZ * 10.5) + 
+                          Math.sin(worldX * 10.8 + worldZ * 10.3) * 0.5;
+    
+    if (spatialPattern > 0.7) {  // About 10% of vertices based on spatial pattern
+      const whiteAmount = Math.random() * 0.15;
+      deepestBlue.r += whiteAmount;
+      deepestBlue.g += whiteAmount;
+      deepestBlue.b += whiteAmount;
+    }
+    
+    const vertColor = deepestBlue;
+
+    // Push RGBA values
+    colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
+  }
+
+  // Apply colors to mesh
+  seaPatch.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+
+  // Create and apply the sea material with vertex colors (matching main island material)
   const seaMaterial = new BABYLON.StandardMaterial(`seaMaterial_${patchX}_${patchZ}`, scene);
-  seaMaterial.diffuseColor = new BABYLON.Color3(0.020, 0.0, 0.08);
+  seaMaterial.useVertexColors = true; // Enable per-vertex coloring
+  seaMaterial.specularColor = new BABYLON.Color3(0, 0, 0); // Match main island (no specular)
   seaMaterial.backFaceCulling = false;
+  seaMaterial.fogEnabled = true;
+  
   seaPatch.material = seaMaterial;
 
   activeSeaPatches[`${patchX}_${patchZ}`] = seaPatch;
   return seaPatch;
 }
+
+
+
+
+
+
+
+
 
 /**
  * lerpColor

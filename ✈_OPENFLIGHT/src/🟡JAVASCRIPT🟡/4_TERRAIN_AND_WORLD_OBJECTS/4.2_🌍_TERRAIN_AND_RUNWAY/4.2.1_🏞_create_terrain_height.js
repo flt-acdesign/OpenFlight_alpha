@@ -1,7 +1,6 @@
-
-
 /**
  * Compute the terrain height at (x,z).
+ * Modified to push underwater surfaces to -100 to separate them from water surface layer.
  */
 function compute_terrain_height(x, z, freqX, freqZ, amplitude, scenery_complexity) {
     
@@ -50,7 +49,15 @@ function compute_terrain_height(x, z, freqX, freqZ, amplitude, scenery_complexit
       heightY = 0;
     }
   
-    return heightY + 14;
+    const finalHeight = heightY + 14;
+    
+    // MODIFICATION: If the height would be at or below sea level (0),
+    // push it down to -100 to separate underwater terrain from water surface
+    if (finalHeight <= 0) {
+      return -100;
+    }
+    
+    return finalHeight;
   }
 }
   

@@ -6,6 +6,9 @@
  * Note: We treat the coordinate system such that:
  * - x and z are the "ground plane" (horizontal).
  * - y is the vertical axis (height).
+ * 
+ * MODIFICATION: Now uses enableDynamicWaterGeneration to create
+ * a complete water surface layer covering the entire scenery.
  **************************************************************/
 function createWorldScenery(scene, shadowGenerator, camera) {
     // Wavelengths along the x and z axes (for the compute_terrain_height)
@@ -44,8 +47,9 @@ function createWorldScenery(scene, shadowGenerator, camera) {
                 create_lighthouses(scene, shadowGenerator, scenery_complexity);
                 create_wind_turbines(scene, shadowGenerator, scenery_complexity);
 
-                // Enable dynamic sea generation (call this after creating your scene and camera)
-                enableDynamicSeaGeneration(scene, scene.activeCamera, scenery_complexity);
+                // MODIFICATION: Enable dynamic water surface generation
+                // Creates animated water patches at y=0 covering entire scenery including island
+                enableDynamicWaterGeneration(scene);
             }
         }
     } else {

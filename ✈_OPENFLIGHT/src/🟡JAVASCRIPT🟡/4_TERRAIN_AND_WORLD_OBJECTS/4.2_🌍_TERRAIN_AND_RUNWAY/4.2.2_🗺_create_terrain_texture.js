@@ -35,7 +35,7 @@
  *         * For yVal ≥ 374: use a top color (preset as a randomized color).
  *
  * 4. Snow Patch Adjustment (for land regions outside crops, yVal ≥ 150):
- *    - Compute a snow blend factor from 0 at 180 m to 1 at 270 m.
+ *    - Compute a snow blend factor from 0 at 180 m to 1 at 270 m.
  *    - If in shadow (negative dot product with light), boost blend factor by 50%.
  *    - Based on a probability test, blend the vertex color toward white.
  *
@@ -230,6 +230,9 @@ function calculateVertexColor(params) {
  *
  * Creates the ground by dividing it into segments, deforming it
  * with a procedural terrain function, and applying per-vertex colors.
+ * 
+ * MODIFICATION: Now works with terrain height that returns -100 for
+ * underwater surfaces, keeping them separated from water surface layer.
  ***************************************************************/
 function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, scenery_complexity) {
   // Store positions where trees will be spawned.
@@ -360,8 +363,10 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, 
         });
 
         // --- Adjust Vertex Height ---
-        // Flatten sea surface: set y-coordinate to 0 if below sea level.
-        positions[v + 1] = yVal < 0 ? 0 : yVal;
+        // MODIFICATION: No longer flatten underwater to 0, as compute_terrain_height 
+        // now returns -100 for underwater surfaces to separate them from water layer.
+        // Simply use the height value as-is.
+        positions[v + 1] = yVal;
 
         // --- Append the Vertex Color (RGBA) ---
         colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
@@ -382,31 +387,40 @@ function create_procedural_ground_texture(scene, groundConfig, shadowGenerator, 
   createRandomTrees(scene, shadowGenerator, treePositions);
 }
 
-// --- Dynamic Sea Generation Configuration ---
-const SEA_PATCH_SIZE = 4000;         // Size of each sea patch
-const SEA_CHECK_RADIUS = 3;            // Number of patches to generate around the camera
-const SEA_PATCH_RESOLUTION = 100;       // Low resolution for performance
+// --- OPTIMIZED Water Surface Configuration ---
+const WATER_PATCH_SIZE = 4000;        // Much larger patches for better performance
+const WATER_CHECK_RADIUS = 2;         // Fewer patches around camera
+const WATER_PATCH_RESOLUTION = 20;    // Lower resolution - no animation needed
 
-let activeSeaPatches = {};             // Track active sea patches
+let activeWaterPatches = {};          // Track active water patches
+let waterMaterial = null;             // Shared material for all water patches
 
 /**
- * enableDynamicSeaGeneration
+ * enableDynamicWaterGeneration
  *
- * Initializes dynamic sea generation by continuously checking the active
- * camera's position.
+ * Initializes dynamic water surface generation.
+ * OPTIMIZED: Uses larger patches, lower resolution, simple material.
  */
-function enableDynamicSeaGeneration(scene) {
+function enableDynamicWaterGeneration(scene) {
+  // Create a single shared material for all water patches (performance optimization)
+  waterMaterial = new BABYLON.StandardMaterial("sharedWaterMaterial", scene);
+  waterMaterial.useVertexColors = true;
+  waterMaterial.specularColor = new BABYLON.Color3(0, 0, 0); // No specular
+  waterMaterial.fogEnabled = true;
+  waterMaterial.backFaceCulling = false;
+
   scene.onBeforeRenderObservable.add(() => {
-    updateSeaPatches(scene);
+    updateWaterPatches(scene);
   });
 }
 
 /**
- * updateSeaPatches
+ * updateWaterPatches
  *
- * Updates sea patches based on the active camera's current position.
+ * Updates water patches based on the active camera's current position.
+ * OPTIMIZED: Uses much larger patches and fewer of them.
  */
-function updateSeaPatches(scene) {
+function updateWaterPatches(scene) {
   const camera = scene.activeCamera;
   if (!camera) {
     console.warn("No active camera found in the scene.");
@@ -414,141 +428,133 @@ function updateSeaPatches(scene) {
   }
 
   // Determine camera's patch coordinates.
-  const camX = Math.floor(camera.position.x / SEA_PATCH_SIZE);
-  const camZ = Math.floor(camera.position.z / SEA_PATCH_SIZE);
+  const camX = Math.floor(camera.position.x / WATER_PATCH_SIZE);
+  const camZ = Math.floor(camera.position.z / WATER_PATCH_SIZE);
   const newActivePatches = {};
 
-  // Generate patches around the camera.
-  for (let dx = -SEA_CHECK_RADIUS; dx <= SEA_CHECK_RADIUS; dx++) {
-    for (let dz = -SEA_CHECK_RADIUS; dz <= SEA_CHECK_RADIUS; dz++) {
+  // Generate patches around the camera (5x5 grid with radius 2)
+  for (let dx = -WATER_CHECK_RADIUS; dx <= WATER_CHECK_RADIUS; dx++) {
+    for (let dz = -WATER_CHECK_RADIUS; dz <= WATER_CHECK_RADIUS; dz++) {
       const patchX = camX + dx;
       const patchZ = camZ + dz;
       const patchKey = `${patchX}_${patchZ}`;
 
       // Create patch if not already active.
-      if (!activeSeaPatches[patchKey]) {
-        const seaPatch = createSeaPatch(scene, patchX, patchZ, 2800);
-        if (seaPatch) {
-          activeSeaPatches[patchKey] = seaPatch;
+      if (!activeWaterPatches[patchKey]) {
+        const waterPatch = createWaterPatch(scene, patchX, patchZ);
+        if (waterPatch) {
+          activeWaterPatches[patchKey] = waterPatch;
         }
       }
-      newActivePatches[patchKey] = activeSeaPatches[patchKey];
+      newActivePatches[patchKey] = activeWaterPatches[patchKey];
     }
   }
 
   // Dispose patches that are no longer near the camera.
-  for (const patchKey in activeSeaPatches) {
-    const patch = activeSeaPatches[patchKey];
+  for (const patchKey in activeWaterPatches) {
+    const patch = activeWaterPatches[patchKey];
     if (patch && !newActivePatches[patchKey]) {
       patch.dispose();
-      delete activeSeaPatches[patchKey];
+      delete activeWaterPatches[patchKey];
     }
   }
 
-  activeSeaPatches = newActivePatches;
+  activeWaterPatches = newActivePatches;
 }
 
-
-
-
-
-
 /**
- * createSeaPatch
+ * createWaterPatch
  *
- * Creates a low-resolution sea patch at the specified grid coordinates
- * using the EXACT same coloring logic as the main island at yVal = -20.
+ * Creates a water surface patch using the same approach as the island terrain.
+ * OPTIMIZED: Static geometry, vertex colors only, no animations, no transparency.
  *
  * @param {BABYLON.Scene} scene - The scene object.
  * @param {Number} patchX - The patch grid X-coordinate.
  * @param {Number} patchZ - The patch grid Z-coordinate.
- * @param {Number} main_patch_side_length - The side length of the main patch.
- * @returns {BABYLON.Mesh|null} The sea patch mesh, or null if overlapping the main patch.
+ * @returns {BABYLON.Mesh} The water patch mesh.
  */
-function createSeaPatch(scene, patchX, patchZ, main_patch_side_length) {
-  const posX = patchX * SEA_PATCH_SIZE;
-  const posZ = patchZ * SEA_PATCH_SIZE;
-  const halfMainPatchSize = main_patch_side_length / 2;
+function createWaterPatch(scene, patchX, patchZ) {
+  const posX = patchX * WATER_PATCH_SIZE;
+  const posZ = patchZ * WATER_PATCH_SIZE;
 
-  // Prevent creation if overlapping the main patch area.
-  const isOverlappingMainPatch =
-    posX + SEA_PATCH_SIZE / 2 > -halfMainPatchSize &&
-    posX - SEA_PATCH_SIZE / 2 < halfMainPatchSize &&
-    posZ + SEA_PATCH_SIZE / 2 > -halfMainPatchSize &&
-    posZ - SEA_PATCH_SIZE / 2 < halfMainPatchSize;
+  // Create simple ground plane with low resolution
+  const waterPatch = BABYLON.MeshBuilder.CreateGround(
+    `waterPatch_${patchX}_${patchZ}`,
+    {
+      width: WATER_PATCH_SIZE,
+      height: WATER_PATCH_SIZE,
+      subdivisions: WATER_PATCH_RESOLUTION,
+      updatable: false, // Static - no updates needed
+    },
+    scene
+  );
 
-  if (isOverlappingMainPatch) {
-    return null;
-  }
+  // Position at sea level (y=0)
+  waterPatch.position.set(posX, 0, posZ);
 
-  // Create the sea patch mesh with higher subdivision for better detail
-  const seaPatch = BABYLON.MeshBuilder.CreateGround(`seaPatch_${patchX}_${patchZ}`, {
-    width: SEA_PATCH_SIZE,
-    height: SEA_PATCH_SIZE,
-    subdivisions: 32,
-    updatable: true,
-  }, scene);
+  // Use shared material (all water patches share same material)
+  waterPatch.material = waterMaterial;
 
-  seaPatch.position.set(posX, -2, posZ);
-
-  // Get vertex data for color manipulation
-  const positions = seaPatch.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-  const indices = seaPatch.getIndices();
+  // Get vertex data for coloring
+  const positions = waterPatch.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  const indices = waterPatch.getIndices();
   const colors = [];
 
-  // EXACT same logic as main island for yVal < -16 (Deep underwater)
-  const yVal = -20; // Fixed height for sea patches (deep water)
-
-  // Process each vertex using the SAME calculateVertexColor logic
+  // Apply vertex colors using same procedural approach as island water
   for (let v = 0; v < positions.length; v += 3) {
-    const worldX = positions[v] + posX;
-    const worldZ = positions[v + 2] + posZ;
+    const localX = positions[v];
+    const localZ = positions[v + 2];
+    const worldX = localX + posX;
+    const worldZ = localZ + posZ;
 
-    // --- Base Color Calculation Based on Height (yVal) ---
-    // Deep underwater: use deep blue with slight randomization.
-    const deepestBlue = randomizeColor(new BABYLON.Color3(0.020, 0.0, 0.08), 0.02);
-    
-    // Use spatial position-based pattern for higher frequency white specks
-    // This creates consistent wave crest patterns based on world coordinates
-    const spatialPattern = Math.sin(worldX * 10.5) * Math.cos(worldZ * 10.5) + 
-                          Math.sin(worldX * 10.8 + worldZ * 10.3) * 0.5;
-    
-    if (spatialPattern > 0.7) {  // About 10% of vertices based on spatial pattern
-      const whiteAmount = Math.random() * 0.15;
-      deepestBlue.r += whiteAmount;
-      deepestBlue.g += whiteAmount;
-      deepestBlue.b += whiteAmount;
+    // Create wave-like pattern using spatial position (similar to original island water)
+    // Use multiple sine waves to create varied water surface appearance
+    const spatialPattern1 = Math.sin(worldX * 0.05) * Math.cos(worldZ * 0.05);
+    const spatialPattern2 = Math.sin(worldX * 0.08 + worldZ * 0.03) * 0.5;
+    const spatialPattern3 = Math.sin((worldX + worldZ) * 0.04) * 0.3;
+    const combinedPattern = spatialPattern1 + spatialPattern2 + spatialPattern3;
+
+    // Base deep blue color (similar to original underwater deep blue)
+    let waterColor = new BABYLON.Color3(0.020, 0.0, 0.08);
+
+    // Add variation based on spatial pattern to simulate waves/ripples
+    // Higher pattern values = lighter blue (wave crests)
+    if (combinedPattern > 0.5) {
+      const lightAmount = (combinedPattern - 0.5) * 0.4;
+      waterColor = new BABYLON.Color3(
+        0.020 + lightAmount * 0.1,
+        0.0 + lightAmount * 0.5,
+        0.08 + lightAmount * 0.7
+      );
     }
-    
-    const vertColor = deepestBlue;
 
-    // Push RGBA values
-    colors.push(vertColor.r, vertColor.g, vertColor.b, 1.0);
+    // Occasionally add white highlights (foam/wave crests)
+    const foamPattern = Math.sin(worldX * 0.15) * Math.cos(worldZ * 0.12);
+    if (foamPattern > 0.85) {
+      const whiteAmount = (foamPattern - 0.85) * 2.0;
+      waterColor.r += whiteAmount * 0.15;
+      waterColor.g += whiteAmount * 0.15;
+      waterColor.b += whiteAmount * 0.15;
+    }
+
+    // Add slight randomization (similar to original code)
+    waterColor = randomizeColor(waterColor, 0.02);
+
+    // Push RGBA values (fully opaque)
+    colors.push(waterColor.r, waterColor.g, waterColor.b, 1.0);
   }
 
   // Apply colors to mesh
-  seaPatch.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, true);
+  waterPatch.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors, false);
 
-  // Create and apply the sea material with vertex colors (matching main island material)
-  const seaMaterial = new BABYLON.StandardMaterial(`seaMaterial_${patchX}_${patchZ}`, scene);
-  seaMaterial.useVertexColors = true; // Enable per-vertex coloring
-  seaMaterial.specularColor = new BABYLON.Color3(0, 0, 0); // Match main island (no specular)
-  seaMaterial.backFaceCulling = false;
-  seaMaterial.fogEnabled = true;
-  
-  seaPatch.material = seaMaterial;
+  // Recompute normals
+  const normals = [];
+  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+  waterPatch.setVerticesData(BABYLON.VertexBuffer.NormalKind, normals, false);
 
-  activeSeaPatches[`${patchX}_${patchZ}`] = seaPatch;
-  return seaPatch;
+  activeWaterPatches[`${patchX}_${patchZ}`] = waterPatch;
+  return waterPatch;
 }
-
-
-
-
-
-
-
-
 
 /**
  * lerpColor
